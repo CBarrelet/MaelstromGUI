@@ -35,15 +35,21 @@ namespace MaelstromGUI {
 	using namespace std;
 	using namespace cv;
 
+	// Image in picture box
 	Mat img;
 	Mat original_img;
 
+	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
 	vector<Bbx> null_bbx_vector;
 	Bboxes bboxes(null_img, null_bbx_vector);
 
+	// Mouse position for zooming
 	cv::Point mouse_pos = cv::Point(0, 0);
 	bool mouse_left_down = false;
+
+	// Related images in the images list
+	vector< cv::String > realted_img_paths;
 
 	/// <summary>
 	/// Summary for MyForm
@@ -75,6 +81,14 @@ namespace MaelstromGUI {
 
 
 	private: System::Windows::Forms::Button^ button_Browse;
+	private: System::Windows::Forms::ListView^ listView1;
+	private: System::Windows::Forms::Button^ view_button;
+	private: System::Windows::Forms::ImageList^ imageList1;
+	private: System::Windows::Forms::ColumnHeader^ Related;
+	private: System::Windows::Forms::ColumnHeader^ columnHeader1;
+
+
+	private: System::ComponentModel::IContainer^ components;
 
 	protected:
 
@@ -84,7 +98,7 @@ namespace MaelstromGUI {
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
-		System::ComponentModel::Container ^components;
+
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -93,9 +107,15 @@ namespace MaelstromGUI {
 		/// </summary>
 		void InitializeComponent(void)
 		{
+			this->components = (gcnew System::ComponentModel::Container());
 			this->button_Edition = (gcnew System::Windows::Forms::Button());
 			this->ptbSource = (gcnew System::Windows::Forms::PictureBox());
 			this->button_Browse = (gcnew System::Windows::Forms::Button());
+			this->listView1 = (gcnew System::Windows::Forms::ListView());
+			this->Related = (gcnew System::Windows::Forms::ColumnHeader());
+			this->view_button = (gcnew System::Windows::Forms::Button());
+			this->imageList1 = (gcnew System::Windows::Forms::ImageList(this->components));
+			this->columnHeader1 = (gcnew System::Windows::Forms::ColumnHeader());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			this->SuspendLayout();
 			// 
@@ -130,11 +150,44 @@ namespace MaelstromGUI {
 			this->button_Browse->UseVisualStyleBackColor = true;
 			this->button_Browse->Click += gcnew System::EventHandler(this, &MainForm::button_Browse_Click);
 			// 
+			// listView1
+			// 
+			this->listView1->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(1) { this->columnHeader1 });
+			this->listView1->HideSelection = false;
+			this->listView1->Location = System::Drawing::Point(525, 60);
+			this->listView1->Name = L"listView1";
+			this->listView1->Size = System::Drawing::Size(250, 400);
+			this->listView1->TabIndex = 3;
+			this->listView1->UseCompatibleStateImageBehavior = false;
+			this->listView1->MouseClick += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::listView1_MouseClick);
+			// 
+			// view_button
+			// 
+			this->view_button->Location = System::Drawing::Point(611, 466);
+			this->view_button->Name = L"view_button";
+			this->view_button->Size = System::Drawing::Size(80, 34);
+			this->view_button->TabIndex = 4;
+			this->view_button->Text = L"Click";
+			this->view_button->UseVisualStyleBackColor = true;
+			this->view_button->Click += gcnew System::EventHandler(this, &MainForm::view_button_Click);
+			// 
+			// imageList1
+			// 
+			this->imageList1->ColorDepth = System::Windows::Forms::ColorDepth::Depth8Bit;
+			this->imageList1->ImageSize = System::Drawing::Size(150, 150);
+			this->imageList1->TransparentColor = System::Drawing::Color::Transparent;
+			// 
+			// columnHeader1
+			// 
+			this->columnHeader1->Text = L"Related frames";
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1904, 1041);
+			this->Controls->Add(this->view_button);
+			this->Controls->Add(this->listView1);
 			this->Controls->Add(this->button_Browse);
 			this->Controls->Add(this->ptbSource);
 			this->Controls->Add(this->button_Edition);
@@ -145,6 +198,10 @@ namespace MaelstromGUI {
 
 		}
 #pragma endregion
+	public: void load() {
+		listView1->Columns->Add("Related frames", 200);
+	}
+
 	// Bbx edition
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
 		namedWindow("Edition");
@@ -277,5 +334,43 @@ namespace MaelstromGUI {
 		}
 	}
 
+	// Temp button
+	private: System::Void view_button_Click(System::Object^ sender, System::EventArgs^ e) {
+		//listView1->Items->Clear();
+		listView1->View = System::Windows::Forms::View::Details;
+		//listView1->Columns->Add("Related frames", 200);
+		listView1->AutoResizeColumn(0, ColumnHeaderAutoResizeStyle::HeaderSize);
+		populate();
+	}
+
+	// Fill the image list
+	private: void populate() {
+		cv::String dirname = "C:/Users/Utilisateur/Pictures/*.jpg";
+		glob(dirname, realted_img_paths);
+		for (size_t i = 0; i < realted_img_paths.size(); ++i) {
+			System::String^ path = gcnew System::String(realted_img_paths[i].c_str()); // Convert string to System::String
+			imageList1->Images->Add(Image::FromFile(path));
+		}
+		listView1->SmallImageList = imageList1;
+		for (size_t i = 0; i < realted_img_paths.size(); ++i) {
+			std::string str = " - 00:00::0" + std::to_string(i) + "::00"; // Create a string
+			System::String^ name = gcnew System::String(str.c_str()); // Convert back to String^
+			listView1->Items->Add(name, i);
+		}
+	}
+	
+	// Display the selected img in the picturebox
+	private: System::Void listView1_MouseClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
+		System::String^ selected = listView1->SelectedItems[0]->SubItems[0]->Text;
+		int img_index = listView1->SelectedItems[0]->Index;
+		img = imread(realted_img_paths[img_index]);
+		int ptb_width = ptbSource->Size.Width;
+		int ptb_height = ptbSource->Size.Height;
+		resize(img, img, cv::Size(ptb_width, ptb_height), INTER_CUBIC);
+		original_img = img.clone();
+		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
+		ptbSource->Refresh();
+		//MessageBox::Show(selected);
+	}
 };
 }
