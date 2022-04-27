@@ -32,6 +32,7 @@ public:
 	int max_width = 0;  // Image width
 
 	cv::Scalar color = cv::Scalar(0, 0, 0); // Bbx color
+	cv::Scalar original_color = cv::Scalar(0, 0, 0); // Bbx original color
 	cv::Scalar selection_color = cv::Scalar(0, 0, 0); // Bbx color when selected
 	int thickness = 2;
 	int corner_radius = int(size / 6);
@@ -49,7 +50,7 @@ public:
 
 	bool removed = false; // Has been removed ?
 
-	// p1_mouse_offset ?
+	cv::Point p1_mouse_offset = cv::Point(0, 0);
 
 	/*--------------------------------------------------
 		Bbx constructor from mouse
@@ -80,6 +81,7 @@ public:
 		this->max_width = img_size.width;
 
 		this->color = color;
+		this->original_color = color;
 		this->selection_color = color + cv::Scalar(50, 50, 50);
 
 		update_pos();
@@ -122,6 +124,19 @@ public:
 	// Check if a round corner is selected
 	bool is_corner_selected(int x_mouse, int y_mouse, cv::Point p) {
 		return std::pow(x_mouse - p.x, 2) + std::pow(y_mouse - p.y, 2) <= std::pow(this->corner_radius, 2);
+	}
+
+	bool is_selected(int x_mouse, int y_mouse) {
+		// Check if bbx is clicked
+		this->selected = contains(x_mouse, y_mouse, this->x1 - int(this->thickness / 2), this->y1, this->x2 + this->thickness, this->y2 + this->thickness + 1);
+		// Check if one of its corner is selected
+		this->p1_selected = is_corner_selected(x_mouse, y_mouse, this->p1);
+		this->p2_selected = is_corner_selected(x_mouse, y_mouse, this->p2);
+		this->p3_selected = is_corner_selected(x_mouse, y_mouse, this->p3);
+		this->p4_selected = is_corner_selected(x_mouse, y_mouse, this->p4);
+		// Bbx is selected if at least a part is clicked
+		this->selected = this->selected || this->p1_selected || this->p2_selected || this->p3_selected || this->p4_selected;
+		return this->selected;
 	}
 
 	// Check if x, y coordinates are within a rectangle (x1,y1,x2,y2)

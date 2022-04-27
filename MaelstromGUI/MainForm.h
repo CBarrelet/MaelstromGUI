@@ -8,18 +8,31 @@
 #include "Bbx.h"
 #include "Bboxes.h"
 
+// Opencv global
 int x_mouse = 0, y_mouse = 0; // Mouse coordinates
 bool mouse_left_click = false;
-char mouse_click = 'L';
+bool mouse_right_click = false;
+bool click = false;
+bool hold = false;
 
-void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
-{
+// System global
+char mouse_click = 'L'; 
+
+// Opencv mouse callback
+void mouse_callback(int  event, int  x, int  y, int  flag, void* param) {
+
+	click = false;
 	if (event == cv::EVENT_MOUSEMOVE) {
 		x_mouse = x;
 		y_mouse = y;
 	}
 	else if (event == cv::EVENT_LBUTTONDOWN) {
 		mouse_left_click = true;
+		hold = !hold;;
+		click = true;
+	}
+	else if (event == cv::EVENT_RBUTTONDOWN) {
+		mouse_right_click = true;
 	}
 }
 
@@ -192,7 +205,7 @@ namespace MaelstromGUI {
 			this->Controls->Add(this->ptbSource);
 			this->Controls->Add(this->button_Edition);
 			this->Name = L"MainForm";
-			this->Text = L"MainForm";
+			this->Text = L"Maelstrom GUI";
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->EndInit();
 			this->ResumeLayout(false);
 
@@ -204,35 +217,41 @@ namespace MaelstromGUI {
 
 	// Bbx edition
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
+		System::String^ message = "Edition mode:\n\tRight clik to create a bounding box\n\tLeft click to modify";
+		MessageBox::Show(message);
 		namedWindow("Edition");
 		setMouseCallback("Edition", mouse_callback);
 		bool close_window = false; // Bool to close the windows when hitting the close button
 		Mat edited_img = original_img.clone(); // Dezoom the image before editing
 		while (true) {
-			waitKey(10);
 			// Close the window on close button
 			close_window = getWindowProperty("Edition", WND_PROP_VISIBLE) < 1;
 			if (close_window) {
-				original_img = edited_img.clone();
-				img = edited_img;
+				//original_img = edited_img.clone();
+				//img = edited_img.clone();
+				ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
+				ptbSource->Refresh();
 				destroyAllWindows();
 				break;
 			}
+			edited_img = original_img.clone(); // Refresh the img
+			bboxes.update(x_mouse, y_mouse, &click, &hold);
 			bboxes.draw(edited_img);
 			imshow("Edition", edited_img);
-			if (mouse_left_click) {
+			if (mouse_right_click) {
 				cv::Point center(x_mouse, y_mouse);
 				bboxes.add(center);
 				// string to system string
 				//System::String^ name = gcnew System::String(s.c_str());
 				//label1->Text = name;
-				mouse_left_click = false;
+				mouse_right_click = false;
 			}
-			ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
-			ptbSource->Refresh();
+			//ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
+			//ptbSource->Refresh();
+			waitKey(10);
 		}
-		ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
-		ptbSource->Refresh();
+		//ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
+		//ptbSource->Refresh();
 	}
 
 	// Load and show image from PC into picture box
