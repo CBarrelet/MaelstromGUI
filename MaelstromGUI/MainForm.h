@@ -5,6 +5,24 @@
 #include <opencv2/imgcodecs/imgcodecs.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 
+#include "Bbx.h"
+#include "Bboxes.h"
+
+int x_mouse = 0, y_mouse = 0; // Mouse coordinates
+bool mouse_left_click = false;
+char mouse_click = 'L';
+
+void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
+{
+	if (event == cv::EVENT_MOUSEMOVE) {
+		x_mouse = x;
+		y_mouse = y;
+	}
+	else if (event == cv::EVENT_LBUTTONDOWN) {
+		mouse_left_click = true;
+	}
+}
+
 namespace MaelstromGUI {
 
 	using namespace System;
@@ -17,7 +35,12 @@ namespace MaelstromGUI {
 	using namespace std;
 	using namespace cv;
 
-	Mat src;
+	Mat img;
+	Mat original_img;
+
+	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
+	vector<Bbx> null_bbx_vector;
+	Bboxes bboxes(null_img, null_bbx_vector);
 
 	/// <summary>
 	/// Summary for MyForm
@@ -117,30 +140,61 @@ namespace MaelstromGUI {
 		}
 #pragma endregion
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
+		// Edition mode
+		//state_editing = true;
+		namedWindow("Edition");
+		setMouseCallback("Edition", mouse_callback);
+		bool close_window = false; // Bool to close the windows when hitting the close button
+		img = original_img; // Dezzom the image before editing
+		while (true) {
+			waitKey(10);
+			// Close the window on close button
+			close_window = getWindowProperty("Edition", WND_PROP_VISIBLE) < 1;
+			if (close_window) {
+				original_img = img;
+				destroyAllWindows();
+				break;
+			}
+			bboxes.draw(img);
+			imshow("Edition", img);
+			if (mouse_left_click) {
+				cv::Point center(x_mouse, y_mouse);
+				cout << "CENTER" << center << endl;
+				bboxes.add(center);
+				// string to system string
+				//System::String^ name = gcnew System::String(s.c_str());
+				//label1->Text = name;
+				mouse_left_click = false;
+			}
+			ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
+			ptbSource->Refresh();
+		}
+		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
+		ptbSource->Refresh();
+		// Quit edition mode
+		//state_editing = false;
 	}
 
 
 
 	// Load and show image from PC into picture box
 	private: System::Void button_Browse_Click(System::Object^ sender, System::EventArgs^ e) {
-		
 		OpenFileDialog^ dgOpen = gcnew OpenFileDialog();
 		dgOpen->Filter = "Image(*.bmp; *.jpg)|*.bmp;*.jpg|All files (*.*)|*.*||";
 		if (dgOpen->ShowDialog() == System::Windows::Forms::DialogResult::Cancel)
 		{
 			return;
 		}
-
 		// Read the image with opencv
-		src = imread(ConvertString2Char(dgOpen->FileName));
-
+		img = imread(ConvertString2Char(dgOpen->FileName));
 		// Resize the image to its placeholder dimensions
-		resize(src, src, cv::Size(600, 600), INTER_CUBIC);
-		//original_src = src;
-
+		resize(img, img, cv::Size(600, 600), INTER_CUBIC);
+		original_img = img.clone();
 		// Convert the image into bitmap
-		ptbSource->Image = ConvertMat2Bitmap(src);
+		ptbSource->Image = ConvertMat2Bitmap(img);
 		ptbSource->Refresh();
+		// Set image size within the Bboxes class
+		bboxes.set_img_size(img.size());
 	}
 
 	// Convert String to Char
@@ -151,11 +205,11 @@ namespace MaelstromGUI {
 
 	// Convert Mat to Bitmap
 	private: System::Drawing::Bitmap^ ConvertMat2Bitmap(Mat img) {
-		Bitmap^ newBitmap = gcnew System::Drawing::Bitmap(src.size().width,
-			src.size().height,
-			src.step,
+		Bitmap^ newBitmap = gcnew System::Drawing::Bitmap(img.size().width,
+			img.size().height,
+			img.step,
 			System::Drawing::Imaging::PixelFormat::Format24bppRgb,
-			(IntPtr)src.data);
+			(IntPtr)img.data);
 		return newBitmap;
 	}
 	};
