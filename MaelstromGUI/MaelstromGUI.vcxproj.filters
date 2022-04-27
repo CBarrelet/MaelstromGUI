@@ -21,12 +21,18 @@
     <ClCompile Include="Bbx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Bboxes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainForm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Bbx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Bboxes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

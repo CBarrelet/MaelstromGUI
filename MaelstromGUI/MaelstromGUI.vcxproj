@@ -124,10 +124,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bboxes.cpp" />
     <ClCompile Include="Bbx.cpp" />
     <ClCompile Include="MainForm.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bboxes.h" />
     <ClInclude Include="Bbx.h" />
     <ClInclude Include="MainForm.h">
       <FileType>CppForm</FileType>
