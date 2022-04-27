@@ -41,7 +41,9 @@ namespace MaelstromGUI {
 				delete components;
 			}
 		}
-	private: System::Windows::Forms::Button^ Edition;
+	private: System::Windows::Forms::Button^ button_Edition;
+	protected:
+
 	protected:
 
 	private:
@@ -57,25 +59,25 @@ namespace MaelstromGUI {
 		/// </summary>
 		void InitializeComponent(void)
 		{
-			this->Edition = (gcnew System::Windows::Forms::Button());
+			this->button_Edition = (gcnew System::Windows::Forms::Button());
 			this->SuspendLayout();
 			// 
-			// Edition
+			// button_Edition
 			// 
-			this->Edition->Location = System::Drawing::Point(1152, 31);
-			this->Edition->Name = L"Edition";
-			this->Edition->Size = System::Drawing::Size(75, 23);
-			this->Edition->TabIndex = 0;
-			this->Edition->Text = L"Edition";
-			this->Edition->UseVisualStyleBackColor = true;
-			this->Edition->Click += gcnew System::EventHandler(this, &MainForm::Edition_Click);
+			this->button_Edition->Location = System::Drawing::Point(1190, 21);
+			this->button_Edition->Name = L"button_Edition";
+			this->button_Edition->Size = System::Drawing::Size(75, 23);
+			this->button_Edition->TabIndex = 0;
+			this->button_Edition->Text = L"Edition";
+			this->button_Edition->UseVisualStyleBackColor = true;
+			this->button_Edition->Click += gcnew System::EventHandler(this, &MainForm::Edition_Click);
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1316, 636);
-			this->Controls->Add(this->Edition);
+			this->Controls->Add(this->button_Edition);
 			this->Name = L"MainForm";
 			this->Text = L"MainForm";
 			this->ResumeLayout(false);
