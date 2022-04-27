@@ -1,6 +1,9 @@
 #pragma once
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgcodecs/imgcodecs.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
 
 namespace MaelstromGUI {
 
@@ -10,6 +13,8 @@ namespace MaelstromGUI {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace std;
+	using namespace cv;
 
 	/// <summary>
 	/// Summary for MyForm
@@ -36,6 +41,8 @@ namespace MaelstromGUI {
 				delete components;
 			}
 		}
+	private: System::Windows::Forms::Button^ Edition;
+	protected:
 
 	private:
 		/// <summary>
@@ -50,12 +57,32 @@ namespace MaelstromGUI {
 		/// </summary>
 		void InitializeComponent(void)
 		{
-			this->components = gcnew System::ComponentModel::Container();
-			this->Size = System::Drawing::Size(300,300);
-			this->Text = L"MainForm";
-			this->Padding = System::Windows::Forms::Padding(0);
+			this->Edition = (gcnew System::Windows::Forms::Button());
+			this->SuspendLayout();
+			// 
+			// Edition
+			// 
+			this->Edition->Location = System::Drawing::Point(1152, 31);
+			this->Edition->Name = L"Edition";
+			this->Edition->Size = System::Drawing::Size(75, 23);
+			this->Edition->TabIndex = 0;
+			this->Edition->Text = L"Edition";
+			this->Edition->UseVisualStyleBackColor = true;
+			this->Edition->Click += gcnew System::EventHandler(this, &MainForm::Edition_Click);
+			// 
+			// MainForm
+			// 
+			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
+			this->ClientSize = System::Drawing::Size(1316, 636);
+			this->Controls->Add(this->Edition);
+			this->Name = L"MainForm";
+			this->Text = L"MainForm";
+			this->ResumeLayout(false);
+
 		}
 #pragma endregion
+	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
+	}
 	};
 }
