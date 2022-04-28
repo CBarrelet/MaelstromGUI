@@ -211,14 +211,16 @@ namespace MaelstromGUI {
 
 		}
 #pragma endregion
+	/*
 	public: void load() {
 		listView1->Columns->Add("Related frames", 200);
 	}
+	*/
 
 	// Bbx edition
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
-		System::String^ message = "Edition mode:\n\tRight clik to create a bounding box\n\tLeft click to modify";
-		MessageBox::Show(message);
+		//System::String^ message = "Edition mode:\n\tRight clik to create a bounding box\n\tLeft click to modify";
+		//MessageBox::Show(message);
 		namedWindow("Edition");
 		setMouseCallback("Edition", mouse_callback);
 		bool close_window = false; // Bool to close the windows when hitting the close button
@@ -228,8 +230,8 @@ namespace MaelstromGUI {
 			close_window = getWindowProperty("Edition", WND_PROP_VISIBLE) < 1;
 			if (close_window) {
 				//original_img = edited_img.clone();
-				//img = edited_img.clone();
-				ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
+				img = edited_img.clone();
+				ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 				ptbSource->Refresh();
 				destroyAllWindows();
 				break;
@@ -248,7 +250,7 @@ namespace MaelstromGUI {
 			}
 			//ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
 			//ptbSource->Refresh();
-			waitKey(10);
+			waitKey(1);
 		}
 		//ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
 		//ptbSource->Refresh();
@@ -256,11 +258,9 @@ namespace MaelstromGUI {
 
 	// Load and show image from PC into picture box
 	private: System::Void button_Browse_Click(System::Object^ sender, System::EventArgs^ e) {
-
 		OpenFileDialog^ dgOpen = gcnew OpenFileDialog();
 		dgOpen->Filter = "Image(*.bmp; *.jpg)|*.bmp;*.jpg|All files (*.*)|*.*||";
-		if (dgOpen->ShowDialog() == System::Windows::Forms::DialogResult::Cancel)
-		{
+		if (dgOpen->ShowDialog() == System::Windows::Forms::DialogResult::Cancel) {
 			return;
 		}
 		// Read the image with opencv
