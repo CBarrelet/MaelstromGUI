@@ -52,6 +52,13 @@ namespace MaelstromGUI {
 	Mat img;
 	Mat original_img;
 
+	// Video in picture box
+	VideoCapture cap;
+	Mat frame;
+	bool play_video = false;
+	int speed_factor = 1;
+	double fps;
+
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
 	vector<Bbx> null_bbx_vector;
@@ -99,6 +106,10 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::ImageList^ imageList1;
 	private: System::Windows::Forms::ColumnHeader^ Related;
 	private: System::Windows::Forms::ColumnHeader^ columnHeader1;
+	private: System::Windows::Forms::Button^ play_button;
+	private: System::Windows::Forms::Button^ speed_button;
+	private: System::Windows::Forms::Button^ load_button;
+	private: System::Windows::Forms::TrackBar^ video_trackBar;
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -125,11 +136,16 @@ namespace MaelstromGUI {
 			this->ptbSource = (gcnew System::Windows::Forms::PictureBox());
 			this->button_Browse = (gcnew System::Windows::Forms::Button());
 			this->listView1 = (gcnew System::Windows::Forms::ListView());
+			this->columnHeader1 = (gcnew System::Windows::Forms::ColumnHeader());
 			this->Related = (gcnew System::Windows::Forms::ColumnHeader());
 			this->view_button = (gcnew System::Windows::Forms::Button());
 			this->imageList1 = (gcnew System::Windows::Forms::ImageList(this->components));
-			this->columnHeader1 = (gcnew System::Windows::Forms::ColumnHeader());
+			this->play_button = (gcnew System::Windows::Forms::Button());
+			this->speed_button = (gcnew System::Windows::Forms::Button());
+			this->load_button = (gcnew System::Windows::Forms::Button());
+			this->video_trackBar = (gcnew System::Windows::Forms::TrackBar());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
 			// 
 			// button_Edition
@@ -174,6 +190,10 @@ namespace MaelstromGUI {
 			this->listView1->UseCompatibleStateImageBehavior = false;
 			this->listView1->MouseClick += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::listView1_MouseClick);
 			// 
+			// columnHeader1
+			// 
+			this->columnHeader1->Text = L"Related frames";
+			// 
 			// view_button
 			// 
 			this->view_button->Location = System::Drawing::Point(611, 466);
@@ -190,15 +210,54 @@ namespace MaelstromGUI {
 			this->imageList1->ImageSize = System::Drawing::Size(150, 150);
 			this->imageList1->TransparentColor = System::Drawing::Color::Transparent;
 			// 
-			// columnHeader1
+			// play_button
 			// 
-			this->columnHeader1->Text = L"Related frames";
+			this->play_button->Location = System::Drawing::Point(872, 966);
+			this->play_button->Name = L"play_button";
+			this->play_button->Size = System::Drawing::Size(75, 23);
+			this->play_button->TabIndex = 5;
+			this->play_button->Text = L"Play";
+			this->play_button->UseVisualStyleBackColor = true;
+			this->play_button->Click += gcnew System::EventHandler(this, &MainForm::play_button_Click);
+			// 
+			// speed_button
+			// 
+			this->speed_button->Location = System::Drawing::Point(953, 966);
+			this->speed_button->Name = L"speed_button";
+			this->speed_button->Size = System::Drawing::Size(75, 23);
+			this->speed_button->TabIndex = 6;
+			this->speed_button->Text = L"x2";
+			this->speed_button->UseVisualStyleBackColor = true;
+			this->speed_button->Click += gcnew System::EventHandler(this, &MainForm::speed_button_Click);
+			// 
+			// load_button
+			// 
+			this->load_button->Location = System::Drawing::Point(791, 966);
+			this->load_button->Name = L"load_button";
+			this->load_button->Size = System::Drawing::Size(75, 23);
+			this->load_button->TabIndex = 7;
+			this->load_button->Text = L"Load";
+			this->load_button->UseVisualStyleBackColor = true;
+			this->load_button->Click += gcnew System::EventHandler(this, &MainForm::load_button_Click);
+			// 
+			// video_trackBar
+			// 
+			this->video_trackBar->Location = System::Drawing::Point(1034, 966);
+			this->video_trackBar->Maximum = 150;
+			this->video_trackBar->Name = L"video_trackBar";
+			this->video_trackBar->Size = System::Drawing::Size(658, 45);
+			this->video_trackBar->TabIndex = 8;
+			this->video_trackBar->Scroll += gcnew System::EventHandler(this, &MainForm::video_trackBar_Scroll);
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1904, 1041);
+			this->Controls->Add(this->video_trackBar);
+			this->Controls->Add(this->load_button);
+			this->Controls->Add(this->speed_button);
+			this->Controls->Add(this->play_button);
 			this->Controls->Add(this->view_button);
 			this->Controls->Add(this->listView1);
 			this->Controls->Add(this->button_Browse);
@@ -207,7 +266,9 @@ namespace MaelstromGUI {
 			this->Name = L"MainForm";
 			this->Text = L"Maelstrom GUI";
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->EndInit();
 			this->ResumeLayout(false);
+			this->PerformLayout();
 
 		}
 #pragma endregion
@@ -390,6 +451,91 @@ namespace MaelstromGUI {
 		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 		ptbSource->Refresh();
 		//MessageBox::Show(selected);
+	}
+	private: System::Void load_button_Click(System::Object^ sender, System::EventArgs^ e) {
+		// Path to change latter
+		std::string video_path = "C:/Users/Utilisateur/Videos/test.mp4";
+		// Open the video file
+		cap.open(video_path);
+		if (!cap.isOpened()) { // TODO: Manage this error
+			cout << "Error opening video stream or file" << endl;
+		}
+		// Get video information
+		int frames_nr = cap.get(CAP_PROP_FRAME_COUNT);
+		fps = cap.get(CAP_PROP_FPS);
+		// Set the track bar step number
+		this->video_trackBar->Maximum = frames_nr;
+		// Read the first frame
+		cap >> frame;
+		// Display on the picture box
+		ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
+		ptbSource->Refresh();
+	}
+
+	// Play or pause the video
+	private: System::Void play_button_Click(System::Object^ sender, System::EventArgs^ e) {
+		play_video = !play_video;
+		if(play_video)
+			this->play_button->Text = L"Pause";
+		else
+			this->play_button->Text = L"Play";
+
+		while (play_video) {
+			// Set the track bar to the current frame
+			this->video_trackBar->Value = cap.get(CAP_PROP_POS_FRAMES);
+			// Display on the picture box
+			ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
+			ptbSource->Refresh();
+			// Compute frame rate
+			waitKey(int(1000/fps/speed_factor));
+			// Read next frame
+			cap >> frame;
+			// If the frame is empty, break immediately
+			if (frame.empty())
+				break;
+		}
+	}
+	// Speed up the frame rate
+	private: System::Void speed_button_Click(System::Object^ sender, System::EventArgs^ e) {
+		if (speed_factor == 1) {
+			string s = "x3";
+			System::String^ name = gcnew System::String(s.c_str());
+			this->speed_button->Text = name;
+			speed_factor = 2;
+		}
+		else if (speed_factor == 2) {
+			string s = "x5";
+			System::String^ name = gcnew System::String(s.c_str());
+			this->speed_button->Text = name;
+			speed_factor = 3;
+		}
+		else if (speed_factor == 3) {
+			string s = "x10";
+			System::String^ name = gcnew System::String(s.c_str());
+			this->speed_button->Text = name;
+			speed_factor = 5;
+		}
+		else if (speed_factor == 5) {
+			string s = "x1";
+			System::String^ name = gcnew System::String(s.c_str());
+			this->speed_button->Text = name;
+			speed_factor = 10;
+		}
+		else if (speed_factor == 10) {
+			string s = "x2";
+			System::String^ name = gcnew System::String(s.c_str());
+			this->speed_button->Text = name;
+			speed_factor = 1;
+		}
+		//cap.set(cv2.CV_CAP_PROP_POS_FRAMES, frame_number-1)
+	}
+
+	// Set frame to track bar
+	private: System::Void video_trackBar_Scroll(System::Object^ sender, System::EventArgs^ e) {
+		cap.set(CAP_PROP_POS_FRAMES, video_trackBar->Value - 1);
+		cap >> frame;
+		ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
+		ptbSource->Refresh();
 	}
 };
 }
