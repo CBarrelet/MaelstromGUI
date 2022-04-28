@@ -51,6 +51,7 @@ namespace MaelstromGUI {
 	// Image in picture box
 	Mat img;
 	Mat original_img;
+	Mat edited_img;
 
 	// Video in picture box
 	VideoCapture cap;
@@ -272,11 +273,6 @@ namespace MaelstromGUI {
 
 		}
 #pragma endregion
-	/*
-	public: void load() {
-		listView1->Columns->Add("Related frames", 200);
-	}
-	*/
 
 	// Bbx edition
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -285,7 +281,7 @@ namespace MaelstromGUI {
 		namedWindow("Edition");
 		setMouseCallback("Edition", mouse_callback);
 		bool close_window = false; // Bool to close the windows when hitting the close button
-		Mat edited_img = original_img.clone(); // Dezoom the image before editing
+		edited_img = original_img.clone(); // Dezoom the image before editing
 		while (true) {
 			// Close the window on close button
 			close_window = getWindowProperty("Edition", WND_PROP_VISIBLE) < 1;
@@ -385,7 +381,10 @@ namespace MaelstromGUI {
 		}
 		else if (mouse_click == 'R') {
 			// Dezoom
-			img = original_img;
+			if(edited_img.empty())
+				img = original_img.clone();
+			else
+				img = edited_img.clone();
 			ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 			ptbSource->Refresh();
 		}
@@ -452,6 +451,8 @@ namespace MaelstromGUI {
 		ptbSource->Refresh();
 		//MessageBox::Show(selected);
 	}
+
+	// Load the video
 	private: System::Void load_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		// Path to change latter
 		std::string video_path = "C:/Users/Utilisateur/Videos/test.mp4";
@@ -495,6 +496,7 @@ namespace MaelstromGUI {
 				break;
 		}
 	}
+
 	// Speed up the frame rate
 	private: System::Void speed_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		if (speed_factor == 1) {
@@ -527,7 +529,6 @@ namespace MaelstromGUI {
 			this->speed_button->Text = name;
 			speed_factor = 1;
 		}
-		//cap.set(cv2.CV_CAP_PROP_POS_FRAMES, frame_number-1)
 	}
 
 	// Set frame to track bar
