@@ -12,6 +12,7 @@
 #include <algorithm>
 
 class Video {
+public:
 	cv::VideoCapture video;
 	cv::Mat frame;
 	int frames_nr;
@@ -20,8 +21,11 @@ class Video {
 	int fps_factor = 1;
 	int wait_timer;
 	std::vector<Bboxes> video_bboxes;
-	
+	std::string mode = "pause";
 
+	cv::Size window_size;
+
+	
 public:
 	/*--------------------------------------------------
 	//
@@ -42,12 +46,13 @@ public:
 	//		INITIALIZATION
 	//
 	----------------------------------------------------*/
-	void init(std::string video_path/*, std::string bboxes_path*/) {
+	void init(std::string video_path, cv::Size window_size/*, std::string bboxes_path*/) {
 		this->video.open(video_path);
 		this->frames_nr = this->video.get(cv::CAP_PROP_FRAME_COUNT);
 		this->fps = this->video.get(cv::CAP_PROP_FPS);
 		this->wait_timer = int(1000 / this->fps / this->fps_factor);
 		this->current_frame = 0;
+		this->window_size = window_size;
 		// TODO: Read bboxes file and assign it to each frame
 		cv::Mat null_img = cv::Mat::zeros(cv::Size(1, 1), CV_8UC1);
 		std::vector<Bbx> null_bbx_vector;
@@ -65,6 +70,10 @@ public:
 	----------------------------------------------------*/
 public:
 
+	std::string getMode() {
+		return this->mode;
+	}
+
 	bool isOpened() {
 		return this->video.isOpened();
 	}
@@ -76,9 +85,12 @@ public:
 		return this->wait_timer;
 	}
 
-	cv::Mat nextFrame() {
-		this->video >> this->frame;
-		return this->frame;
+	void nextFrame() {
+		//this->video >> this->frame;
+		this->video.read(this->frame);
+		// FPS drop... Might have to adapt to the original resolution
+		//resize(this->frame, this->frame, this->window_size, cv::INTER_CUBIC);
+		//return this->frame;
 	}
 
 	cv::Mat getFrame() {
@@ -112,6 +124,11 @@ public:
 
 	void setFrame(int frame_indice) {
 		this->video.set(cv::CAP_PROP_POS_FRAMES, frame_indice);
+	}
+
+	void setMode(std::string mode) {
+		// Should be "pause", "play", or "replay"
+		this->mode = mode;
 	}
 
 private:

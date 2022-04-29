@@ -352,19 +352,19 @@ namespace MaelstromGUI {
 		return newBitmap;
 	}
 
+	// Display a cv::Mat in the picture box
 	private: void display(Mat img) {
 		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 		ptbSource->Refresh();
 	}
 
-
 	// Double click event on the Image
 	private: System::Void ptbSource_MouseDoubleClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
+		// Zoom
 		if (mouse_click == 'L') {
+			int zoom = 500;
 			int ptb_width  = ptbSource->Size.Width;
 			int ptb_height = ptbSource->Size.Height;
-			// Zomm
-			int zoom = 500;
 			int x1 = int(mouse_pos.x - zoom / 2);
 			int y1 = int(mouse_pos.y - zoom / 2);
 			if (x1 + zoom > ptb_width) {
@@ -384,8 +384,8 @@ namespace MaelstromGUI {
 			resize(img, img, cv::Size(ptb_width, ptb_height), INTER_CUBIC);
 			display(img);
 		}
+		// Dezoom
 		else if (mouse_click == 'R') {
-			// Dezoom
 			if(edited_img.empty())
 				img = original_img.clone();
 			else
@@ -456,56 +456,46 @@ namespace MaelstromGUI {
 
 	// Load the video
 	private: System::Void load_button_Click(System::Object^ sender, System::EventArgs^ e) {
-		// Path to change latter
 		std::string video_path = "C:/Users/Utilisateur/Videos/test.mp4";
-		video.init(video_path);
-
+		cv::Size window_size(ptbSource->Size.Width, ptbSource->Size.Height);
+		video.init(video_path, window_size);
 		if (!video.isOpened()) // TODO: Manage this error
 			cout << "Error opening video stream or file" << endl;
-		// Set the track bar step number
 		this->video_trackBar->Maximum = video.getFramesNr();
-		// Set fvideo label
 		set_video_label();
-		// Read the first frame
-		frame = video.nextFrame();
-		// Display on the picture box
-		display(frame);
+		video.nextFrame();
+		display(video.frame);
 	}
 
 	// Play or pause the video
 	private: System::Void play_button_Click(System::Object^ sender, System::EventArgs^ e) {
-		if (play_video == "play") {
+		if (video.getMode() == "play") {
 			this->play_button->Text = L"Play";
-			play_video = "pause";
+			video.setMode("pause");
 		}	
-		else if (play_video == "pause") {
+		else if (video.getMode() == "pause") {
 			this->play_button->Text = L"Pause";
-			play_video = "play";
+			video.setMode("play");
 		}
-		else if (play_video == "replay") {
+		else if (video.getMode() == "replay") {
 			video.setFrame(0);
 			this->video_trackBar->Value = video.getFrameId();
 			set_video_label();
 			this->play_button->Text = L"Pause";
-			play_video = "play";
+			video.setMode("play");
 		}
-		while (play_video == "play") {
-			// Set the track bar to the current frame
+		while (video.getMode() == "play") {
 			this->video_trackBar->Value = video.getFrameId();
-			// Read next frame
-			frame = video.nextFrame();
-			// If the frame is empty, break immediately
-			if (frame.empty()) {
+			video.nextFrame();
+			if (video.frame.empty()) {
 				this->play_button->Text = L"Replay";
-				play_video = "replay";
+				video.setMode("replay");
 				break;
 			}
 			else
 				set_video_label();
-			// Display on the picture box
-			display(frame);
+			display(video.frame);	
 			waitKey(video.getWaitTimer());
-
 		}
 	}
 
@@ -545,16 +535,16 @@ namespace MaelstromGUI {
 
 	// Set frame to track bar
 	private: System::Void video_trackBar_Scroll(System::Object^ sender, System::EventArgs^ e) {
-		if (play_video == "replay")
+		if (video.getMode() == "replay")
 			if (video.getFrameId() < video.getFramesNr()) {
 				play_video = "pause";
+				video.setMode("pause");
 				this->play_button->Text = L"Play";
 			}
 		video.setFrame(video_trackBar->Value - 1);
-		// Set current frame label
 		set_video_label();
-		frame = video.nextFrame();
-		display(frame);
+		video.nextFrame();
+		display(video.frame);
 	}
 
 	// Set the video label
