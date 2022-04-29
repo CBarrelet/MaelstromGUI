@@ -7,6 +7,7 @@
 
 #include "Bbx.h"
 #include "Bboxes.h"
+#include "Video.h"
 
 // Opencv global
 int x_mouse = 0, y_mouse = 0; // Mouse coordinates
@@ -54,14 +55,11 @@ namespace MaelstromGUI {
 	Mat edited_img;
 
 	// Video in picture box
-	VideoCapture cap;
 	Mat frame;
 	string play_video = "pause"; // or "play" or "replay"
-	int speed_factor = 1;
-	double fps;
-	int frames_nr = 0;
-	int current_frame = 0;
-	
+
+	Video video;
+
 
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
@@ -451,29 +449,28 @@ namespace MaelstromGUI {
 		original_img = img.clone();
 		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 		ptbSource->Refresh();
-		//MessageBox::Show(selected);
 	}
 
 	// Load the video
 	private: System::Void load_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		// Path to change latter
 		std::string video_path = "C:/Users/Utilisateur/Videos/test.mp4";
+		video.init(video_path);
 		// Open the video file
 		cap.open(video_path);
 		if (!cap.isOpened()) // TODO: Manage this error
 			cout << "Error opening video stream or file" << endl;
-		// Get video information
-		frames_nr = cap.get(CAP_PROP_FRAME_COUNT);
-		fps = cap.get(CAP_PROP_FPS);
 		// Set the track bar step number
 		this->video_trackBar->Maximum = frames_nr;
 		// Set fvideo label
 		set_video_label();
 		// Read the first frame
-		cap >> frame;
+		frame = video.nextFrame();
 		// Display on the picture box
 		ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
 		ptbSource->Refresh();
+
+		
 	}
 
 	// Play or pause the video
@@ -487,18 +484,17 @@ namespace MaelstromGUI {
 			play_video = "play";
 		}
 		else if (play_video == "replay") {
-			current_frame = 1;
-			this->video_trackBar->Value = current_frame;
-			cap.set(CAP_PROP_POS_FRAMES, 1);
+			video.setFrame(0);
+			this->video_trackBar->Value = video.getFrameId();
 			set_video_label();
 			this->play_button->Text = L"Pause";
 			play_video = "play";
 		}
 		while (play_video == "play") {
 			// Set the track bar to the current frame
-			this->video_trackBar->Value = current_frame;
+			this->video_trackBar->Value = video.getFrameId();
 			// Read next frame
-			cap >> frame;
+			frame = video.nextFrame();
 			// If the frame is empty, break immediately
 			if (frame.empty()) {
 				this->play_button->Text = L"Replay";
@@ -510,68 +506,66 @@ namespace MaelstromGUI {
 			// Display on the picture box
 			ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
 			ptbSource->Refresh();
-			// Compute frame rate
-			waitKey(int(1000 / fps / speed_factor));		
+			waitKey(video.getWaitTimer());
+
 		}
 	}
 
 	// Speed up the frame rate
 	private: System::Void speed_button_Click(System::Object^ sender, System::EventArgs^ e) {
-		if (speed_factor == 1) {
+		if (video.getFpsFactor() == 1) {
 			string s = "x3";
 			System::String^ name = gcnew System::String(s.c_str());
 			this->speed_button->Text = name;
-			speed_factor = 2;
+			video.setFpsFactor(2);
 		}
-		else if (speed_factor == 2) {
+		else if (video.getFpsFactor() == 2) {
 			string s = "x5";
 			System::String^ name = gcnew System::String(s.c_str());
 			this->speed_button->Text = name;
-			speed_factor = 3;
+			video.setFpsFactor(3);
 		}
-		else if (speed_factor == 3) {
+		else if (video.getFpsFactor() == 3) {
 			string s = "x10";
 			System::String^ name = gcnew System::String(s.c_str());
 			this->speed_button->Text = name;
-			speed_factor = 5;
+			video.setFpsFactor(5);
 		}
-		else if (speed_factor == 5) {
+		else if (video.getFpsFactor() == 5) {
 			string s = "x1";
 			System::String^ name = gcnew System::String(s.c_str());
 			this->speed_button->Text = name;
-			speed_factor = 10;
+			video.setFpsFactor(10);
 		}
-		else if (speed_factor == 10) {
+		else if (video.getFpsFactor() == 10) {
 			string s = "x2";
 			System::String^ name = gcnew System::String(s.c_str());
 			this->speed_button->Text = name;
-			speed_factor = 1;
+			video.setFpsFactor(1);
 		}
 	}
 
 	// Set frame to track bar
 	private: System::Void video_trackBar_Scroll(System::Object^ sender, System::EventArgs^ e) {
 		if (play_video == "replay")
-			if (current_frame < frames_nr) {
+			if (video.getFrameId() < video.getFramesNr()) {
 				play_video = "pause";
 				this->play_button->Text = L"Play";
 			}
-		// Set current frame
-		cap.set(CAP_PROP_POS_FRAMES, video_trackBar->Value - 1);
+		video.setFrame(video_trackBar->Value - 1);
 		// Set current frame label
 		set_video_label();
-		cap >> frame;
+		frame = video.nextFrame();
 		ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
 		ptbSource->Refresh();
 	}
 
 	// Set the video label
 	private: void set_video_label() {
-		current_frame = cap.get(CAP_PROP_POS_FRAMES);
-		int displayed_label_frame = current_frame;
-		if (current_frame + 1 > frames_nr)
+		int displayed_label_frame = video.getFrameId();
+		if (displayed_label_frame + 1 > video.getFramesNr())
 			displayed_label_frame = displayed_label_frame - 1;
-		string s = std::to_string(displayed_label_frame + 1) + "/" + std::to_string(frames_nr);
+		string s = std::to_string(displayed_label_frame + 1) + "/" + std::to_string(video.getFramesNr());
 		System::String^ name = gcnew System::String(s.c_str());
 		this->video_label->Text = name;
 	}
