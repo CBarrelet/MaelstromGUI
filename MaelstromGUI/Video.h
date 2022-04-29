@@ -64,6 +64,10 @@ public:
 	//
 	----------------------------------------------------*/
 public:
+
+	bool isOpened() {
+		return this->video.isOpened();
+	}
 	int getFpsFactor() {
 		return this->fps_factor;
 	}

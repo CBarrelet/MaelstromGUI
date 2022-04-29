@@ -352,6 +352,12 @@ namespace MaelstromGUI {
 		return newBitmap;
 	}
 
+	private: void display(Mat img) {
+		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
+		ptbSource->Refresh();
+	}
+
+
 	// Double click event on the Image
 	private: System::Void ptbSource_MouseDoubleClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
 		if (mouse_click == 'L') {
@@ -376,8 +382,7 @@ namespace MaelstromGUI {
 			cv::Rect myROI(x1, y1, zoom, zoom);
 			img = img(myROI);
 			resize(img, img, cv::Size(ptb_width, ptb_height), INTER_CUBIC);
-			ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
-			ptbSource->Refresh();
+			display(img);
 		}
 		else if (mouse_click == 'R') {
 			// Dezoom
@@ -385,8 +390,7 @@ namespace MaelstromGUI {
 				img = original_img.clone();
 			else
 				img = edited_img.clone();
-			ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
-			ptbSource->Refresh();
+			display(img);
 		}
 	}
 
@@ -447,8 +451,7 @@ namespace MaelstromGUI {
 		int ptb_height = ptbSource->Size.Height;
 		resize(img, img, cv::Size(ptb_width, ptb_height), INTER_CUBIC);
 		original_img = img.clone();
-		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
-		ptbSource->Refresh();
+		display(img);
 	}
 
 	// Load the video
@@ -456,21 +459,17 @@ namespace MaelstromGUI {
 		// Path to change latter
 		std::string video_path = "C:/Users/Utilisateur/Videos/test.mp4";
 		video.init(video_path);
-		// Open the video file
-		cap.open(video_path);
-		if (!cap.isOpened()) // TODO: Manage this error
+
+		if (!video.isOpened()) // TODO: Manage this error
 			cout << "Error opening video stream or file" << endl;
 		// Set the track bar step number
-		this->video_trackBar->Maximum = frames_nr;
+		this->video_trackBar->Maximum = video.getFramesNr();
 		// Set fvideo label
 		set_video_label();
 		// Read the first frame
 		frame = video.nextFrame();
 		// Display on the picture box
-		ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
-		ptbSource->Refresh();
-
-		
+		display(frame);
 	}
 
 	// Play or pause the video
@@ -504,8 +503,7 @@ namespace MaelstromGUI {
 			else
 				set_video_label();
 			// Display on the picture box
-			ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
-			ptbSource->Refresh();
+			display(frame);
 			waitKey(video.getWaitTimer());
 
 		}
@@ -556,8 +554,7 @@ namespace MaelstromGUI {
 		// Set current frame label
 		set_video_label();
 		frame = video.nextFrame();
-		ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
-		ptbSource->Refresh();
+		display(frame);
 	}
 
 	// Set the video label
