@@ -15,6 +15,7 @@ class Video {
 public:
 	cv::VideoCapture video;
 	cv::Mat frame;
+	cv::Mat edited_frame;
 	int frames_nr;
 	int current_frame;
 	double fps;
@@ -86,19 +87,23 @@ public:
 	}
 
 	void nextFrame() {
-		//this->video >> this->frame;
 		this->video.read(this->frame);
 		// FPS drop... Might have to adapt to the original resolution
 		//resize(this->frame, this->frame, this->window_size, cv::INTER_CUBIC);
-		//return this->frame;
 	}
 
 	cv::Mat getFrame() {
 		return this->frame;
 	}
 
+	cv::Mat getEditedFrame() {
+		// Draw bboxes
+		this->edited_frame = this->video_bboxes[this->getFrameId()].draw(this->frame.clone());
+		return this->edited_frame;
+	}
+
 	int getFrameId() {
-		this->current_frame = this->video.get(cv::CAP_PROP_POS_FRAMES);
+		this->current_frame = this->video.get(cv::CAP_PROP_POS_FRAMES) - 1;
 		return this->current_frame;
 	}
 
@@ -117,6 +122,15 @@ private:
 	//
 	----------------------------------------------------*/
 public:
+
+	void addBbx(cv::Point center) {
+		this->video_bboxes[getFrameId()].add(center);
+	}
+
+	void setEditedFrame() {
+		this->edited_frame = this->frame.clone();
+	}
+
 	void setFpsFactor(int factor) {
 		this->fps_factor = factor;
 		setWaitTimer();
@@ -136,5 +150,13 @@ private:
 		this->wait_timer = int(1000 / getFps() / getFpsFactor());
 	}
 
-
+	/*--------------------------------------------------
+	//
+	//		UPDATE
+	//
+	----------------------------------------------------*/
+public:
+	void updateBboxes(int x_mouse, int y_mouse, bool* click, bool* hold) {
+		this->video_bboxes[getFrameId()].update(x_mouse, y_mouse, click, hold);
+	}
 };

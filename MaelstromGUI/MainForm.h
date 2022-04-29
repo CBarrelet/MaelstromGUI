@@ -291,25 +291,27 @@ namespace MaelstromGUI {
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
 		namedWindow("Edition");
 		setMouseCallback("Edition", mouse_callback);
+		
+		video.video_bboxes[video.getFrameId()].set_img_size(video.frame.size()); // TODO: DO better ^^
 		bool close_window = false; // Bool to close the windows when hitting the close button
-		edited_img = original_img.clone(); // Dezoom the image before editing
+
+		video.setEditedFrame();
+
 		while (true) {
 			// Close the window on close button
 			close_window = getWindowProperty("Edition", WND_PROP_VISIBLE) < 1;
 			if (close_window) {
-				img = edited_img.clone();
-				ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
-				ptbSource->Refresh();
+				display(video.getEditedFrame());
 				destroyAllWindows();
 				break;
 			}
-			edited_img = original_img.clone(); // Refresh the img
-			bboxes.update(x_mouse, y_mouse, &click, &hold);
-			bboxes.draw(edited_img);
-			imshow("Edition", edited_img);
+
+			video.updateBboxes(x_mouse, y_mouse, &click, &hold);
+			imshow("Edition", video.getEditedFrame());
+
 			if (mouse_right_click) {
 				cv::Point center(x_mouse, y_mouse);
-				bboxes.add(center);
+				video.addBbx(center);
 				mouse_right_click = false;
 			}
 			waitKey(1);
@@ -354,8 +356,10 @@ namespace MaelstromGUI {
 
 	// Display a cv::Mat in the picture box
 	private: void display(Mat img) {
-		ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
-		ptbSource->Refresh();
+		if (!img.empty()) {
+			ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
+			ptbSource->Refresh();
+		}
 	}
 
 	// Double click event on the Image
@@ -464,7 +468,7 @@ namespace MaelstromGUI {
 		this->video_trackBar->Maximum = video.getFramesNr();
 		set_video_label();
 		video.nextFrame();
-		display(video.frame);
+		display(video.getEditedFrame());
 	}
 
 	// Play or pause the video
@@ -494,7 +498,7 @@ namespace MaelstromGUI {
 			}
 			else
 				set_video_label();
-			display(video.frame);	
+			display(video.getEditedFrame());
 			waitKey(video.getWaitTimer());
 		}
 	}
@@ -535,21 +539,24 @@ namespace MaelstromGUI {
 
 	// Set frame to track bar
 	private: System::Void video_trackBar_Scroll(System::Object^ sender, System::EventArgs^ e) {
+		cout << video_trackBar->Value << endl;
 		if (video.getMode() == "replay")
 			if (video.getFrameId() < video.getFramesNr()) {
 				play_video = "pause";
 				video.setMode("pause");
 				this->play_button->Text = L"Play";
 			}
+
 		video.setFrame(video_trackBar->Value - 1);
 		set_video_label();
 		video.nextFrame();
-		display(video.frame);
+		display(video.getEditedFrame());
+		
 	}
 
 	// Set the video label
 	private: void set_video_label() {
-		int displayed_label_frame = video.getFrameId();
+		int displayed_label_frame = video.getFrameId() + 1;
 		if (displayed_label_frame + 1 > video.getFramesNr())
 			displayed_label_frame = displayed_label_frame - 1;
 		string s = std::to_string(displayed_label_frame + 1) + "/" + std::to_string(video.getFramesNr());

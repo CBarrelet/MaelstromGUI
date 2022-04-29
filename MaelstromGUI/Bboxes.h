@@ -71,6 +71,8 @@ public:
 		Bbx bbx(id, center, this->img_size, color);
 		std::cout << "Bbx : " << std::endl;
 		std::cout << bbx.p1 << bbx.p3 << bbx.color << std::endl;
+		std::cout << bbx.color << " " << bbx.x1 << std::endl;
+
 
 		this->bboxes.push_back(bbx);
 
@@ -78,15 +80,20 @@ public:
 			if (!this->bboxes[i].removed) {
 				std::cout << "vector bboxes : " << i << std::endl;
 				//this->bboxes[i].p3 += cv::Point(20, 20);
-				std::cout << this->bboxes[i].p1 << this->bboxes[i].p3 << std::endl;
+				std::cout << this->bboxes[i].p1 << " " << this->bboxes[i].p3 << std::endl;
+				std::cout << this->bboxes[i].x1 << " " << this->bboxes[i].y1 << std::endl;
+				std::cout << this->bboxes[i].color << std::endl;
 			}
 		}
 	}
 
-	void draw(cv::Mat img) {
+	cv::Mat draw(cv::Mat img) {
 		for (int i = 0; i < size(); i++) {
+			
 			if (!this->bboxes[i].removed) {
 				cv::rectangle(img, this->bboxes[i].p1, this->bboxes[i].p3, this->bboxes[i].color, this->bboxes[i].thickness);
+				//std::cout << "test " << i << std::endl;
+				//std::cout << this->bboxes[i].p1 << " " << this->bboxes[i].color << std::endl;
 
 				if (this->bboxes[i].selected && !this->one_is_selected) {
 					cv::circle(img, this->bboxes[i].p1, this->bboxes[i].corner_radius, this->bboxes[i].color, 2);
@@ -109,6 +116,7 @@ public:
 				}
 			}
 		}
+		return img;
 	}
 
 	void update(int x_mouse, int y_mouse, bool* click, bool* hold) {
