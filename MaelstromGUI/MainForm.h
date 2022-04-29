@@ -56,9 +56,12 @@ namespace MaelstromGUI {
 	// Video in picture box
 	VideoCapture cap;
 	Mat frame;
-	bool play_video = false;
+	string play_video = "pause"; // or "play" or "replay"
 	int speed_factor = 1;
 	double fps;
+	int frames_nr = 0;
+	int current_frame = 0;
+	
 
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
@@ -111,6 +114,7 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Button^ speed_button;
 	private: System::Windows::Forms::Button^ load_button;
 	private: System::Windows::Forms::TrackBar^ video_trackBar;
+	private: System::Windows::Forms::Label^ video_label;
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -145,6 +149,7 @@ namespace MaelstromGUI {
 			this->speed_button = (gcnew System::Windows::Forms::Button());
 			this->load_button = (gcnew System::Windows::Forms::Button());
 			this->video_trackBar = (gcnew System::Windows::Forms::TrackBar());
+			this->video_label = (gcnew System::Windows::Forms::Label());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
@@ -246,15 +251,25 @@ namespace MaelstromGUI {
 			this->video_trackBar->Location = System::Drawing::Point(1034, 966);
 			this->video_trackBar->Maximum = 150;
 			this->video_trackBar->Name = L"video_trackBar";
-			this->video_trackBar->Size = System::Drawing::Size(658, 45);
+			this->video_trackBar->Size = System::Drawing::Size(565, 45);
 			this->video_trackBar->TabIndex = 8;
 			this->video_trackBar->Scroll += gcnew System::EventHandler(this, &MainForm::video_trackBar_Scroll);
+			// 
+			// video_label
+			// 
+			this->video_label->AutoSize = true;
+			this->video_label->Location = System::Drawing::Point(1605, 971);
+			this->video_label->Name = L"video_label";
+			this->video_label->Size = System::Drawing::Size(24, 13);
+			this->video_label->TabIndex = 9;
+			this->video_label->Text = L"0/0";
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1904, 1041);
+			this->Controls->Add(this->video_label);
 			this->Controls->Add(this->video_trackBar);
 			this->Controls->Add(this->load_button);
 			this->Controls->Add(this->speed_button);
@@ -276,8 +291,6 @@ namespace MaelstromGUI {
 
 	// Bbx edition
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
-		//System::String^ message = "Edition mode:\n\tRight clik to create a bounding box\n\tLeft click to modify";
-		//MessageBox::Show(message);
 		namedWindow("Edition");
 		setMouseCallback("Edition", mouse_callback);
 		bool close_window = false; // Bool to close the windows when hitting the close button
@@ -286,7 +299,6 @@ namespace MaelstromGUI {
 			// Close the window on close button
 			close_window = getWindowProperty("Edition", WND_PROP_VISIBLE) < 1;
 			if (close_window) {
-				//original_img = edited_img.clone();
 				img = edited_img.clone();
 				ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 				ptbSource->Refresh();
@@ -300,26 +312,18 @@ namespace MaelstromGUI {
 			if (mouse_right_click) {
 				cv::Point center(x_mouse, y_mouse);
 				bboxes.add(center);
-				// string to system string
-				//System::String^ name = gcnew System::String(s.c_str());
-				//label1->Text = name;
 				mouse_right_click = false;
 			}
-			//ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
-			//ptbSource->Refresh();
 			waitKey(1);
 		}
-		//ptbSource->Image = ConvertMat2Bitmap(edited_img); // Refresh the image on the Windows application
-		//ptbSource->Refresh();
 	}
 
 	// Load and show image from PC into picture box
 	private: System::Void button_Browse_Click(System::Object^ sender, System::EventArgs^ e) {
 		OpenFileDialog^ dgOpen = gcnew OpenFileDialog();
 		dgOpen->Filter = "Image(*.bmp; *.jpg)|*.bmp;*.jpg|All files (*.*)|*.*||";
-		if (dgOpen->ShowDialog() == System::Windows::Forms::DialogResult::Cancel) {
+		if (dgOpen->ShowDialog() == System::Windows::Forms::DialogResult::Cancel)
 			return;
-		}
 		// Read the image with opencv
 		img = imread(ConvertString2Char(dgOpen->FileName));
 		// Resize the image to its placeholder dimensions
@@ -363,16 +367,14 @@ namespace MaelstromGUI {
 				int delta = x1 + zoom - ptb_width;
 				x1 -= delta;
 			}
-			else if (x1 < 0) {
+			else if (x1 < 0)
 				x1 = 0;
-			}
 			if (y1 + zoom > ptb_height) {
 				int delta = y1 + zoom - ptb_height;
 				y1 -= delta;
 			}
-			else if (y1 < 0) {
+			else if (y1 < 0)
 				y1 = 0;
-			}
 			cv::Rect myROI(x1, y1, zoom, zoom);
 			img = img(myROI);
 			resize(img, img, cv::Size(ptb_width, ptb_height), INTER_CUBIC);
@@ -458,14 +460,15 @@ namespace MaelstromGUI {
 		std::string video_path = "C:/Users/Utilisateur/Videos/test.mp4";
 		// Open the video file
 		cap.open(video_path);
-		if (!cap.isOpened()) { // TODO: Manage this error
+		if (!cap.isOpened()) // TODO: Manage this error
 			cout << "Error opening video stream or file" << endl;
-		}
 		// Get video information
-		int frames_nr = cap.get(CAP_PROP_FRAME_COUNT);
+		frames_nr = cap.get(CAP_PROP_FRAME_COUNT);
 		fps = cap.get(CAP_PROP_FPS);
 		// Set the track bar step number
 		this->video_trackBar->Maximum = frames_nr;
+		// Set fvideo label
+		set_video_label();
 		// Read the first frame
 		cap >> frame;
 		// Display on the picture box
@@ -475,25 +478,40 @@ namespace MaelstromGUI {
 
 	// Play or pause the video
 	private: System::Void play_button_Click(System::Object^ sender, System::EventArgs^ e) {
-		play_video = !play_video;
-		if(play_video)
-			this->play_button->Text = L"Pause";
-		else
+		if (play_video == "play") {
 			this->play_button->Text = L"Play";
-
-		while (play_video) {
+			play_video = "pause";
+		}	
+		else if (play_video == "pause") {
+			this->play_button->Text = L"Pause";
+			play_video = "play";
+		}
+		else if (play_video == "replay") {
+			current_frame = 1;
+			this->video_trackBar->Value = current_frame;
+			cap.set(CAP_PROP_POS_FRAMES, 1);
+			set_video_label();
+			this->play_button->Text = L"Pause";
+			play_video = "play";
+		}
+		while (play_video == "play") {
 			// Set the track bar to the current frame
-			this->video_trackBar->Value = cap.get(CAP_PROP_POS_FRAMES);
+			this->video_trackBar->Value = current_frame;
+			// Read next frame
+			cap >> frame;
+			// If the frame is empty, break immediately
+			if (frame.empty()) {
+				this->play_button->Text = L"Replay";
+				play_video = "replay";
+				break;
+			}
+			else
+				set_video_label();
 			// Display on the picture box
 			ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
 			ptbSource->Refresh();
 			// Compute frame rate
-			waitKey(int(1000/fps/speed_factor));
-			// Read next frame
-			cap >> frame;
-			// If the frame is empty, break immediately
-			if (frame.empty())
-				break;
+			waitKey(int(1000 / fps / speed_factor));		
 		}
 	}
 
@@ -533,10 +551,29 @@ namespace MaelstromGUI {
 
 	// Set frame to track bar
 	private: System::Void video_trackBar_Scroll(System::Object^ sender, System::EventArgs^ e) {
+		if (play_video == "replay")
+			if (current_frame < frames_nr) {
+				play_video = "pause";
+				this->play_button->Text = L"Play";
+			}
+		// Set current frame
 		cap.set(CAP_PROP_POS_FRAMES, video_trackBar->Value - 1);
+		// Set current frame label
+		set_video_label();
 		cap >> frame;
 		ptbSource->Image = ConvertMat2Bitmap(frame); // Refresh the image on the Windows application
 		ptbSource->Refresh();
+	}
+
+	// Set the video label
+	private: void set_video_label() {
+		current_frame = cap.get(CAP_PROP_POS_FRAMES);
+		int displayed_label_frame = current_frame;
+		if (current_frame + 1 > frames_nr)
+			displayed_label_frame = displayed_label_frame - 1;
+		string s = std::to_string(displayed_label_frame + 1) + "/" + std::to_string(frames_nr);
+		System::String^ name = gcnew System::String(s.c_str());
+		this->video_label->Text = name;
 	}
 };
 }
