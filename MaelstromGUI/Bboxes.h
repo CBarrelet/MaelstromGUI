@@ -63,37 +63,16 @@ public:
 		cv::Scalar color = get_random_color(50, 205);
 		int id = this->count;
 		this->count++;
-
-
-		std::cout << "NOT from bbx" << std::endl;
-		std::cout << center << std::endl;
-
 		Bbx bbx(id, center, this->img_size, color);
-		std::cout << "Bbx : " << std::endl;
-		std::cout << bbx.p1 << bbx.p3 << bbx.color << std::endl;
-		std::cout << bbx.color << " " << bbx.x1 << std::endl;
-
-
 		this->bboxes.push_back(bbx);
-
-		for (int i = 0; i < size(); i++) {
-			if (!this->bboxes[i].removed) {
-				std::cout << "vector bboxes : " << i << std::endl;
-				//this->bboxes[i].p3 += cv::Point(20, 20);
-				std::cout << this->bboxes[i].p1 << " " << this->bboxes[i].p3 << std::endl;
-				std::cout << this->bboxes[i].x1 << " " << this->bboxes[i].y1 << std::endl;
-				std::cout << this->bboxes[i].color << std::endl;
-			}
-		}
 	}
 
 	cv::Mat draw(cv::Mat img) {
 		for (int i = 0; i < size(); i++) {
 			
 			if (!this->bboxes[i].removed) {
+				// Actual bbx
 				cv::rectangle(img, this->bboxes[i].p1, this->bboxes[i].p3, this->bboxes[i].color, this->bboxes[i].thickness);
-				//std::cout << "test " << i << std::endl;
-				//std::cout << this->bboxes[i].p1 << " " << this->bboxes[i].color << std::endl;
 
 				if (this->bboxes[i].selected && !this->one_is_selected) {
 					cv::circle(img, this->bboxes[i].p1, this->bboxes[i].corner_radius, this->bboxes[i].color, 2);
@@ -110,7 +89,6 @@ public:
 					cv::Point p2_cancel = cv::Point(this->bboxes[i].p2) + cv::Point(line_size, line_size);
 					cv::Point p3_cancel = cv::Point(this->bboxes[i].p2) + cv::Point(-line_size, line_size);
 					cv::Point p4_cancel = cv::Point(this->bboxes[i].p2) + cv::Point(line_size, -line_size);
-
 					cv::line(img, p1_cancel, p2_cancel, cv::Scalar(0, 0, 0), 2);
 					cv::line(img, p3_cancel, p4_cancel, cv::Scalar(0, 0, 0), 2);
 				}
@@ -158,7 +136,6 @@ public:
 					if (*click && this->bboxes[i].is_corner_selected(x_mouse, y_mouse, this->bboxes[i].p2)) {
 						this->bboxes[i].removed_clicked = true;
 						this->bboxes[i].removed = true;
-						//std::cout << *click << std::endl;
 					}
 
 					if (*hold) {

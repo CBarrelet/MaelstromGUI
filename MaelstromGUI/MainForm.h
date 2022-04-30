@@ -291,12 +291,9 @@ namespace MaelstromGUI {
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
 		namedWindow("Edition");
 		setMouseCallback("Edition", mouse_callback);
-		
 		video.video_bboxes[video.getFrameId()].set_img_size(video.frame.size()); // TODO: DO better ^^
 		bool close_window = false; // Bool to close the windows when hitting the close button
-
 		video.setEditedFrame();
-
 		while (true) {
 			// Close the window on close button
 			close_window = getWindowProperty("Edition", WND_PROP_VISIBLE) < 1;
@@ -305,10 +302,8 @@ namespace MaelstromGUI {
 				destroyAllWindows();
 				break;
 			}
-
 			video.updateBboxes(x_mouse, y_mouse, &click, &hold);
 			imshow("Edition", video.getEditedFrame());
-
 			if (mouse_right_click) {
 				cv::Point center(x_mouse, y_mouse);
 				video.addBbx(center);
@@ -400,7 +395,6 @@ namespace MaelstromGUI {
 
 	// Get mouse state when clicked
 	private: System::Void ptbSource_MouseDown(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
-		//cout << e->X << endl;
 		mouse_pos = cv::Point(e->X, e->Y);
 		cv::Point mouseDownLocation = cv::Point(e->X, e->Y);
 		System::String^ eventString = nullptr;
@@ -465,7 +459,8 @@ namespace MaelstromGUI {
 		video.init(video_path, window_size);
 		if (!video.isOpened()) // TODO: Manage this error
 			cout << "Error opening video stream or file" << endl;
-		this->video_trackBar->Maximum = video.getFramesNr();
+		this->video_trackBar->Maximum = video.getFramesNr()-1;
+		this->video_trackBar->Value = 0;
 		set_video_label();
 		video.nextFrame();
 		display(video.getEditedFrame());
@@ -483,21 +478,22 @@ namespace MaelstromGUI {
 		}
 		else if (video.getMode() == "replay") {
 			video.setFrame(0);
-			this->video_trackBar->Value = video.getFrameId();
+			this->video_trackBar->Value = video.getFrameId()+1;
 			set_video_label();
 			this->play_button->Text = L"Pause";
 			video.setMode("play");
 		}
 		while (video.getMode() == "play") {
-			this->video_trackBar->Value = video.getFrameId();
 			video.nextFrame();
 			if (video.frame.empty()) {
 				this->play_button->Text = L"Replay";
 				video.setMode("replay");
 				break;
 			}
-			else
+			else {
+				this->video_trackBar->Value = video.getFrameId();
 				set_video_label();
+			}
 			display(video.getEditedFrame());
 			waitKey(video.getWaitTimer());
 		}
@@ -539,27 +535,22 @@ namespace MaelstromGUI {
 
 	// Set frame to track bar
 	private: System::Void video_trackBar_Scroll(System::Object^ sender, System::EventArgs^ e) {
-		cout << video_trackBar->Value << endl;
 		if (video.getMode() == "replay")
 			if (video.getFrameId() < video.getFramesNr()) {
 				play_video = "pause";
 				video.setMode("pause");
 				this->play_button->Text = L"Play";
 			}
-
-		video.setFrame(video_trackBar->Value - 1);
+		video.setFrame(video_trackBar->Value);
 		set_video_label();
 		video.nextFrame();
-		display(video.getEditedFrame());
-		
+		display(video.getEditedFrame());	
 	}
 
 	// Set the video label
 	private: void set_video_label() {
 		int displayed_label_frame = video.getFrameId() + 1;
-		if (displayed_label_frame + 1 > video.getFramesNr())
-			displayed_label_frame = displayed_label_frame - 1;
-		string s = std::to_string(displayed_label_frame + 1) + "/" + std::to_string(video.getFramesNr());
+		string s = std::to_string(displayed_label_frame + 1) + "/" + std::to_string(this->video_trackBar->Maximum + 1);
 		System::String^ name = gcnew System::String(s.c_str());
 		this->video_label->Text = name;
 	}
