@@ -1,5 +1,9 @@
 #pragma once
 
+//#include "config.h"
+
+#include <time.h>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs/imgcodecs.hpp>
@@ -8,6 +12,8 @@
 #include "Bbx.h"
 #include "Bboxes.h"
 #include "Video.h"
+#include "Server.h"
+
 
 // Opencv global
 int x_mouse = 0, y_mouse = 0; // Mouse coordinates
@@ -49,6 +55,10 @@ namespace MaelstromGUI {
 	using namespace std;
 	using namespace cv;
 
+	// Date and time
+	struct tm newtime;
+	__time32_t aclock;
+
 	// Image in picture box
 	Mat img;
 	Mat original_img;
@@ -56,9 +66,23 @@ namespace MaelstromGUI {
 
 	// Video in picture box
 	Mat frame;
+	cv::Mat stream_frame;
 	string play_video = "pause"; // or "play" or "replay"
 
 	Video video;
+
+	cv::VideoWriter output_video;
+	std::string video_name;
+	int video_count = 0;
+
+
+	// Server global
+	Server server;
+	bool server_initialized = false;
+	bool server_is_running = false; // Set to true if running, false if error or shuted down
+	bool camera_show = false; // To start or shutdown with the same button
+	
+	
 
 
 	// Bboxes initialization
@@ -113,6 +137,8 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Button^ load_button;
 	private: System::Windows::Forms::TrackBar^ video_trackBar;
 	private: System::Windows::Forms::Label^ video_label;
+	private: System::Windows::Forms::Button^ server_button;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorker1;
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -148,13 +174,15 @@ namespace MaelstromGUI {
 			this->load_button = (gcnew System::Windows::Forms::Button());
 			this->video_trackBar = (gcnew System::Windows::Forms::TrackBar());
 			this->video_label = (gcnew System::Windows::Forms::Label());
+			this->server_button = (gcnew System::Windows::Forms::Button());
+			this->backgroundWorker1 = (gcnew System::ComponentModel::BackgroundWorker());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
 			// 
 			// button_Edition
 			// 
-			this->button_Edition->Location = System::Drawing::Point(1617, 31);
+			this->button_Edition->Location = System::Drawing::Point(1106, 25);
 			this->button_Edition->Name = L"button_Edition";
 			this->button_Edition->Size = System::Drawing::Size(75, 23);
 			this->button_Edition->TabIndex = 0;
@@ -165,9 +193,9 @@ namespace MaelstromGUI {
 			// ptbSource
 			// 
 			this->ptbSource->BackColor = System::Drawing::SystemColors::ControlDark;
-			this->ptbSource->Location = System::Drawing::Point(792, 60);
+			this->ptbSource->Location = System::Drawing::Point(541, 55);
 			this->ptbSource->Name = L"ptbSource";
-			this->ptbSource->Size = System::Drawing::Size(900, 900);
+			this->ptbSource->Size = System::Drawing::Size(640, 640);
 			this->ptbSource->TabIndex = 1;
 			this->ptbSource->TabStop = false;
 			this->ptbSource->MouseDoubleClick += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::ptbSource_MouseDoubleClick);
@@ -187,7 +215,7 @@ namespace MaelstromGUI {
 			// 
 			this->listView1->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(1) { this->columnHeader1 });
 			this->listView1->HideSelection = false;
-			this->listView1->Location = System::Drawing::Point(525, 60);
+			this->listView1->Location = System::Drawing::Point(253, 55);
 			this->listView1->Name = L"listView1";
 			this->listView1->Size = System::Drawing::Size(250, 400);
 			this->listView1->TabIndex = 3;
@@ -200,7 +228,7 @@ namespace MaelstromGUI {
 			// 
 			// view_button
 			// 
-			this->view_button->Location = System::Drawing::Point(611, 466);
+			this->view_button->Location = System::Drawing::Point(54, 107);
 			this->view_button->Name = L"view_button";
 			this->view_button->Size = System::Drawing::Size(80, 34);
 			this->view_button->TabIndex = 4;
@@ -216,7 +244,7 @@ namespace MaelstromGUI {
 			// 
 			// play_button
 			// 
-			this->play_button->Location = System::Drawing::Point(872, 966);
+			this->play_button->Location = System::Drawing::Point(621, 707);
 			this->play_button->Name = L"play_button";
 			this->play_button->Size = System::Drawing::Size(75, 23);
 			this->play_button->TabIndex = 5;
@@ -226,7 +254,7 @@ namespace MaelstromGUI {
 			// 
 			// speed_button
 			// 
-			this->speed_button->Location = System::Drawing::Point(953, 966);
+			this->speed_button->Location = System::Drawing::Point(702, 707);
 			this->speed_button->Name = L"speed_button";
 			this->speed_button->Size = System::Drawing::Size(75, 23);
 			this->speed_button->TabIndex = 6;
@@ -236,7 +264,7 @@ namespace MaelstromGUI {
 			// 
 			// load_button
 			// 
-			this->load_button->Location = System::Drawing::Point(791, 966);
+			this->load_button->Location = System::Drawing::Point(540, 707);
 			this->load_button->Name = L"load_button";
 			this->load_button->Size = System::Drawing::Size(75, 23);
 			this->load_button->TabIndex = 7;
@@ -246,27 +274,46 @@ namespace MaelstromGUI {
 			// 
 			// video_trackBar
 			// 
-			this->video_trackBar->Location = System::Drawing::Point(1034, 966);
+			this->video_trackBar->Location = System::Drawing::Point(783, 707);
 			this->video_trackBar->Maximum = 150;
 			this->video_trackBar->Name = L"video_trackBar";
-			this->video_trackBar->Size = System::Drawing::Size(565, 45);
+			this->video_trackBar->Size = System::Drawing::Size(365, 45);
 			this->video_trackBar->TabIndex = 8;
 			this->video_trackBar->Scroll += gcnew System::EventHandler(this, &MainForm::video_trackBar_Scroll);
 			// 
 			// video_label
 			// 
 			this->video_label->AutoSize = true;
-			this->video_label->Location = System::Drawing::Point(1605, 971);
+			this->video_label->Location = System::Drawing::Point(1154, 712);
 			this->video_label->Name = L"video_label";
 			this->video_label->Size = System::Drawing::Size(24, 13);
 			this->video_label->TabIndex = 9;
 			this->video_label->Text = L"0/0";
 			// 
+			// server_button
+			// 
+			this->server_button->BackColor = System::Drawing::SystemColors::ControlLight;
+			this->server_button->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->server_button->Location = System::Drawing::Point(423, 701);
+			this->server_button->Name = L"server_button";
+			this->server_button->Size = System::Drawing::Size(80, 34);
+			this->server_button->TabIndex = 10;
+			this->server_button->Text = L"Start recording";
+			this->server_button->UseVisualStyleBackColor = false;
+			this->server_button->Click += gcnew System::EventHandler(this, &MainForm::server_button_Click);
+			// 
+			// backgroundWorker1
+			// 
+			this->backgroundWorker1->WorkerSupportsCancellation = true;
+			this->backgroundWorker1->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorker1_DoWork);
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(1904, 1041);
+			this->ClientSize = System::Drawing::Size(1208, 1041);
+			this->Controls->Add(this->server_button);
 			this->Controls->Add(this->video_label);
 			this->Controls->Add(this->video_trackBar);
 			this->Controls->Add(this->load_button);
@@ -353,7 +400,7 @@ namespace MaelstromGUI {
 	private: void display(Mat img) {
 		if (!img.empty()) {
 			ptbSource->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
-			ptbSource->Refresh();
+			//ptbSource->Refresh(); // If streaming, freeze
 		}
 	}
 
@@ -488,6 +535,10 @@ namespace MaelstromGUI {
 			if (video.frame.empty()) {
 				this->play_button->Text = L"Replay";
 				video.setMode("replay");
+				video.setFrame(video.getFrameId() - 1);
+				video.nextFrame();
+				set_video_label();
+				video.nextFrame(); // Only god know why I have to add this line
 				break;
 			}
 			else {
@@ -554,5 +605,142 @@ namespace MaelstromGUI {
 		System::String^ name = gcnew System::String(s.c_str());
 		this->video_label->Text = name;
 	}
+
+		   /* --------------------------------------------------
+				SERVEUR
+
+				Server button
+				Background worker
+	
+		   ----------------------------------------------------- */
+	private: System::Void server_button_Click(System::Object^ sender, System::EventArgs^ e) {
+		camera_show = !camera_show; // Default is false, fist click launch the server
+
+		//cout << CV_VERSION << endl;
+
+		if(!server_initialized) {
+			server.connect(8000);
+			server_initialized = true;
+			std::cout << "Server started" << std::endl;	
+		}
+		
+		if (camera_show) {
+
+			backgroundWorker1->RunWorkerAsync(1);
+			camera_show = true;
+
+			this->server_button->Text = L"Recording";
+			this->server_button->BackColor = System::Drawing::Color::Red;
+			this->server_button->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+
+			// Start video writer
+			//std::string openh = "H264";
+			//int codec = VideoWriter::fourcc(openh);
+			std::string vid_path = getNewPath();
+			cout << vid_path << endl;
+			output_video.open(vid_path, -1, 30, cv::Size(640, 640), true);	
+			
+		}
+		else {
+			camera_show = false;
+			std::cout << "Server shutdown" << std::endl;
+			this->server_button->Text = L"Start recording";
+			this->server_button->BackColor = System::Drawing::SystemColors::Control;
+			this->server_button->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+
+			
+		}	
+		
+	}
+	private: System::Void backgroundWorker1_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		int recvMsgSize;
+		int frame_id = 0;
+
+
+		while (true) {
+			
+			do {
+				recvMsgSize = server.recv();
+			} while (recvMsgSize > sizeof(int));
+
+			int total_pack = ((int*)server.getBuffer())[0];
+
+			int pack_count = 0;
+
+			char* long_buffer = new char[PACK_SIZE * total_pack];
+			for (int i = 0; i < total_pack; i++) {	
+				recvMsgSize = server.recv();
+
+				if (recvMsgSize != PACK_SIZE) {
+					std::cerr << "Received unexpected size pack:" << recvMsgSize << std::endl;
+					cout << server.getBuffer() << endl;
+					continue;
+				}
+				else {
+					pack_count++;
+					memcpy(&long_buffer[i * PACK_SIZE], server.getBuffer(), PACK_SIZE);
+				}	
+			}
+
+			if (pack_count == total_pack) {
+				stream_frame = server.getFrame(long_buffer, total_pack);
+				if (stream_frame.size().width == 0) {
+					cerr << "decode failure!" << endl;
+					continue;
+				}
+
+				if (camera_show) {
+
+					if (!(stream_frame.size().width == 0)) {
+						display(stream_frame);
+						output_video.write(stream_frame);
+
+						//cv::imwrite(vid_path, stream_frame);
+					}
+				}
+				else {
+					output_video.release();
+					cv::waitKey(1);
+					cv:destroyAllWindows();
+					backgroundWorker1->CancelAsync();
+					e->Cancel = true;
+					free(long_buffer);
+					break;
+				}
+			}
+			
+				
+			//free(long_buffer);
+		}
+	}
+
+	public:
+		char* getTime() {
+			char time[32];
+			errno_t errNum;
+			_time32(&aclock);
+			_localtime32_s(&newtime, &aclock);
+			errNum = asctime_s(time, 32, &newtime);
+			std::replace(std::begin(time), std::end(time), ' ', '_');
+			std::replace(std::begin(time), std::end(time), ':', '-');
+			char* new_time = new char[32];
+			std::strcpy(new_time, time);
+			return new_time;
+		}
+
+		string getNewPath() {
+			char* time = getTime();
+			string path("C:/Users/Utilisateur/source/repos/Maelstrom/Maelstrom/videos/video_");
+			string extension_time(time);
+			free(time);
+			extension_time.erase(extension_time.length() - 1);
+			string extension_video(".mp4");
+			string new_path = path + extension_time + extension_video;
+			//new_path.erase(std::remove(new_path.begin(), new_path.end(), '\n', new_path.end()));
+
+			return new_path;
+		}
 };
 }
