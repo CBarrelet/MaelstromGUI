@@ -1,6 +1,11 @@
 #pragma once
 
+
+// PC Rob: 192.168.1.10
+// PC GUI: 192.168.1.11 Port 10000 with request Port 10001 continuously
+
 //#include "config.h"
+
 
 #include <time.h>
 
@@ -14,6 +19,7 @@
 #include "Video.h"
 #include "Server.h"
 
+#include "PracticalSocket.h"
 
 // Opencv global
 int x_mouse = 0, y_mouse = 0; // Mouse coordinates
@@ -76,15 +82,25 @@ namespace MaelstromGUI {
 	int video_count = 0;
 
 
-	// Server global
-	Server server;
-	bool server_initialized = false;
-	bool server_is_running = false; // Set to true if running, false if error or shuted down
+	// Server Jetson
+	Server server_jetson;
+	bool server_jetson_initialized = false;
+	bool server_jetson_is_running = false; // Set to true if running, false if error or shuted down
 	bool camera_show = false; // To start or shutdown with the same button
 	
+	// Server Robot
+	string ip_gui = "192.168.0.11";
+	string ip_robot = "192.168.0.10";
+	unsigned short request_port = 10000;
+	int request_id = 0;
+	unsigned short continuous_port = 10001;
+	// To send request to the robot controler
+	UDPSocket robot_request_socket(ip_gui, request_port);
+	// To receive robot information continuously 
+	UDPSocket robot_info_socket(ip_gui, continuous_port);
+
 	
-
-
+	
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
 	vector<Bbx> null_bbx_vector;
@@ -139,6 +155,21 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ video_label;
 	private: System::Windows::Forms::Button^ server_button;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorker1;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobot;
+
+
+	private: System::Windows::Forms::Button^ button1;
+	private: System::Windows::Forms::Button^ goToButton;
+	private: System::Windows::Forms::TextBox^ xCooText;
+	private: System::Windows::Forms::TextBox^ yCooText;
+	private: System::Windows::Forms::TextBox^ zCooText;
+	private: System::Windows::Forms::Label^ label1;
+	private: System::Windows::Forms::Label^ label2;
+	private: System::Windows::Forms::Label^ label3;
+
+
+
+
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -176,6 +207,15 @@ namespace MaelstromGUI {
 			this->video_label = (gcnew System::Windows::Forms::Label());
 			this->server_button = (gcnew System::Windows::Forms::Button());
 			this->backgroundWorker1 = (gcnew System::ComponentModel::BackgroundWorker());
+			this->backgroundWorkerRobot = (gcnew System::ComponentModel::BackgroundWorker());
+			this->button1 = (gcnew System::Windows::Forms::Button());
+			this->goToButton = (gcnew System::Windows::Forms::Button());
+			this->xCooText = (gcnew System::Windows::Forms::TextBox());
+			this->yCooText = (gcnew System::Windows::Forms::TextBox());
+			this->zCooText = (gcnew System::Windows::Forms::TextBox());
+			this->label1 = (gcnew System::Windows::Forms::Label());
+			this->label2 = (gcnew System::Windows::Forms::Label());
+			this->label3 = (gcnew System::Windows::Forms::Label());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
@@ -308,11 +348,101 @@ namespace MaelstromGUI {
 			this->backgroundWorker1->WorkerSupportsCancellation = true;
 			this->backgroundWorker1->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorker1_DoWork);
 			// 
+			// backgroundWorkerRobot
+			// 
+			this->backgroundWorkerRobot->WorkerSupportsCancellation = true;
+			this->backgroundWorkerRobot->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerRobot_DoWork);
+			// 
+			// button1
+			// 
+			this->button1->Location = System::Drawing::Point(144, 696);
+			this->button1->Name = L"button1";
+			this->button1->Size = System::Drawing::Size(75, 45);
+			this->button1->TabIndex = 13;
+			this->button1->Text = L"Robot server";
+			this->button1->UseVisualStyleBackColor = true;
+			this->button1->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
+			// 
+			// goToButton
+			// 
+			this->goToButton->Location = System::Drawing::Point(144, 824);
+			this->goToButton->Name = L"goToButton";
+			this->goToButton->Size = System::Drawing::Size(75, 23);
+			this->goToButton->TabIndex = 15;
+			this->goToButton->Text = L"Go to";
+			this->goToButton->UseVisualStyleBackColor = true;
+			this->goToButton->Click += gcnew System::EventHandler(this, &MainForm::goToButton_Click);
+			// 
+			// xCooText
+			// 
+			this->xCooText->Location = System::Drawing::Point(235, 827);
+			this->xCooText->Name = L"xCooText";
+			this->xCooText->Size = System::Drawing::Size(68, 20);
+			this->xCooText->TabIndex = 16;
+			this->xCooText->Text = L"- - -";
+			this->xCooText->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->xCooText->Click += gcnew System::EventHandler(this, &MainForm::xCooText_Click);
+			// 
+			// yCooText
+			// 
+			this->yCooText->Location = System::Drawing::Point(309, 827);
+			this->yCooText->Name = L"yCooText";
+			this->yCooText->Size = System::Drawing::Size(68, 20);
+			this->yCooText->TabIndex = 17;
+			this->yCooText->Text = L"- - -";
+			this->yCooText->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->yCooText->Click += gcnew System::EventHandler(this, &MainForm::yCooText_Click);
+			// 
+			// zCooText
+			// 
+			this->zCooText->Location = System::Drawing::Point(383, 827);
+			this->zCooText->Name = L"zCooText";
+			this->zCooText->Size = System::Drawing::Size(68, 20);
+			this->zCooText->TabIndex = 18;
+			this->zCooText->Text = L"- - -";
+			this->zCooText->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->zCooText->Click += gcnew System::EventHandler(this, &MainForm::zCooText_Click);
+			// 
+			// label1
+			// 
+			this->label1->AutoSize = true;
+			this->label1->Location = System::Drawing::Point(266, 850);
+			this->label1->Name = L"label1";
+			this->label1->Size = System::Drawing::Size(37, 13);
+			this->label1->TabIndex = 19;
+			this->label1->Text = L"x (mm)";
+			// 
+			// label2
+			// 
+			this->label2->AutoSize = true;
+			this->label2->Location = System::Drawing::Point(340, 850);
+			this->label2->Name = L"label2";
+			this->label2->Size = System::Drawing::Size(37, 13);
+			this->label2->TabIndex = 20;
+			this->label2->Text = L"y (mm)";
+			// 
+			// label3
+			// 
+			this->label3->AutoSize = true;
+			this->label3->Location = System::Drawing::Point(414, 850);
+			this->label3->Name = L"label3";
+			this->label3->Size = System::Drawing::Size(37, 13);
+			this->label3->TabIndex = 21;
+			this->label3->Text = L"z (mm)";
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1208, 1041);
+			this->Controls->Add(this->label3);
+			this->Controls->Add(this->label2);
+			this->Controls->Add(this->label1);
+			this->Controls->Add(this->zCooText);
+			this->Controls->Add(this->yCooText);
+			this->Controls->Add(this->xCooText);
+			this->Controls->Add(this->goToButton);
+			this->Controls->Add(this->button1);
 			this->Controls->Add(this->server_button);
 			this->Controls->Add(this->video_label);
 			this->Controls->Add(this->video_trackBar);
@@ -618,9 +748,9 @@ namespace MaelstromGUI {
 
 		//cout << CV_VERSION << endl;
 
-		if(!server_initialized) {
-			server.connect(8000);
-			server_initialized = true;
+		if(!server_jetson_initialized) {
+			server_jetson.connect("192.168.0.20", 8000);
+			server_jetson_initialized = true;
 			std::cout << "Server started" << std::endl;	
 		}
 		
@@ -654,6 +784,8 @@ namespace MaelstromGUI {
 		}	
 		
 	}
+
+	// Server Jetson
 	private: System::Void backgroundWorker1_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		int recvMsgSize;
 		int frame_id = 0;
@@ -662,30 +794,30 @@ namespace MaelstromGUI {
 		while (true) {
 			
 			do {
-				recvMsgSize = server.recv();
+				recvMsgSize = server_jetson.recv();
 			} while (recvMsgSize > sizeof(int));
 
-			int total_pack = ((int*)server.getBuffer())[0];
+			int total_pack = ((int*)server_jetson.getBuffer())[0];
 
 			int pack_count = 0;
 
 			char* long_buffer = new char[PACK_SIZE * total_pack];
 			for (int i = 0; i < total_pack; i++) {	
-				recvMsgSize = server.recv();
+				recvMsgSize = server_jetson.recv();
 
 				if (recvMsgSize != PACK_SIZE) {
 					std::cerr << "Received unexpected size pack:" << recvMsgSize << std::endl;
-					cout << server.getBuffer() << endl;
+					cout << server_jetson.getBuffer() << endl;
 					continue;
 				}
 				else {
 					pack_count++;
-					memcpy(&long_buffer[i * PACK_SIZE], server.getBuffer(), PACK_SIZE);
+					memcpy(&long_buffer[i * PACK_SIZE], server_jetson.getBuffer(), PACK_SIZE);
 				}	
 			}
 
 			if (pack_count == total_pack) {
-				stream_frame = server.getFrame(long_buffer, total_pack);
+				stream_frame = server_jetson.getFrame(long_buffer, total_pack);
 				if (stream_frame.size().width == 0) {
 					cerr << "decode failure!" << endl;
 					continue;
@@ -732,7 +864,7 @@ namespace MaelstromGUI {
 
 		string getNewPath() {
 			char* time = getTime();
-			string path("C:/Users/Utilisateur/source/repos/Maelstrom/Maelstrom/videos/video_");
+			string path("D:/projects/cyril/videos/video_");
 			string extension_time(time);
 			free(time);
 			extension_time.erase(extension_time.length() - 1);
@@ -742,5 +874,78 @@ namespace MaelstromGUI {
 
 			return new_path;
 		}
+
+
+private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
+	//server_robot.connect("192.168.0.11", 10001);
+
+	cout << "Sending" << endl;
+	char* test_mess = "test";
+	//server_robot.socket.sendTo(test_mess, 5, "192.168.0.10", 10000);
+
+	string ip_robot = "192.168.0.10";
+	unsigned short request_port = 10000;
+	//robot_socket.sendTo(test_mess, 5, ip_robot, request_port);
+
+	backgroundWorkerRobot->RunWorkerAsync(1);
+	
+}
+
+	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while (true) {
+			char rcv_buffer[100];
+			robot_info_socket.recvFrom(rcv_buffer, 100, ip_robot, continuous_port);
+			cout << rcv_buffer << endl;
+		}
+	}
+
+char* addZeroChar(System::String^ Sstr) {
+	string str = ConvertString2Char(Sstr);
+	int size = 7;
+	char* new_char = new char[7];
+	if (str[0] == '-') {
+		new_char[0] = '-';
+		size = 6;
+	}
+	for (size_t i = 0; i < size; i++) {
+		if (i <= str.size())
+			if (str[str.size() - i] != '-')
+				new_char[6 - i] = str[str.size() - i];
+			else
+				new_char[6 - i] = '0';
+		else
+			new_char[6 - i] = '0';
+	}
+	return new_char;
+}
+
+// Send the robot to the coordinates
+// Request: "*id;xxxxxx;xxxxxx;xxxxxx#
+//            id;   x  ;  y   ;  z
+private: System::Void goToButton_Click(System::Object^ sender, System::EventArgs^ e) {
+
+	string x_str, y_str, z_str;
+	x_str = ConvertString2Char(xCooText->Text);
+	y_str = ConvertString2Char(yCooText->Text);
+	z_str = ConvertString2Char(zCooText->Text);
+
+	string str2send = "*" + x_str + ";" + y_str + ";" + z_str + "#";
+
+	robot_request_socket.sendTo(str2send.c_str(), 100, ip_robot, request_port);
+	char answer[100];
+	robot_request_socket.recvFrom(answer, 100, ip_robot, request_port);
+	cout << answer << endl;
+}
+
+// Reinit text box on click
+private: System::Void xCooText_Click(System::Object^ sender, System::EventArgs^ e) {
+	xCooText->Text = "";
+}
+private: System::Void yCooText_Click(System::Object^ sender, System::EventArgs^ e) {
+	yCooText->Text = "";
+}
+private: System::Void zCooText_Click(System::Object^ sender, System::EventArgs^ e) {
+	zCooText->Text = "";
+}
 };
 }

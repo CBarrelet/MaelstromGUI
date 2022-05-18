@@ -24,25 +24,32 @@ using std::chrono::system_clock;
 class Server {
 private:
 	unsigned short server_port;
-	UDPSocket socket;
+	//UDPSocket socket;
 	char buffer[BUF_LEN]; // Buffer for echo string
 	int recvMsgSize; // Size of received message
 	std::string source_address; // Address of datagram source
 	unsigned short source_port; // Port of datagram source
 
 public:
+	UDPSocket socket;
 	Server() {}
 
 	~Server() {}
 
-	void connect(unsigned short server_port) {
+	void connect(std::string source_address, unsigned short server_port) {
 		this->server_port = server_port;
 		this->socket.init();
-		this->socket.setLocalPort(server_port);
+		//this->socket.setLocalPort(server_port);
+		this->socket.setLocalAddressAndPort(source_address, server_port);
 		this->socket.setBroadcast();
 	}
 
 	int recv() {
+		this->recvMsgSize = socket.recvFrom(this->buffer, BUF_LEN, this->source_address, this->source_port);
+		return this->recvMsgSize;
+	}
+
+	int recv2(std::string source_address, unsigned short server_port) {
 		this->recvMsgSize = socket.recvFrom(this->buffer, BUF_LEN, this->source_address, this->source_port);
 		return this->recvMsgSize;
 	}

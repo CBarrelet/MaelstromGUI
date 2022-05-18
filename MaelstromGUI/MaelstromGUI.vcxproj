@@ -74,9 +74,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExecutablePath>C:\Users\Utilisateur\Documents\libraries\opencv\build\include;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>C:\Users\Utilisateur\Documents\libraries\opencv\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Utilisateur\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>C:\Users\admin\Documents\libraries\opencv\build\include;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>C:\Users\admin\Documents\libraries\opencv\build\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\admin\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ExecutablePath>C:\Users\Utilisateur\Documents\libraries\opencv\build\include;$(ExecutablePath)</ExecutablePath>
