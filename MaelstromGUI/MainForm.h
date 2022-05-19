@@ -9,6 +9,17 @@
 #include "Bboxes.h"
 #include "Video.h"
 
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+#include <tchar.h>
+
+#include <comdef.h>
+
+#define BUF_SIZE 256
+TCHAR szName[] = TEXT("/MyFileMappingObject");
+TCHAR szMsg[] = TEXT("Message from first process.");
+
 // Opencv global
 int x_mouse = 0, y_mouse = 0; // Mouse coordinates
 bool mouse_left_click = false;
@@ -113,6 +124,9 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Button^ load_button;
 	private: System::Windows::Forms::TrackBar^ video_trackBar;
 	private: System::Windows::Forms::Label^ video_label;
+	private: System::Windows::Forms::Button^ shmButton;
+	private: System::Windows::Forms::Button^ button1;
+	private: System::Windows::Forms::TextBox^ shmText;
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -148,6 +162,9 @@ namespace MaelstromGUI {
 			this->load_button = (gcnew System::Windows::Forms::Button());
 			this->video_trackBar = (gcnew System::Windows::Forms::TrackBar());
 			this->video_label = (gcnew System::Windows::Forms::Label());
+			this->shmButton = (gcnew System::Windows::Forms::Button());
+			this->button1 = (gcnew System::Windows::Forms::Button());
+			this->shmText = (gcnew System::Windows::Forms::TextBox());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
@@ -262,11 +279,41 @@ namespace MaelstromGUI {
 			this->video_label->TabIndex = 9;
 			this->video_label->Text = L"0/0";
 			// 
+			// shmButton
+			// 
+			this->shmButton->Location = System::Drawing::Point(59, 234);
+			this->shmButton->Name = L"shmButton";
+			this->shmButton->Size = System::Drawing::Size(97, 40);
+			this->shmButton->TabIndex = 10;
+			this->shmButton->Text = L"Init ShM";
+			this->shmButton->UseVisualStyleBackColor = true;
+			this->shmButton->Click += gcnew System::EventHandler(this, &MainForm::shmButton_Click);
+			// 
+			// button1
+			// 
+			this->button1->Location = System::Drawing::Point(200, 234);
+			this->button1->Name = L"button1";
+			this->button1->Size = System::Drawing::Size(97, 40);
+			this->button1->TabIndex = 11;
+			this->button1->Text = L"Init ShM";
+			this->button1->UseVisualStyleBackColor = true;
+			this->button1->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
+			// 
+			// shmText
+			// 
+			this->shmText->Location = System::Drawing::Point(123, 319);
+			this->shmText->Name = L"shmText";
+			this->shmText->Size = System::Drawing::Size(100, 20);
+			this->shmText->TabIndex = 12;
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1904, 1041);
+			this->Controls->Add(this->shmText);
+			this->Controls->Add(this->button1);
+			this->Controls->Add(this->shmButton);
 			this->Controls->Add(this->video_label);
 			this->Controls->Add(this->video_trackBar);
 			this->Controls->Add(this->load_button);
@@ -554,5 +601,98 @@ namespace MaelstromGUI {
 		System::String^ name = gcnew System::String(s.c_str());
 		this->video_label->Text = name;
 	}
+private: System::Void shmButton_Click(System::Object^ sender, System::EventArgs^ e) {
+
+	HANDLE hMapFile;
+	LPCTSTR pBuf;
+
+	hMapFile = OpenFileMapping(
+		FILE_MAP_ALL_ACCESS,   // read/write access
+		FALSE,                 // do not inherit the name
+		szName);               // name of mapping object
+
+	if (hMapFile == NULL)
+	{
+		_tprintf(TEXT("Could not open file mapping object (%d).\n"),
+			GetLastError());
+		//return 1;
+	}
+
+	pBuf = (LPTSTR)MapViewOfFile(hMapFile, // handle to map object
+		FILE_MAP_ALL_ACCESS,  // read/write permission
+		0,
+		0,
+		BUF_SIZE);
+
+	if (pBuf == NULL)
+	{
+		_tprintf(TEXT("Could not map view of file (%d).\n"),
+			GetLastError());
+
+		//CloseHandle(hMapFile);
+
+	}
+
+	const wchar_t* p;
+	p = pBuf;
+
+
+	/*_bstr_t b(p);
+	const char* c = b;
+	printf("Output: %s\n", c);*/
+	
+	cout << (char*)p << endl;
+
+	//sprintf("recu=%s\n", pBuf);
+
+
+	UnmapViewOfFile(pBuf);
+
+	CloseHandle(hMapFile);
+
+}
+private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
+	HANDLE hMapFile;
+	LPCTSTR pBuf;
+
+	hMapFile = CreateFileMapping(
+		INVALID_HANDLE_VALUE,    // use paging file
+		NULL,                    // default security
+		PAGE_READWRITE,          // read/write access
+		0,                       // maximum object size (high-order DWORD)
+		BUF_SIZE,                // maximum object size (low-order DWORD)
+		szName);                 // name of mapping object
+
+	if (hMapFile == NULL)
+	{
+		_tprintf(TEXT("Could not create file mapping object (%d).\n"),
+			GetLastError());
+		//return 1;
+	}
+	pBuf = (LPTSTR)MapViewOfFile(hMapFile,   // handle to map object
+		FILE_MAP_ALL_ACCESS, // read/write permission
+		0,
+		0,
+		BUF_SIZE);
+
+	if (pBuf == NULL)
+	{
+		_tprintf(TEXT("Could not map view of file (%d).\n"),
+			GetLastError());
+
+		//CloseHandle(hMapFile);
+
+		//return 1;
+	}
+
+
+	CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
+	//_getch();
+
+	//UnmapViewOfFile(pBuf);
+
+	//CloseHandle(hMapFile);
+
+}
 };
 }
