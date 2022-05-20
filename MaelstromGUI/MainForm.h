@@ -21,6 +21,17 @@
 
 #include "PracticalSocket.h"
 
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+#include <tchar.h>
+
+#define BUF_SIZE 256
+TCHAR szName[] = TEXT("Global\\MyFileMappingObject");
+TCHAR szMsg[] = TEXT("Message from first process.");
+
+#pragma comment(lib, "user32.lib")
+
 // Opencv global
 int x_mouse = 0, y_mouse = 0; // Mouse coordinates
 bool mouse_left_click = false;
@@ -89,7 +100,9 @@ namespace MaelstromGUI {
 	bool camera_show = false; // To start or shutdown with the same button
 	
 	// Server Robot
-	string ip_gui = "192.168.0.11";
+	//string ip_gui = "192.168.0.11";
+	//string ip_robot = "192.168.0.10";
+	string ip_gui = "192.168.1.10";
 	string ip_robot = "192.168.0.10";
 	unsigned short request_port = 10000;
 	int request_id = 0;
@@ -98,6 +111,13 @@ namespace MaelstromGUI {
 	UDPSocket robot_request_socket(ip_gui, request_port);
 	// To receive robot information continuously 
 	UDPSocket robot_info_socket(ip_gui, continuous_port);
+
+	// Server Arduino
+	// To receive arduino information continuously 
+	string ip_arduino = "192.168.0.4";
+	unsigned short arduino_port = 5817;
+	string ip_gui2 = "192.168.1.10";
+	UDPSocket arduino_info_socket(ip_gui2, arduino_port); // Is it needed?
 
 	
 	
@@ -166,6 +186,8 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ label1;
 	private: System::Windows::Forms::Label^ label2;
 	private: System::Windows::Forms::Label^ label3;
+	private: System::Windows::Forms::Button^ intiShmButton;
+	private: System::Windows::Forms::Button^ readShmButton;
 
 
 
@@ -216,6 +238,8 @@ namespace MaelstromGUI {
 			this->label1 = (gcnew System::Windows::Forms::Label());
 			this->label2 = (gcnew System::Windows::Forms::Label());
 			this->label3 = (gcnew System::Windows::Forms::Label());
+			this->intiShmButton = (gcnew System::Windows::Forms::Button());
+			this->readShmButton = (gcnew System::Windows::Forms::Button());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
@@ -430,11 +454,33 @@ namespace MaelstromGUI {
 			this->label3->TabIndex = 21;
 			this->label3->Text = L"z (mm)";
 			// 
+			// intiShmButton
+			// 
+			this->intiShmButton->Location = System::Drawing::Point(84, 577);
+			this->intiShmButton->Name = L"intiShmButton";
+			this->intiShmButton->Size = System::Drawing::Size(75, 23);
+			this->intiShmButton->TabIndex = 22;
+			this->intiShmButton->Text = L"Init ShM";
+			this->intiShmButton->UseVisualStyleBackColor = true;
+			this->intiShmButton->Click += gcnew System::EventHandler(this, &MainForm::intiShmButton_Click);
+			// 
+			// readShmButton
+			// 
+			this->readShmButton->Location = System::Drawing::Point(165, 577);
+			this->readShmButton->Name = L"readShmButton";
+			this->readShmButton->Size = System::Drawing::Size(75, 23);
+			this->readShmButton->TabIndex = 23;
+			this->readShmButton->Text = L"Read ShM";
+			this->readShmButton->UseVisualStyleBackColor = true;
+			this->readShmButton->Click += gcnew System::EventHandler(this, &MainForm::readShmButton_Click);
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1208, 1041);
+			this->Controls->Add(this->readShmButton);
+			this->Controls->Add(this->intiShmButton);
 			this->Controls->Add(this->label3);
 			this->Controls->Add(this->label2);
 			this->Controls->Add(this->label1);
@@ -876,20 +922,20 @@ namespace MaelstromGUI {
 		}
 
 
-private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
-	//server_robot.connect("192.168.0.11", 10001);
+	private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
+		//server_robot.connect("192.168.0.11", 10001);
 
-	cout << "Sending" << endl;
-	char* test_mess = "test";
-	//server_robot.socket.sendTo(test_mess, 5, "192.168.0.10", 10000);
+		cout << "Sending" << endl;
+		char* test_mess = "test";
+		//server_robot.socket.sendTo(test_mess, 5, "192.168.0.10", 10000);
 
-	string ip_robot = "192.168.0.10";
-	unsigned short request_port = 10000;
-	//robot_socket.sendTo(test_mess, 5, ip_robot, request_port);
+		string ip_robot = "192.168.0.10";
+		unsigned short request_port = 10000;
+		//robot_socket.sendTo(test_mess, 5, ip_robot, request_port);
 
-	backgroundWorkerRobot->RunWorkerAsync(1);
+		backgroundWorkerRobot->RunWorkerAsync(1);
 	
-}
+	}
 
 	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
@@ -899,53 +945,156 @@ private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e
 		}
 	}
 
-char* addZeroChar(System::String^ Sstr) {
-	string str = ConvertString2Char(Sstr);
-	int size = 7;
-	char* new_char = new char[7];
-	if (str[0] == '-') {
-		new_char[0] = '-';
-		size = 6;
-	}
-	for (size_t i = 0; i < size; i++) {
-		if (i <= str.size())
-			if (str[str.size() - i] != '-')
-				new_char[6 - i] = str[str.size() - i];
+	char* addZeroChar(System::String^ Sstr) {
+		string str = ConvertString2Char(Sstr);
+		int size = 7;
+		char* new_char = new char[7];
+		if (str[0] == '-') {
+			new_char[0] = '-';
+			size = 6;
+		}
+		for (size_t i = 0; i < size; i++) {
+			if (i <= str.size())
+				if (str[str.size() - i] != '-')
+					new_char[6 - i] = str[str.size() - i];
+				else
+					new_char[6 - i] = '0';
 			else
 				new_char[6 - i] = '0';
-		else
-			new_char[6 - i] = '0';
+		}
+		return new_char;
 	}
-	return new_char;
-}
 
 // Send the robot to the coordinates
 // Request: "*id;xxxxxx;xxxxxx;xxxxxx#
 //            id;   x  ;  y   ;  z
-private: System::Void goToButton_Click(System::Object^ sender, System::EventArgs^ e) {
+	private: System::Void goToButton_Click(System::Object^ sender, System::EventArgs^ e) {
 
-	string x_str, y_str, z_str;
-	x_str = ConvertString2Char(xCooText->Text);
-	y_str = ConvertString2Char(yCooText->Text);
-	z_str = ConvertString2Char(zCooText->Text);
+		string x_str, y_str, z_str;
+		x_str = ConvertString2Char(xCooText->Text);
+		y_str = ConvertString2Char(yCooText->Text);
+		z_str = ConvertString2Char(zCooText->Text);
 
-	string str2send = "*" + x_str + ";" + y_str + ";" + z_str + "#";
+		string str2send = "*" + x_str + ";" + y_str + ";" + z_str + "#";
 
-	robot_request_socket.sendTo(str2send.c_str(), 100, ip_robot, request_port);
-	char answer[100];
-	robot_request_socket.recvFrom(answer, 100, ip_robot, request_port);
-	cout << answer << endl;
+		robot_request_socket.sendTo(str2send.c_str(), 100, ip_robot, request_port);
+		char answer[100];
+		robot_request_socket.recvFrom(answer, 100, ip_robot, request_port);
+		cout << answer << endl;
+	}
+
+	// Reinit text box on click
+	private: System::Void xCooText_Click(System::Object^ sender, System::EventArgs^ e) {
+		xCooText->Text = "";
+	}
+	private: System::Void yCooText_Click(System::Object^ sender, System::EventArgs^ e) {
+		yCooText->Text = "";
+	}
+	private: System::Void zCooText_Click(System::Object^ sender, System::EventArgs^ e) {
+		zCooText->Text = "";
+	}
+
+private: System::Void intiShmButton_Click(System::Object^ sender, System::EventArgs^ e) {
+	HANDLE hMapFile;
+	LPCTSTR pBuf;
+
+	hMapFile = CreateFileMapping(
+		INVALID_HANDLE_VALUE,    // use paging file
+		NULL,                    // default security
+		PAGE_READWRITE,          // read/write access
+		0,                       // maximum object size (high-order DWORD)
+		BUF_SIZE,                // maximum object size (low-order DWORD)
+		szName);                 // name of mapping object
+
+	if (hMapFile == NULL)
+	{
+		_tprintf(TEXT("Could not create file mapping object (%d).\n"),
+			GetLastError());
+		//return 1;
+	}
+	pBuf = (LPTSTR)MapViewOfFile(hMapFile,   // handle to map object
+		FILE_MAP_ALL_ACCESS, // read/write permission
+		0,
+		0,
+		BUF_SIZE);
+
+	if (pBuf == NULL)
+	{
+		_tprintf(TEXT("Could not map view of file (%d).\n"),
+			GetLastError());
+
+		CloseHandle(hMapFile);
+
+		//return 1;
+	}
+
+
+	//CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
+	//_getch();
+
+	//UnmapViewOfFile(pBuf);
+	//CloseHandle(hMapFile);
+
+
 }
+private: System::Void readShmButton_Click(System::Object^ sender, System::EventArgs^ e) {
 
-// Reinit text box on click
-private: System::Void xCooText_Click(System::Object^ sender, System::EventArgs^ e) {
-	xCooText->Text = "";
-}
-private: System::Void yCooText_Click(System::Object^ sender, System::EventArgs^ e) {
-	yCooText->Text = "";
-}
-private: System::Void zCooText_Click(System::Object^ sender, System::EventArgs^ e) {
-	zCooText->Text = "";
+	char rcv_buffer[100];
+	string ip_arduino = "192.168.1.254";
+	unsigned short arduino_port = 5817;
+	cout << "Receiving..." << endl;
+	arduino_info_socket.recvFrom(rcv_buffer, 100, ip_arduino, arduino_port);
+	cout << rcv_buffer << endl;
+
+	// Rouli(*10), tengage(*10), lacet(*10), profondeur(*100) 
+
+	//HANDLE hMapFile;
+	//LPCTSTR pBuf;
+
+	//hMapFile = OpenFileMapping(
+	//	FILE_MAP_ALL_ACCESS,   // read/write access
+	//	FALSE,                 // do not inherit the name
+	//	szName);               // name of mapping object
+
+	//if (hMapFile == NULL)
+	//{
+	//	_tprintf(TEXT("Could not open file mapping object (%d).\n"),
+	//		GetLastError());
+	//	//return 1;
+	//}
+
+	//pBuf = (LPTSTR)MapViewOfFile(hMapFile, // handle to map object
+	//	FILE_MAP_ALL_ACCESS,  // read/write permission
+	//	0,
+	//	0,
+	//	BUF_SIZE);
+
+	//if (pBuf == NULL)
+	//{
+	//	_tprintf(TEXT("Could not map view of file (%d).\n"),
+	//		GetLastError());
+
+	//	CloseHandle(hMapFile);
+
+	//	//return 1;
+	//}
+
+	////const wchar_t* p;
+	////p = pBuf;
+	/////*_bstr_t b(p);
+	////const char* c = b;
+	////printf("Output: %s\n", c);*/
+	////cout << (char*)p << endl;
+
+	////sprintf("recu=%s\n", pBuf);
+
+	////MessageBox(NULL, pBuf, TEXT("Process2"), MB_OK);
+
+	//UnmapViewOfFile(pBuf);
+
+	//CloseHandle(hMapFile);
+
+
 }
 };
 }
