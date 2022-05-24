@@ -1,8 +1,9 @@
 #pragma once
 
 
-// PC Rob: 192.168.1.10
-// PC GUI: 192.168.1.11 Port 10000 with request Port 10001 continuously
+// PC Rob: 192.168.0.10
+// PC GUI: 192.168.0.11 Port 10000 with request Port 10001 continuously
+// GUI with Vincent 192.168.1.10 TO CHANGE
 
 //#include "config.h"
 
@@ -102,11 +103,11 @@ namespace MaelstromGUI {
 	// Server Robot
 	//string ip_gui = "192.168.0.11";
 	//string ip_robot = "192.168.0.10";
-	string ip_gui = "192.168.1.10";
+	string ip_gui = "192.168.0.11";
 	string ip_robot = "192.168.0.10";
-	unsigned short request_port = 10000;
+	unsigned short request_port = 10000; // Port to send data like position
 	int request_id = 0;
-	unsigned short continuous_port = 10001;
+	unsigned short continuous_port = 10001; // Port to receive data like position
 	// To send request to the robot controler
 	UDPSocket robot_request_socket(ip_gui, request_port);
 	// To receive robot information continuously 
@@ -116,10 +117,9 @@ namespace MaelstromGUI {
 	// To receive arduino information continuously 
 	string ip_arduino = "192.168.0.4";
 	unsigned short arduino_port = 5817;
-	string ip_gui2 = "192.168.1.10";
+	string ip_gui2 = "192.168.0.11";
 	UDPSocket arduino_info_socket(ip_gui2, arduino_port); // Is it needed?
 
-	
 	
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
@@ -188,11 +188,7 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ label3;
 	private: System::Windows::Forms::Button^ intiShmButton;
 	private: System::Windows::Forms::Button^ readShmButton;
-
-
-
-
-
+	private: System::Windows::Forms::Button^ startComButton;
 
 	private: System::ComponentModel::IContainer^ components;
 
@@ -240,6 +236,7 @@ namespace MaelstromGUI {
 			this->label3 = (gcnew System::Windows::Forms::Label());
 			this->intiShmButton = (gcnew System::Windows::Forms::Button());
 			this->readShmButton = (gcnew System::Windows::Forms::Button());
+			this->startComButton = (gcnew System::Windows::Forms::Button());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
@@ -474,11 +471,22 @@ namespace MaelstromGUI {
 			this->readShmButton->UseVisualStyleBackColor = true;
 			this->readShmButton->Click += gcnew System::EventHandler(this, &MainForm::readShmButton_Click);
 			// 
+			// startComButton
+			// 
+			this->startComButton->Location = System::Drawing::Point(46, 201);
+			this->startComButton->Name = L"startComButton";
+			this->startComButton->Size = System::Drawing::Size(88, 35);
+			this->startComButton->TabIndex = 24;
+			this->startComButton->Text = L"Start communication";
+			this->startComButton->UseVisualStyleBackColor = true;
+			this->startComButton->Click += gcnew System::EventHandler(this, &MainForm::startComButton_Click);
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1208, 1041);
+			this->Controls->Add(this->startComButton);
 			this->Controls->Add(this->readShmButton);
 			this->Controls->Add(this->intiShmButton);
 			this->Controls->Add(this->label3);
@@ -782,13 +790,13 @@ namespace MaelstromGUI {
 		this->video_label->Text = name;
 	}
 
-		   /* --------------------------------------------------
-				SERVEUR
+	/* --------------------------------------------------
+		SERVEUR
 
-				Server button
-				Background worker
+		Server button
+		Background worker
 	
-		   ----------------------------------------------------- */
+	----------------------------------------------------- */
 	private: System::Void server_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		camera_show = !camera_show; // Default is false, fist click launch the server
 
@@ -888,8 +896,7 @@ namespace MaelstromGUI {
 					break;
 				}
 			}
-			
-				
+
 			//free(long_buffer);
 		}
 	}
@@ -917,26 +924,15 @@ namespace MaelstromGUI {
 			string extension_video(".mp4");
 			string new_path = path + extension_time + extension_video;
 			//new_path.erase(std::remove(new_path.begin(), new_path.end(), '\n', new_path.end()));
-
 			return new_path;
 		}
 
-
+	// Start receiving continuous data from robot
 	private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
-		//server_robot.connect("192.168.0.11", 10001);
-
-		cout << "Sending" << endl;
-		char* test_mess = "test";
-		//server_robot.socket.sendTo(test_mess, 5, "192.168.0.10", 10000);
-
-		string ip_robot = "192.168.0.10";
-		unsigned short request_port = 10000;
-		//robot_socket.sendTo(test_mess, 5, ip_robot, request_port);
-
 		backgroundWorkerRobot->RunWorkerAsync(1);
-	
 	}
 
+	// Receive data from robot continuously
 	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
 			char rcv_buffer[100];
@@ -944,7 +940,8 @@ namespace MaelstromGUI {
 			cout << rcv_buffer << endl;
 		}
 	}
-
+	
+	// Not needed
 	char* addZeroChar(System::String^ Sstr) {
 		string str = ConvertString2Char(Sstr);
 		int size = 7;
@@ -969,7 +966,6 @@ namespace MaelstromGUI {
 // Request: "*id;xxxxxx;xxxxxx;xxxxxx#
 //            id;   x  ;  y   ;  z
 	private: System::Void goToButton_Click(System::Object^ sender, System::EventArgs^ e) {
-
 		string x_str, y_str, z_str;
 		x_str = ConvertString2Char(xCooText->Text);
 		y_str = ConvertString2Char(yCooText->Text);
@@ -993,6 +989,10 @@ namespace MaelstromGUI {
 	private: System::Void zCooText_Click(System::Object^ sender, System::EventArgs^ e) {
 		zCooText->Text = "";
 	}
+
+
+
+
 
 private: System::Void intiShmButton_Click(System::Object^ sender, System::EventArgs^ e) {
 	HANDLE hMapFile;
@@ -1093,6 +1093,12 @@ private: System::Void readShmButton_Click(System::Object^ sender, System::EventA
 	//UnmapViewOfFile(pBuf);
 
 	//CloseHandle(hMapFile);
+
+
+}
+private: System::Void startComButton_Click(System::Object^ sender, System::EventArgs^ e) {
+
+
 
 
 }
