@@ -3,10 +3,10 @@
 
 // PC Rob: 192.168.0.10
 // PC GUI: 192.168.0.11 Port 10000 with request Port 10001 continuously
+// 
 // GUI with Vincent 192.168.1.10 TO CHANGE
 
 //#include "config.h"
-
 
 #include <time.h>
 
@@ -27,10 +27,50 @@
 #include <conio.h>
 #include <tchar.h>
 
+#include <cstdio>
+
+#include <chrono>
+#include <ctime>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+
+
+std::string time_in_HH_MM_SS_MMM() {
+	using namespace std::chrono;
+	// get current time
+	auto now = system_clock::now();
+	// get number of milliseconds for the current second
+	// (remainder after division into seconds)
+	auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+	// convert to std::time_t in order to convert to std::tm (broken time)
+	auto timer = system_clock::to_time_t(now);
+	// convert to broken time
+	std::tm bt = *std::localtime(&timer);
+	std::ostringstream oss;
+	oss << std::put_time(&bt, "%H:%M:%S"); // HH:MM:SS
+	oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+	return oss.str();
+}
+
+std::string getTimeStamp() {
+	using std::chrono::system_clock;
+	auto now = std::chrono::system_clock::now();
+	char buffer[80];
+	auto transformed = now.time_since_epoch().count() / 1000000;
+	auto millis = transformed % 1000;
+	std::time_t tt;
+	tt = system_clock::to_time_t(now);
+	auto timeinfo = localtime(&tt);
+	strftime(buffer, 80, "%F", timeinfo);
+	std::string timestamp = std::string(buffer) + '_' + time_in_HH_MM_SS_MMM();
+	return timestamp;
+}
+
+// Shared memory
 #define BUF_SIZE 256
 TCHAR szName[] = TEXT("Global\\MyFileMappingObject");
 TCHAR szMsg[] = TEXT("Message from first process.");
-
 #pragma comment(lib, "user32.lib")
 
 // Opencv global
@@ -73,6 +113,10 @@ namespace MaelstromGUI {
 	using namespace std;
 	using namespace cv;
 
+	// Logs path
+	string log_dir_path("D:/projects/cyril/logs/");
+	string videos_dir_path("D:/projects/cyril/videos/");
+
 	// Date and time
 	struct tm newtime;
 	__time32_t aclock;
@@ -93,21 +137,33 @@ namespace MaelstromGUI {
 	std::string video_name;
 	int video_count = 0;
 
+	// GUI info
+	string ip_gui = "192.168.0.11";
+
+	// Jetson info
+	string ip_jetson = "192.168.0.20";
+	unsigned short jetson_port = 8000;
+
+	// Robot info
+	string ip_robot = "192.168.0.10";
+	unsigned short request_port = 10000; // Port to send data like position
+	int request_id = 1;
+	unsigned short continuous_port = 10001; // Port to receive data like position
+	
+	// Arduino info
+	string ip_arduino = "192.168.0.254";
+	unsigned short arduino_port = 5817;
 
 	// Server Jetson
 	Server server_jetson;
 	bool server_jetson_initialized = false;
 	bool server_jetson_is_running = false; // Set to true if running, false if error or shuted down
 	bool camera_show = false; // To start or shutdown with the same button
+
+	//Test server Jetson
+	//UDPSocket jetson_socket(ip_gui, jetson_port);
 	
 	// Server Robot
-	//string ip_gui = "192.168.0.11";
-	//string ip_robot = "192.168.0.10";
-	string ip_gui = "192.168.0.11";
-	string ip_robot = "192.168.0.10";
-	unsigned short request_port = 10000; // Port to send data like position
-	int request_id = 0;
-	unsigned short continuous_port = 10001; // Port to receive data like position
 	// To send request to the robot controler
 	UDPSocket robot_request_socket(ip_gui, request_port);
 	// To receive robot information continuously 
@@ -115,12 +171,10 @@ namespace MaelstromGUI {
 
 	// Server Arduino
 	// To receive arduino information continuously 
-	string ip_arduino = "192.168.0.4";
-	unsigned short arduino_port = 5817;
-	string ip_gui2 = "192.168.0.11";
-	UDPSocket arduino_info_socket(ip_gui2, arduino_port); // Is it needed?
+	UDPSocket arduino_info_socket(ip_gui, arduino_port); // Is it needed?
 
-	
+
+
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
 	vector<Bbx> null_bbx_vector;
@@ -145,6 +199,28 @@ namespace MaelstromGUI {
 			//
 			//TODO: Add the constructor code here
 			//
+
+			cout << time_in_HH_MM_SS_MMM() << endl;
+
+			cout << getTimeStamp() << endl;
+
+			// Keep track of logs
+			if (false) {
+				string log_path = log_dir_path + getTime() + ".txt";
+				freopen(log_path.c_str(), "w", stdout);
+			}
+			log("Start");
+
+			// Init robot/arduino/jetson sockets
+
+			// To receive continuous data from the robot
+			backgroundWorkerRobot->RunWorkerAsync(1);
+			// To receive continuous data from the arduino
+			backgroundWorkerArduino->RunWorkerAsync(1);
+			// To receive continuous data from the jetson
+			//backgroundWorkerJetson->RunWorkerAsync(1);
+
+
 		}
 
 	protected:
@@ -160,8 +236,6 @@ namespace MaelstromGUI {
 		}
 	private: System::Windows::Forms::Button^ button_Edition;
 	private: System::Windows::Forms::PictureBox^ ptbSource;
-
-
 	private: System::Windows::Forms::Button^ button_Browse;
 	private: System::Windows::Forms::ListView^ listView1;
 	private: System::Windows::Forms::Button^ view_button;
@@ -174,11 +248,8 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::TrackBar^ video_trackBar;
 	private: System::Windows::Forms::Label^ video_label;
 	private: System::Windows::Forms::Button^ server_button;
-	private: System::ComponentModel::BackgroundWorker^ backgroundWorker1;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerJetson;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobot;
-
-
-	private: System::Windows::Forms::Button^ button1;
 	private: System::Windows::Forms::Button^ goToButton;
 	private: System::Windows::Forms::TextBox^ xCooText;
 	private: System::Windows::Forms::TextBox^ yCooText;
@@ -188,13 +259,8 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ label3;
 	private: System::Windows::Forms::Button^ intiShmButton;
 	private: System::Windows::Forms::Button^ readShmButton;
-	private: System::Windows::Forms::Button^ startComButton;
-
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerArduino;
 	private: System::ComponentModel::IContainer^ components;
-
-	protected:
-
-	protected:
 
 	private:
 		/// <summary>
@@ -224,9 +290,8 @@ namespace MaelstromGUI {
 			this->video_trackBar = (gcnew System::Windows::Forms::TrackBar());
 			this->video_label = (gcnew System::Windows::Forms::Label());
 			this->server_button = (gcnew System::Windows::Forms::Button());
-			this->backgroundWorker1 = (gcnew System::ComponentModel::BackgroundWorker());
+			this->backgroundWorkerJetson = (gcnew System::ComponentModel::BackgroundWorker());
 			this->backgroundWorkerRobot = (gcnew System::ComponentModel::BackgroundWorker());
-			this->button1 = (gcnew System::Windows::Forms::Button());
 			this->goToButton = (gcnew System::Windows::Forms::Button());
 			this->xCooText = (gcnew System::Windows::Forms::TextBox());
 			this->yCooText = (gcnew System::Windows::Forms::TextBox());
@@ -236,7 +301,7 @@ namespace MaelstromGUI {
 			this->label3 = (gcnew System::Windows::Forms::Label());
 			this->intiShmButton = (gcnew System::Windows::Forms::Button());
 			this->readShmButton = (gcnew System::Windows::Forms::Button());
-			this->startComButton = (gcnew System::Windows::Forms::Button());
+			this->backgroundWorkerArduino = (gcnew System::ComponentModel::BackgroundWorker());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
@@ -364,25 +429,15 @@ namespace MaelstromGUI {
 			this->server_button->UseVisualStyleBackColor = false;
 			this->server_button->Click += gcnew System::EventHandler(this, &MainForm::server_button_Click);
 			// 
-			// backgroundWorker1
+			// backgroundWorkerJetson
 			// 
-			this->backgroundWorker1->WorkerSupportsCancellation = true;
-			this->backgroundWorker1->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorker1_DoWork);
+			this->backgroundWorkerJetson->WorkerSupportsCancellation = true;
+			this->backgroundWorkerJetson->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerJetson_DoWork);
 			// 
 			// backgroundWorkerRobot
 			// 
 			this->backgroundWorkerRobot->WorkerSupportsCancellation = true;
 			this->backgroundWorkerRobot->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerRobot_DoWork);
-			// 
-			// button1
-			// 
-			this->button1->Location = System::Drawing::Point(144, 696);
-			this->button1->Name = L"button1";
-			this->button1->Size = System::Drawing::Size(75, 45);
-			this->button1->TabIndex = 13;
-			this->button1->Text = L"Robot server";
-			this->button1->UseVisualStyleBackColor = true;
-			this->button1->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
 			// 
 			// goToButton
 			// 
@@ -471,22 +526,15 @@ namespace MaelstromGUI {
 			this->readShmButton->UseVisualStyleBackColor = true;
 			this->readShmButton->Click += gcnew System::EventHandler(this, &MainForm::readShmButton_Click);
 			// 
-			// startComButton
+			// backgroundWorkerArduino
 			// 
-			this->startComButton->Location = System::Drawing::Point(46, 201);
-			this->startComButton->Name = L"startComButton";
-			this->startComButton->Size = System::Drawing::Size(88, 35);
-			this->startComButton->TabIndex = 24;
-			this->startComButton->Text = L"Start communication";
-			this->startComButton->UseVisualStyleBackColor = true;
-			this->startComButton->Click += gcnew System::EventHandler(this, &MainForm::startComButton_Click);
+			this->backgroundWorkerArduino->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerArduino_DoWork);
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1208, 1041);
-			this->Controls->Add(this->startComButton);
 			this->Controls->Add(this->readShmButton);
 			this->Controls->Add(this->intiShmButton);
 			this->Controls->Add(this->label3);
@@ -496,7 +544,6 @@ namespace MaelstromGUI {
 			this->Controls->Add(this->yCooText);
 			this->Controls->Add(this->xCooText);
 			this->Controls->Add(this->goToButton);
-			this->Controls->Add(this->button1);
 			this->Controls->Add(this->server_button);
 			this->Controls->Add(this->video_label);
 			this->Controls->Add(this->video_trackBar);
@@ -800,17 +847,14 @@ namespace MaelstromGUI {
 	private: System::Void server_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		camera_show = !camera_show; // Default is false, fist click launch the server
 
-		//cout << CV_VERSION << endl;
-
 		if(!server_jetson_initialized) {
-			server_jetson.connect("192.168.0.20", 8000);
+			server_jetson.connect("192.168.0.11", 8000);
 			server_jetson_initialized = true;
-			std::cout << "Server started" << std::endl;	
 		}
 		
 		if (camera_show) {
 
-			backgroundWorker1->RunWorkerAsync(1);
+			backgroundWorkerJetson->RunWorkerAsync(1);
 			camera_show = true;
 
 			this->server_button->Text = L"Recording";
@@ -819,90 +863,30 @@ namespace MaelstromGUI {
 				static_cast<System::Byte>(0)));
 
 			// Start video writer
-			//std::string openh = "H264";
-			//int codec = VideoWriter::fourcc(openh);
-			std::string vid_path = getNewPath();
-			cout << vid_path << endl;
-			output_video.open(vid_path, -1, 30, cv::Size(640, 640), true);	
-			
+			std::string vid_path = getNewVideoPath();
+			output_video.open(vid_path, VideoWriter::fourcc('a', 'v', 'c', '1'), 10, cv::Size(640, 640), true);
+			log("From video recording: " + vid_path + " created");
 		}
 		else {
 			camera_show = false;
-			std::cout << "Server shutdown" << std::endl;
 			this->server_button->Text = L"Start recording";
 			this->server_button->BackColor = System::Drawing::SystemColors::Control;
 			this->server_button->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-
-			
 		}	
 		
 	}
 
-	// Server Jetson
-	private: System::Void backgroundWorker1_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
-		int recvMsgSize;
-		int frame_id = 0;
-
-
-		while (true) {
-			
-			do {
-				recvMsgSize = server_jetson.recv();
-			} while (recvMsgSize > sizeof(int));
-
-			int total_pack = ((int*)server_jetson.getBuffer())[0];
-
-			int pack_count = 0;
-
-			char* long_buffer = new char[PACK_SIZE * total_pack];
-			for (int i = 0; i < total_pack; i++) {	
-				recvMsgSize = server_jetson.recv();
-
-				if (recvMsgSize != PACK_SIZE) {
-					std::cerr << "Received unexpected size pack:" << recvMsgSize << std::endl;
-					cout << server_jetson.getBuffer() << endl;
-					continue;
-				}
-				else {
-					pack_count++;
-					memcpy(&long_buffer[i * PACK_SIZE], server_jetson.getBuffer(), PACK_SIZE);
-				}	
-			}
-
-			if (pack_count == total_pack) {
-				stream_frame = server_jetson.getFrame(long_buffer, total_pack);
-				if (stream_frame.size().width == 0) {
-					cerr << "decode failure!" << endl;
-					continue;
-				}
-
-				if (camera_show) {
-
-					if (!(stream_frame.size().width == 0)) {
-						display(stream_frame);
-						output_video.write(stream_frame);
-
-						//cv::imwrite(vid_path, stream_frame);
-					}
-				}
-				else {
-					output_video.release();
-					cv::waitKey(1);
-					cv:destroyAllWindows();
-					backgroundWorker1->CancelAsync();
-					e->Cancel = true;
-					free(long_buffer);
-					break;
-				}
-			}
-
-			//free(long_buffer);
-		}
-	}
+	
 
 	public:
-		char* getTime() {
+
+		void log(string log_str) {
+			log_str.erase(std::remove(log_str.begin(), log_str.end(), '\n'), log_str.end());
+			cout << "[" <<  getTimeStamp() << "]: " << log_str << endl;
+		}
+
+		string getTime() {
 			char time[32];
 			errno_t errNum;
 			_time32(&aclock);
@@ -912,71 +896,41 @@ namespace MaelstromGUI {
 			std::replace(std::begin(time), std::end(time), ':', '-');
 			char* new_time = new char[32];
 			std::strcpy(new_time, time);
-			return new_time;
+			string str_time(new_time);
+			str_time.erase(str_time.length() - 1);
+			return str_time;
 		}
 
-		string getNewPath() {
-			char* time = getTime();
-			string path("D:/projects/cyril/videos/video_");
-			string extension_time(time);
-			free(time);
-			extension_time.erase(extension_time.length() - 1);
-			string extension_video(".mp4");
-			string new_path = path + extension_time + extension_video;
-			//new_path.erase(std::remove(new_path.begin(), new_path.end(), '\n', new_path.end()));
+		string getNewVideoPath() {
+			
+			//string new_path = videos_dir_path + "video_" + getTime() + ".mp4";
+			string new_path = videos_dir_path + "video.mp4";
+			//string path("D:\\projects\\cyril\\videos/video_");
+			//string new_path = path + getTime() + ".mp4";
+
 			return new_path;
 		}
 
-	// Start receiving continuous data from robot
-	private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
-		backgroundWorkerRobot->RunWorkerAsync(1);
-	}
+	/*----------------------------------------------------------------------------------------------------
 
-	// Receive data from robot continuously
-	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
-		while (true) {
-			char rcv_buffer[100];
-			robot_info_socket.recvFrom(rcv_buffer, 100, ip_robot, continuous_port);
-			cout << rcv_buffer << endl;
-		}
-	}
-	
-	// Not needed
-	char* addZeroChar(System::String^ Sstr) {
-		string str = ConvertString2Char(Sstr);
-		int size = 7;
-		char* new_char = new char[7];
-		if (str[0] == '-') {
-			new_char[0] = '-';
-			size = 6;
-		}
-		for (size_t i = 0; i < size; i++) {
-			if (i <= str.size())
-				if (str[str.size() - i] != '-')
-					new_char[6 - i] = str[str.size() - i];
-				else
-					new_char[6 - i] = '0';
-			else
-				new_char[6 - i] = '0';
-		}
-		return new_char;
-	}
+			Send command to robot:
+				Request: "*xxxxxx;xxxxxx;xxxxxx;xxxxxx#
+							 id  ;   x  ;   y  ;   z
 
-// Send the robot to the coordinates
-// Request: "*id;xxxxxx;xxxxxx;xxxxxx#
-//            id;   x  ;  y   ;  z
+	------------------------------------------------------------------------------------------------------*/
 	private: System::Void goToButton_Click(System::Object^ sender, System::EventArgs^ e) {
+		char answer[100]; // Robot answer (should repeat the received position
 		string x_str, y_str, z_str;
 		x_str = ConvertString2Char(xCooText->Text);
 		y_str = ConvertString2Char(yCooText->Text);
 		z_str = ConvertString2Char(zCooText->Text);
-
-		string str2send = "*" + x_str + ";" + y_str + ";" + z_str + "#";
-
+		string str2send = "*" + to_string(request_id) + ";" + x_str + ";" + y_str + ";" + z_str + "#";
+		request_id++;
+		
+		log("Request from GUI: " + str2send);
 		robot_request_socket.sendTo(str2send.c_str(), 100, ip_robot, request_port);
-		char answer[100];
 		robot_request_socket.recvFrom(answer, 100, ip_robot, request_port);
-		cout << answer << endl;
+		log("Answer from robot: " + str2send);
 	}
 
 	// Reinit text box on click
@@ -991,61 +945,155 @@ namespace MaelstromGUI {
 	}
 
 
+	/*----------------------------------------------------------------------------------------------------
+	
+			Background workers:
+				- Arduino
+				- Robot
+				- Jetson
+
+	------------------------------------------------------------------------------------------------------*/
+
+
+	// Receive data from robot continuously
+	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while (true) {
+			char rcv_buffer[100];
+			robot_info_socket.recvFrom(rcv_buffer, 100, ip_robot, continuous_port);
+			log("From robot: " + (string)rcv_buffer);
+		}
+	}
+	
+	// Receive data from Arduino continuously
+	private: System::Void backgroundWorkerArduino_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while (true) {
+			char rcv_buffer[100];
+			arduino_info_socket.recvFrom(rcv_buffer, 100, ip_arduino, arduino_port);
+			log("From arduino: " + (string)rcv_buffer);
+		}
+	}
+
+
+	//Server Jetson
+	private: System::Void backgroundWorkerJetson_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		int recvMsgSize;
+		int frame_id = 0;
+
+		//int codec = VideoWriter::fourcc('a', 'v', 'c', '1');
+		//cv::VideoWriter output_video(getNewVideoPath(), codec, 30, cv::Size(640, 640), true);
+
+		while (true) {
+
+			do {
+				recvMsgSize = server_jetson.recv();
+			} while (recvMsgSize > sizeof(int));
+
+			int total_pack = ((int*)server_jetson.getBuffer())[0];
+
+			int pack_count = 0;
+
+			char* long_buffer = new char[PACK_SIZE * total_pack];
+			for (int i = 0; i < total_pack; i++) {
+				recvMsgSize = server_jetson.recv();
+
+				if (recvMsgSize != PACK_SIZE) {
+					std::cerr << "Received unexpected size pack:" << recvMsgSize << std::endl;
+					log("From video recording: received unexpected size pack:" + std::to_string(recvMsgSize));
+					continue;
+				}
+				else {
+					pack_count++;
+					memcpy(&long_buffer[i * PACK_SIZE], server_jetson.getBuffer(), PACK_SIZE);
+				}
+			}
+
+			if (pack_count == total_pack) {
+				stream_frame = server_jetson.getFrame(long_buffer, total_pack);
+				if (stream_frame.size().width == 0) {
+					cerr << "decode failure!" << endl;
+					log("From video recording: decode failure");
+					continue;
+				}
+
+				if (camera_show) {
+
+					if (!(stream_frame.size().width == 0)) {
+						display(stream_frame);
+						output_video.write(stream_frame);
+					}
+				}
+				else {
+					//cv::imwrite(getNewVideoPath(), stream_frame);
+					output_video.release();
+					stream_frame.release();
+					cv::waitKey(1);
+					cv:destroyAllWindows();
+					backgroundWorkerJetson->CancelAsync();
+					e->Cancel = true;
+					free(long_buffer);
+					break;
+				}
+			}
+			free(long_buffer);
+		}
+	}
+
+	//private: System::Void backgroundWorkerJetson_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+	//	char rcv_buffer[65540];
+	//	while (true) {
+	//		cout << "YES?" << endl;
+	//		jetson_socket.recvFrom(rcv_buffer, 65540, ip_jetson, jetson_port);
+	//		//log("From arduino: " + (string)rcv_buffer);
+	//		cout << "YES" << endl;
+	//	}
+	//}
+
+
+
+
+
+
+
 
 
 
 private: System::Void intiShmButton_Click(System::Object^ sender, System::EventArgs^ e) {
-	HANDLE hMapFile;
-	LPCTSTR pBuf;
+	//HANDLE hMapFile;
+	//LPCTSTR pBuf;
 
-	hMapFile = CreateFileMapping(
-		INVALID_HANDLE_VALUE,    // use paging file
-		NULL,                    // default security
-		PAGE_READWRITE,          // read/write access
-		0,                       // maximum object size (high-order DWORD)
-		BUF_SIZE,                // maximum object size (low-order DWORD)
-		szName);                 // name of mapping object
+	//hMapFile = CreateFileMapping(
+	//	INVALID_HANDLE_VALUE,    // use paging file
+	//	NULL,                    // default security
+	//	PAGE_READWRITE,          // read/write access
+	//	0,                       // maximum object size (high-order DWORD)
+	//	BUF_SIZE,                // maximum object size (low-order DWORD)
+	//	szName);                 // name of mapping object
 
-	if (hMapFile == NULL)
-	{
-		_tprintf(TEXT("Could not create file mapping object (%d).\n"),
-			GetLastError());
-		//return 1;
-	}
-	pBuf = (LPTSTR)MapViewOfFile(hMapFile,   // handle to map object
-		FILE_MAP_ALL_ACCESS, // read/write permission
-		0,
-		0,
-		BUF_SIZE);
+	//if (hMapFile == NULL)
+	//{
+	//	_tprintf(TEXT("Could not create file mapping object (%d).\n"),
+	//		GetLastError());
+	//	//return 1;
+	//}
+	//pBuf = (LPTSTR)MapViewOfFile(hMapFile,   // handle to map object
+	//	FILE_MAP_ALL_ACCESS, // read/write permission
+	//	0,
+	//	0,
+	//	BUF_SIZE);
 
-	if (pBuf == NULL)
-	{
-		_tprintf(TEXT("Could not map view of file (%d).\n"),
-			GetLastError());
-
-		CloseHandle(hMapFile);
-
-		//return 1;
-	}
-
-
-	//CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
-	//_getch();
-
-	//UnmapViewOfFile(pBuf);
-	//CloseHandle(hMapFile);
-
-
+	//if (pBuf == NULL)
+	//{
+	//	_tprintf(TEXT("Could not map view of file (%d).\n"),
+	//		GetLastError());
+	//	CloseHandle(hMapFile);
+	//	//return 1;
+	//}
+	////CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
+	////_getch();
+	////UnmapViewOfFile(pBuf);
+	////CloseHandle(hMapFile);
 }
 private: System::Void readShmButton_Click(System::Object^ sender, System::EventArgs^ e) {
-
-	char rcv_buffer[100];
-	string ip_arduino = "192.168.1.254";
-	unsigned short arduino_port = 5817;
-	cout << "Receiving..." << endl;
-	arduino_info_socket.recvFrom(rcv_buffer, 100, ip_arduino, arduino_port);
-	cout << rcv_buffer << endl;
-
 	// Rouli(*10), tengage(*10), lacet(*10), profondeur(*100) 
 
 	//HANDLE hMapFile;
@@ -1096,11 +1144,10 @@ private: System::Void readShmButton_Click(System::Object^ sender, System::EventA
 
 
 }
-private: System::Void startComButton_Click(System::Object^ sender, System::EventArgs^ e) {
 
 
 
 
-}
+
 };
 }

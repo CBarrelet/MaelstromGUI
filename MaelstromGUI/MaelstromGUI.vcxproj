@@ -79,9 +79,9 @@
     <LibraryPath>C:\Users\admin\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ExecutablePath>C:\Users\Utilisateur\Documents\libraries\opencv\build\include;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>C:\Users\Utilisateur\Documents\libraries\opencv\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Utilisateur\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>C:\Users\admin\Documents\libraries\opencv\build\include;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>C:\Users\admin\Documents\libraries\opencv\build\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\admin\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -119,7 +119,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>opencv_world455.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <SubSystem>NotSet</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
@@ -135,6 +135,7 @@
     <ClCompile Include="Bbx.cpp" />
     <ClCompile Include="MainForm.cpp" />
     <ClCompile Include="PracticalSocket.cpp" />
+    <ClCompile Include="Robot.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Video.cpp" />
   </ItemGroup>
@@ -147,6 +148,7 @@
     </ClInclude>
     <ClInclude Include="new_button.h" />
     <ClInclude Include="PracticalSocket.h" />
+    <ClInclude Include="Robot.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="Video.h" />
   </ItemGroup>
