@@ -1,13 +1,5 @@
 #pragma once
 
-
-// PC Rob: 192.168.0.10
-// PC GUI: 192.168.0.11 Port 10000 with request Port 10001 continuously
-// 
-// GUI with Vincent 192.168.1.10 TO CHANGE
-
-//#include "config.h"
-
 #include <time.h>
 
 #include <opencv2/core/core.hpp>
@@ -19,21 +11,13 @@
 #include "Bboxes.h"
 #include "Video.h"
 #include "Server.h"
+#include "Arduino.h"
+#include "DVL.h"
+#include "Robot.h"
+
+#include "config.h"
 
 #include "PracticalSocket.h"
-
-#include <windows.h>
-#include <stdio.h>
-#include <conio.h>
-#include <tchar.h>
-
-#include <cstdio>
-
-#include <chrono>
-#include <ctime>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
 
 
 std::string time_in_HH_MM_SS_MMM() {
@@ -52,7 +36,6 @@ std::string time_in_HH_MM_SS_MMM() {
 	oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
 	return oss.str();
 }
-
 std::string getTimeStamp() {
 	using std::chrono::system_clock;
 	auto now = std::chrono::system_clock::now();
@@ -66,12 +49,10 @@ std::string getTimeStamp() {
 	std::string timestamp = std::string(buffer) + '_' + time_in_HH_MM_SS_MMM();
 	return timestamp;
 }
-
-// Shared memory
-#define BUF_SIZE 256
-TCHAR szName[] = TEXT("Global\\MyFileMappingObject");
-TCHAR szMsg[] = TEXT("Message from first process.");
-#pragma comment(lib, "user32.lib")
+void log(std::string log_str) {
+	log_str.erase(std::remove(log_str.begin(), log_str.end(), '\n'), log_str.end());
+	std::cout << "[" << getTimeStamp() << "]: " << log_str << std::endl;
+}
 
 // Opencv global
 int x_mouse = 0, y_mouse = 0; // Mouse coordinates
@@ -165,15 +146,19 @@ namespace MaelstromGUI {
 	
 	// Server Robot
 	// To send request to the robot controler
-	UDPSocket robot_request_socket(ip_gui, request_port);
+	//UDPSocket robot_request_socket(ip_gui, request_port);
 	// To receive robot information continuously 
-	UDPSocket robot_info_socket(ip_gui, continuous_port);
+	//UDPSocket robot_info_socket(ip_gui, continuous_port);
 
 	// Server Arduino
 	// To receive arduino information continuously 
-	UDPSocket arduino_info_socket(ip_gui, arduino_port); // Is it needed?
+	//UDPSocket arduino_info_socket(ip_gui, arduino_port); // Is it needed?
 
+	Arduino arduino;
 
+	DVL dvl;
+
+	Robot robot;
 
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
@@ -201,7 +186,6 @@ namespace MaelstromGUI {
 			//
 
 			cout << time_in_HH_MM_SS_MMM() << endl;
-
 			cout << getTimeStamp() << endl;
 
 			// Keep track of logs
@@ -211,7 +195,7 @@ namespace MaelstromGUI {
 			}
 			log("Start");
 
-			// Init robot/arduino/jetson sockets
+			// Init robot/arduino/jetson communication
 
 			// To receive continuous data from the robot
 			backgroundWorkerRobot->RunWorkerAsync(1);
@@ -219,6 +203,8 @@ namespace MaelstromGUI {
 			backgroundWorkerArduino->RunWorkerAsync(1);
 			// To receive continuous data from the jetson
 			//backgroundWorkerJetson->RunWorkerAsync(1);
+			// To receive continuous data from the dvl
+			backgroundWorkerDVL->RunWorkerAsync(1);
 
 
 		}
@@ -257,9 +243,13 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ label1;
 	private: System::Windows::Forms::Label^ label2;
 	private: System::Windows::Forms::Label^ label3;
-	private: System::Windows::Forms::Button^ intiShmButton;
-	private: System::Windows::Forms::Button^ readShmButton;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerArduino;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL;
+	private: System::Windows::Forms::Button^ buttonDVLon;
+	private: System::Windows::Forms::Button^ buttonDVLyes;
+	private: System::Windows::Forms::Button^ buttonDVLno;
+	private: System::Windows::Forms::Label^ labelDVLon;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobotCommand;
 	private: System::ComponentModel::IContainer^ components;
 
 	private:
@@ -299,9 +289,13 @@ namespace MaelstromGUI {
 			this->label1 = (gcnew System::Windows::Forms::Label());
 			this->label2 = (gcnew System::Windows::Forms::Label());
 			this->label3 = (gcnew System::Windows::Forms::Label());
-			this->intiShmButton = (gcnew System::Windows::Forms::Button());
-			this->readShmButton = (gcnew System::Windows::Forms::Button());
 			this->backgroundWorkerArduino = (gcnew System::ComponentModel::BackgroundWorker());
+			this->backgroundWorkerDVL = (gcnew System::ComponentModel::BackgroundWorker());
+			this->buttonDVLon = (gcnew System::Windows::Forms::Button());
+			this->buttonDVLyes = (gcnew System::Windows::Forms::Button());
+			this->buttonDVLno = (gcnew System::Windows::Forms::Button());
+			this->labelDVLon = (gcnew System::Windows::Forms::Label());
+			this->backgroundWorkerRobotCommand = (gcnew System::ComponentModel::BackgroundWorker());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			this->SuspendLayout();
@@ -341,9 +335,9 @@ namespace MaelstromGUI {
 			// 
 			this->listView1->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(1) { this->columnHeader1 });
 			this->listView1->HideSelection = false;
-			this->listView1->Location = System::Drawing::Point(253, 55);
+			this->listView1->Location = System::Drawing::Point(302, 55);
 			this->listView1->Name = L"listView1";
-			this->listView1->Size = System::Drawing::Size(250, 400);
+			this->listView1->Size = System::Drawing::Size(201, 370);
 			this->listView1->TabIndex = 3;
 			this->listView1->UseCompatibleStateImageBehavior = false;
 			this->listView1->MouseClick += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::listView1_MouseClick);
@@ -441,7 +435,7 @@ namespace MaelstromGUI {
 			// 
 			// goToButton
 			// 
-			this->goToButton->Location = System::Drawing::Point(144, 824);
+			this->goToButton->Location = System::Drawing::Point(54, 701);
 			this->goToButton->Name = L"goToButton";
 			this->goToButton->Size = System::Drawing::Size(75, 23);
 			this->goToButton->TabIndex = 15;
@@ -451,7 +445,7 @@ namespace MaelstromGUI {
 			// 
 			// xCooText
 			// 
-			this->xCooText->Location = System::Drawing::Point(235, 827);
+			this->xCooText->Location = System::Drawing::Point(145, 704);
 			this->xCooText->Name = L"xCooText";
 			this->xCooText->Size = System::Drawing::Size(68, 20);
 			this->xCooText->TabIndex = 16;
@@ -461,7 +455,7 @@ namespace MaelstromGUI {
 			// 
 			// yCooText
 			// 
-			this->yCooText->Location = System::Drawing::Point(309, 827);
+			this->yCooText->Location = System::Drawing::Point(219, 704);
 			this->yCooText->Name = L"yCooText";
 			this->yCooText->Size = System::Drawing::Size(68, 20);
 			this->yCooText->TabIndex = 17;
@@ -471,7 +465,7 @@ namespace MaelstromGUI {
 			// 
 			// zCooText
 			// 
-			this->zCooText->Location = System::Drawing::Point(383, 827);
+			this->zCooText->Location = System::Drawing::Point(293, 704);
 			this->zCooText->Name = L"zCooText";
 			this->zCooText->Size = System::Drawing::Size(68, 20);
 			this->zCooText->TabIndex = 18;
@@ -482,7 +476,7 @@ namespace MaelstromGUI {
 			// label1
 			// 
 			this->label1->AutoSize = true;
-			this->label1->Location = System::Drawing::Point(266, 850);
+			this->label1->Location = System::Drawing::Point(176, 727);
 			this->label1->Name = L"label1";
 			this->label1->Size = System::Drawing::Size(37, 13);
 			this->label1->TabIndex = 19;
@@ -491,7 +485,7 @@ namespace MaelstromGUI {
 			// label2
 			// 
 			this->label2->AutoSize = true;
-			this->label2->Location = System::Drawing::Point(340, 850);
+			this->label2->Location = System::Drawing::Point(250, 727);
 			this->label2->Name = L"label2";
 			this->label2->Size = System::Drawing::Size(37, 13);
 			this->label2->TabIndex = 20;
@@ -500,43 +494,79 @@ namespace MaelstromGUI {
 			// label3
 			// 
 			this->label3->AutoSize = true;
-			this->label3->Location = System::Drawing::Point(414, 850);
+			this->label3->Location = System::Drawing::Point(324, 727);
 			this->label3->Name = L"label3";
 			this->label3->Size = System::Drawing::Size(37, 13);
 			this->label3->TabIndex = 21;
 			this->label3->Text = L"z (mm)";
 			// 
-			// intiShmButton
-			// 
-			this->intiShmButton->Location = System::Drawing::Point(84, 577);
-			this->intiShmButton->Name = L"intiShmButton";
-			this->intiShmButton->Size = System::Drawing::Size(75, 23);
-			this->intiShmButton->TabIndex = 22;
-			this->intiShmButton->Text = L"Init ShM";
-			this->intiShmButton->UseVisualStyleBackColor = true;
-			this->intiShmButton->Click += gcnew System::EventHandler(this, &MainForm::intiShmButton_Click);
-			// 
-			// readShmButton
-			// 
-			this->readShmButton->Location = System::Drawing::Point(165, 577);
-			this->readShmButton->Name = L"readShmButton";
-			this->readShmButton->Size = System::Drawing::Size(75, 23);
-			this->readShmButton->TabIndex = 23;
-			this->readShmButton->Text = L"Read ShM";
-			this->readShmButton->UseVisualStyleBackColor = true;
-			this->readShmButton->Click += gcnew System::EventHandler(this, &MainForm::readShmButton_Click);
-			// 
 			// backgroundWorkerArduino
 			// 
 			this->backgroundWorkerArduino->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerArduino_DoWork);
+			// 
+			// backgroundWorkerDVL
+			// 
+			this->backgroundWorkerDVL->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerDVL_DoWork);
+			// 
+			// buttonDVLon
+			// 
+			this->buttonDVLon->Location = System::Drawing::Point(41, 236);
+			this->buttonDVLon->Name = L"buttonDVLon";
+			this->buttonDVLon->Size = System::Drawing::Size(80, 34);
+			this->buttonDVLon->TabIndex = 24;
+			this->buttonDVLon->Text = L"DVL on";
+			this->buttonDVLon->UseVisualStyleBackColor = true;
+			this->buttonDVLon->Click += gcnew System::EventHandler(this, &MainForm::buttonDVLon_Click);
+			// 
+			// buttonDVLyes
+			// 
+			this->buttonDVLyes->Location = System::Drawing::Point(144, 249);
+			this->buttonDVLyes->Name = L"buttonDVLyes";
+			this->buttonDVLyes->Size = System::Drawing::Size(41, 21);
+			this->buttonDVLyes->TabIndex = 25;
+			this->buttonDVLyes->Text = L"Yes";
+			this->buttonDVLyes->UseVisualStyleBackColor = true;
+			this->buttonDVLyes->Visible = false;
+			this->buttonDVLyes->Click += gcnew System::EventHandler(this, &MainForm::buttonDVLyes_Click);
+			// 
+			// buttonDVLno
+			// 
+			this->buttonDVLno->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->buttonDVLno->Location = System::Drawing::Point(210, 249);
+			this->buttonDVLno->Name = L"buttonDVLno";
+			this->buttonDVLno->Size = System::Drawing::Size(41, 21);
+			this->buttonDVLno->TabIndex = 26;
+			this->buttonDVLno->Text = L"No";
+			this->buttonDVLno->UseVisualStyleBackColor = true;
+			this->buttonDVLno->Visible = false;
+			this->buttonDVLno->Click += gcnew System::EventHandler(this, &MainForm::buttonDVLno_Click);
+			// 
+			// labelDVLon
+			// 
+			this->labelDVLon->AutoSize = true;
+			this->labelDVLon->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->labelDVLon->Location = System::Drawing::Point(127, 233);
+			this->labelDVLon->Name = L"labelDVLon";
+			this->labelDVLon->Size = System::Drawing::Size(141, 13);
+			this->labelDVLon->TabIndex = 27;
+			this->labelDVLon->Text = L"Is the DVL underwater\?";
+			this->labelDVLon->Visible = false;
+			// 
+			// backgroundWorkerRobotCommand
+			// 
+			this->backgroundWorkerRobotCommand->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerRobotCommand_DoWork);
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1208, 1041);
-			this->Controls->Add(this->readShmButton);
-			this->Controls->Add(this->intiShmButton);
+			this->Controls->Add(this->labelDVLon);
+			this->Controls->Add(this->buttonDVLno);
+			this->Controls->Add(this->buttonDVLyes);
+			this->Controls->Add(this->buttonDVLon);
 			this->Controls->Add(this->label3);
 			this->Controls->Add(this->label2);
 			this->Controls->Add(this->label1);
@@ -563,8 +593,8 @@ namespace MaelstromGUI {
 			this->PerformLayout();
 
 		}
-#pragma endregion
 
+#pragma endregion
 	// Bbx edition
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
 		namedWindow("Edition");
@@ -590,7 +620,6 @@ namespace MaelstromGUI {
 			waitKey(1);
 		}
 	}
-
 	// Load and show image from PC into picture box
 	private: System::Void button_Browse_Click(System::Object^ sender, System::EventArgs^ e) {
 		OpenFileDialog^ dgOpen = gcnew OpenFileDialog();
@@ -610,13 +639,11 @@ namespace MaelstromGUI {
 		// Set image size within the Bboxes class
 		bboxes.set_img_size(img.size());
 	}
-
 	// Convert String to Char
 	private: char* ConvertString2Char(System::String^ str) { // Marshal method
 		char* str2 = (char*)(void*)Marshal::StringToHGlobalAnsi(str);
 		return str2;
 	}
-
 	// Convert Mat to Bitmap
 	private: System::Drawing::Bitmap^ ConvertMat2Bitmap(Mat img) {
 		Bitmap^ newBitmap = gcnew System::Drawing::Bitmap(img.size().width,
@@ -626,7 +653,6 @@ namespace MaelstromGUI {
 			(IntPtr)img.data);
 		return newBitmap;
 	}
-
 	// Display a cv::Mat in the picture box
 	private: void display(Mat img) {
 		if (!img.empty()) {
@@ -634,7 +660,6 @@ namespace MaelstromGUI {
 			//ptbSource->Refresh(); // If streaming, freeze
 		}
 	}
-
 	// Double click event on the Image
 	private: System::Void ptbSource_MouseDoubleClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
 		// Zoom
@@ -670,7 +695,6 @@ namespace MaelstromGUI {
 			display(img);
 		}
 	}
-
 	// Get mouse state when clicked
 	private: System::Void ptbSource_MouseDown(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
 		mouse_pos = cv::Point(e->X, e->Y);
@@ -692,7 +716,6 @@ namespace MaelstromGUI {
 			break;
 		}
 	}
-
 	// Temp button
 	private: System::Void view_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		//listView1->Items->Clear();
@@ -701,7 +724,6 @@ namespace MaelstromGUI {
 		listView1->AutoResizeColumn(0, ColumnHeaderAutoResizeStyle::HeaderSize);
 		populate();
 	}
-
 	// Fill the image list
 	private: void populate() {
 		cv::String dirname = "C:/Users/Utilisateur/Pictures/*.jpg";
@@ -717,7 +739,6 @@ namespace MaelstromGUI {
 			listView1->Items->Add(name, i);
 		}
 	}
-	
 	// Display the selected img in the picturebox
 	private: System::Void listView1_MouseClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
 		System::String^ selected = listView1->SelectedItems[0]->SubItems[0]->Text;
@@ -729,7 +750,6 @@ namespace MaelstromGUI {
 		original_img = img.clone();
 		display(img);
 	}
-
 	// Load the video
 	private: System::Void load_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		std::string video_path = "C:/Users/Utilisateur/Videos/test.mp4";
@@ -743,7 +763,6 @@ namespace MaelstromGUI {
 		video.nextFrame();
 		display(video.getEditedFrame());
 	}
-
 	// Play or pause the video
 	private: System::Void play_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		if (video.getMode() == "play") {
@@ -780,7 +799,6 @@ namespace MaelstromGUI {
 			waitKey(video.getWaitTimer());
 		}
 	}
-
 	// Speed up the frame rate
 	private: System::Void speed_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		if (video.getFpsFactor() == 1) {
@@ -814,7 +832,6 @@ namespace MaelstromGUI {
 			video.setFpsFactor(1);
 		}
 	}
-
 	// Set frame to track bar
 	private: System::Void video_trackBar_Scroll(System::Object^ sender, System::EventArgs^ e) {
 		if (video.getMode() == "replay")
@@ -828,7 +845,6 @@ namespace MaelstromGUI {
 		video.nextFrame();
 		display(video.getEditedFrame());	
 	}
-
 	// Set the video label
 	private: void set_video_label() {
 		int displayed_label_frame = video.getFrameId() + 1;
@@ -873,19 +889,10 @@ namespace MaelstromGUI {
 			this->server_button->BackColor = System::Drawing::SystemColors::Control;
 			this->server_button->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-		}	
-		
+		}		
 	}
 
-	
-
 	public:
-
-		void log(string log_str) {
-			log_str.erase(std::remove(log_str.begin(), log_str.end(), '\n'), log_str.end());
-			cout << "[" <<  getTimeStamp() << "]: " << log_str << endl;
-		}
-
 		string getTime() {
 			char time[32];
 			errno_t errNum;
@@ -900,7 +907,6 @@ namespace MaelstromGUI {
 			str_time.erase(str_time.length() - 1);
 			return str_time;
 		}
-
 		string getNewVideoPath() {
 			
 			//string new_path = videos_dir_path + "video_" + getTime() + ".mp4";
@@ -912,12 +918,12 @@ namespace MaelstromGUI {
 		}
 
 	/*----------------------------------------------------------------------------------------------------
-
 			Send command to robot:
 				Request: "*xxxxxx;xxxxxx;xxxxxx;xxxxxx#
 							 id  ;   x  ;   y  ;   z
-
 	------------------------------------------------------------------------------------------------------*/
+
+	// Should be replace with the new robot class
 	private: System::Void goToButton_Click(System::Object^ sender, System::EventArgs^ e) {
 		char answer[100]; // Robot answer (should repeat the received position
 		string x_str, y_str, z_str;
@@ -926,13 +932,11 @@ namespace MaelstromGUI {
 		z_str = ConvertString2Char(zCooText->Text);
 		string str2send = "*" + to_string(request_id) + ";" + x_str + ";" + y_str + ";" + z_str + "#";
 		request_id++;
-		
 		log("Request from GUI: " + str2send);
-		robot_request_socket.sendTo(str2send.c_str(), 100, ip_robot, request_port);
-		robot_request_socket.recvFrom(answer, 100, ip_robot, request_port);
+		//robot_request_socket.sendTo(str2send.c_str(), 100, ip_robot, request_port);
+		//robot_request_socket.recvFrom(answer, 100, ip_robot, request_port);
 		log("Answer from robot: " + str2send);
 	}
-
 	// Reinit text box on click
 	private: System::Void xCooText_Click(System::Object^ sender, System::EventArgs^ e) {
 		xCooText->Text = "";
@@ -946,35 +950,34 @@ namespace MaelstromGUI {
 
 
 	/*----------------------------------------------------------------------------------------------------
-	
 			Background workers:
 				- Arduino
+				- DVL
 				- Robot
+				- Robot command
 				- Jetson
-
 	------------------------------------------------------------------------------------------------------*/
 
 
 	// Receive data from robot continuously
 	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
-			char rcv_buffer[100];
-			robot_info_socket.recvFrom(rcv_buffer, 100, ip_robot, continuous_port);
-			log("From robot: " + (string)rcv_buffer);
+			robot.rcvData();
 		}
 	}
-	
 	// Receive data from Arduino continuously
 	private: System::Void backgroundWorkerArduino_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
-			char rcv_buffer[100];
-			arduino_info_socket.recvFrom(rcv_buffer, 100, ip_arduino, arduino_port);
-			log("From arduino: " + (string)rcv_buffer);
+			arduino.rcvData();
 		}
 	}
-
-
-	//Server Jetson
+	// Receive data from DVL continuously
+	private: System::Void backgroundWorkerDVL_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while (true) {
+			dvl.rcvData();
+		}
+	}
+	// Server Jetson
 	private: System::Void backgroundWorkerJetson_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		int recvMsgSize;
 		int frame_id = 0;
@@ -1037,117 +1040,37 @@ namespace MaelstromGUI {
 			free(long_buffer);
 		}
 	}
-
-	//private: System::Void backgroundWorkerJetson_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
-	//	char rcv_buffer[65540];
-	//	while (true) {
-	//		cout << "YES?" << endl;
-	//		jetson_socket.recvFrom(rcv_buffer, 65540, ip_jetson, jetson_port);
-	//		//log("From arduino: " + (string)rcv_buffer);
-	//		cout << "YES" << endl;
-	//	}
-	//}
-
-
-
-
-
-
-
-
-
-
-private: System::Void intiShmButton_Click(System::Object^ sender, System::EventArgs^ e) {
-	//HANDLE hMapFile;
-	//LPCTSTR pBuf;
-
-	//hMapFile = CreateFileMapping(
-	//	INVALID_HANDLE_VALUE,    // use paging file
-	//	NULL,                    // default security
-	//	PAGE_READWRITE,          // read/write access
-	//	0,                       // maximum object size (high-order DWORD)
-	//	BUF_SIZE,                // maximum object size (low-order DWORD)
-	//	szName);                 // name of mapping object
-
-	//if (hMapFile == NULL)
-	//{
-	//	_tprintf(TEXT("Could not create file mapping object (%d).\n"),
-	//		GetLastError());
-	//	//return 1;
-	//}
-	//pBuf = (LPTSTR)MapViewOfFile(hMapFile,   // handle to map object
-	//	FILE_MAP_ALL_ACCESS, // read/write permission
-	//	0,
-	//	0,
-	//	BUF_SIZE);
-
-	//if (pBuf == NULL)
-	//{
-	//	_tprintf(TEXT("Could not map view of file (%d).\n"),
-	//		GetLastError());
-	//	CloseHandle(hMapFile);
-	//	//return 1;
-	//}
-	////CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
-	////_getch();
-	////UnmapViewOfFile(pBuf);
-	////CloseHandle(hMapFile);
-}
-private: System::Void readShmButton_Click(System::Object^ sender, System::EventArgs^ e) {
-	// Rouli(*10), tengage(*10), lacet(*10), profondeur(*100) 
-
-	//HANDLE hMapFile;
-	//LPCTSTR pBuf;
-
-	//hMapFile = OpenFileMapping(
-	//	FILE_MAP_ALL_ACCESS,   // read/write access
-	//	FALSE,                 // do not inherit the name
-	//	szName);               // name of mapping object
-
-	//if (hMapFile == NULL)
-	//{
-	//	_tprintf(TEXT("Could not open file mapping object (%d).\n"),
-	//		GetLastError());
-	//	//return 1;
-	//}
-
-	//pBuf = (LPTSTR)MapViewOfFile(hMapFile, // handle to map object
-	//	FILE_MAP_ALL_ACCESS,  // read/write permission
-	//	0,
-	//	0,
-	//	BUF_SIZE);
-
-	//if (pBuf == NULL)
-	//{
-	//	_tprintf(TEXT("Could not map view of file (%d).\n"),
-	//		GetLastError());
-
-	//	CloseHandle(hMapFile);
-
-	//	//return 1;
-	//}
-
-	////const wchar_t* p;
-	////p = pBuf;
-	/////*_bstr_t b(p);
-	////const char* c = b;
-	////printf("Output: %s\n", c);*/
-	////cout << (char*)p << endl;
-
-	////sprintf("recu=%s\n", pBuf);
-
-	////MessageBox(NULL, pBuf, TEXT("Process2"), MB_OK);
-
-	//UnmapViewOfFile(pBuf);
-
-	//CloseHandle(hMapFile);
-
-
-}
-
-
-
-
-
+	// Send a command to the robot
+	private: System::Void backgroundWorkerRobotCommand_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		robot.goTo(0, 0, 0, 0);
+		// Stop background worker when finished
+		backgroundWorkerJetson->CancelAsync();
+		e->Cancel = true;
+	}
+	// Start DVL
+	private: System::Void buttonDVLon_Click(System::Object^ sender, System::EventArgs^ e) {
+		if (this->buttonDVLon->Text == L"DVL on") {
+			this->labelDVLon->Visible = true;
+			this->buttonDVLyes->Visible = true;
+			this->buttonDVLno->Visible = true;
+		}
+		else {
+			arduino.dvlOff();
+			this->buttonDVLon->Text = L"DVL on";
+		}
+			
+	}
+	private: System::Void buttonDVLyes_Click(System::Object^ sender, System::EventArgs^ e) {
+		this->buttonDVLon->Text = L"DVL off";
+		this->labelDVLon->Visible = false;
+		this->buttonDVLyes->Visible = false;
+		this->buttonDVLno->Visible = false;
+		arduino.dvlOn();
+	}
+	private: System::Void buttonDVLno_Click(System::Object^ sender, System::EventArgs^ e) {
+		this->labelDVLon->Visible = false;
+		this->buttonDVLyes->Visible = false;
+		this->buttonDVLno->Visible = false;
+	}
 };
 }

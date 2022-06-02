@@ -131,8 +131,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Arduino.cpp" />
     <ClCompile Include="Bboxes.cpp" />
     <ClCompile Include="Bbx.cpp" />
+    <ClCompile Include="DepthMap.cpp" />
+    <ClCompile Include="DVL.cpp" />
     <ClCompile Include="MainForm.cpp" />
     <ClCompile Include="PracticalSocket.cpp" />
     <ClCompile Include="Robot.cpp" />
@@ -140,13 +143,15 @@
     <ClCompile Include="Video.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Arduino.h" />
     <ClInclude Include="Bboxes.h" />
     <ClInclude Include="Bbx.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="DepthMap.h" />
+    <ClInclude Include="DVL.h" />
     <ClInclude Include="MainForm.h">
       <FileType>CppForm</FileType>
     </ClInclude>
-    <ClInclude Include="new_button.h" />
     <ClInclude Include="PracticalSocket.h" />
     <ClInclude Include="Robot.h" />
     <ClInclude Include="Server.h" />
