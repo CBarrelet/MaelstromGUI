@@ -11,6 +11,15 @@ private:
 	std::string server_ip;
 	std::string client_ip;
 	unsigned short continuous_port;
+
+	// Socket to turn off the Jetson
+	UDPSocket jetson_socket;
+	std::string jetson_ip = JETSON_IP;
+	unsigned short jetson_request_port = JETSON_REQUEST_PORT;
+
+	public:
+	char jetson_buffer[100];
+	bool is_jetson_on = false;
 	
 	float imu[3] = {0,0,0}; // roll, pitch, yaw (degree)
 	float depth = 0; // pressure sensor (meter)
@@ -28,6 +37,10 @@ public:
 		this->socket.init();
 		this->socket.setLocalAddressAndPort(this->server_ip, this->continuous_port);
 		this->socket.setBroadcast();
+
+		this->jetson_socket.init();
+		this->jetson_socket.setLocalAddressAndPort(this->server_ip, this->jetson_request_port);
+		this->jetson_socket.setBroadcast();
 	}
 
 	~Arduino() {
@@ -35,8 +48,15 @@ public:
 	}
 
 	/*------------------------------
-		Receive data continously.
+		Receive data
 	-------------------------------*/
+
+	void rcvAny() {
+		char buffer[100];
+		this->socket.recvFrom(buffer, 100, (std::string)client_ip, this->continuous_port);
+		log("Arduino has started.");
+	}
+
 	void rcvData() {
 		this->socket.recvFrom(this->rcv_buffer, 100, (std::string)client_ip, this->continuous_port);
 		log("From Arduino: " + (std::string)this->rcv_buffer);

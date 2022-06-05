@@ -136,6 +136,7 @@
     <ClCompile Include="Bbx.cpp" />
     <ClCompile Include="DepthMap.cpp" />
     <ClCompile Include="DVL.cpp" />
+    <ClCompile Include="Jetson.cpp" />
     <ClCompile Include="MainForm.cpp" />
     <ClCompile Include="PracticalSocket.cpp" />
     <ClCompile Include="Robot.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="DepthMap.h" />
     <ClInclude Include="DVL.h" />
+    <ClInclude Include="Jetson.h" />
     <ClInclude Include="MainForm.h">
       <FileType>CppForm</FileType>
     </ClInclude>
