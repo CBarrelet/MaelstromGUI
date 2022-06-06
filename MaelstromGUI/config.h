@@ -15,6 +15,11 @@
 #include <algorithm>
 #include <iterator>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgcodecs/imgcodecs.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+
 #define FRAME_HEIGHT 480
 #define FRAME_WIDTH 640
 #define FRAME_INTERVAL (1000/30)

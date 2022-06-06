@@ -14,6 +14,7 @@ private:
 	unsigned short request_port;
 
 	// Robot positions
+public:
 	float pos[3] = {0,0,0}; // x, y, z
 	float angles[3] = { 0,0,0 };
 	// Motor positions
@@ -44,10 +45,9 @@ private:
 	int pump_state = -1;
 
 	int request_id = 1;
-
-	// Drawing
-	float size=50;
-	float radius = 0.5;
+	
+	float target[4] = { 0,0,0,0 }; // x, y, z, delta z
+	
 
 public:
 	/*------------------------------
@@ -122,6 +122,23 @@ public:
 		log("To Robot (answer): " + str2send);
 	}
 
+	void setTarget(cv::Point3d target) {
+		this->target[0] = (float) this->pos[0] + target.x;
+		this->target[1] = (float) this->pos[1] + target.y;
+		this->target[2] = (float) this->pos[2] + target.z;
+
+		// Should consider the depth map
+		this->target[3] = 1; // delta_z
+	}
+
+	void goToTarget() {
+		float x = this->target[0];
+		float y = this->target[1];
+		float z = this->target[2];
+		float delta_z = this->target[3];
+		goTo(x, y, z, delta_z);
+	}
+
 	/*------------------------------
 		Send a command to the Robot.
 		Should be in mm.
@@ -133,6 +150,7 @@ public:
 		a  d
 	-------------------------------*/
 	void goTo(float x, float y, float z, float delta_z) {
+		
 		// First position (current position)
 		float a_x = this->pos[0], a_y = this->pos[1], a_z = this->pos[2];
 		// Second position (first command)
@@ -156,14 +174,14 @@ public:
 			if (this->state == 10) {
 				request_socket.sendTo(first_command.c_str(), 100, this->client_ip, request_port);
 				log("To Robot (first command): " + first_command);
+				Sleep(250);
 				// If robot is moving
-				if (state == 40) {
+				if (this->state == 40) {
 					first_command_sent = true;
 					this->request_id++;
 				}
 			}
 		}
-		Sleep(2000);
 
 		// Second command
 		while (!second_command_sent) {
@@ -171,15 +189,15 @@ public:
 			if (this->state == 10) {
 				request_socket.sendTo(second_command.c_str(), 100, this->client_ip, request_port);
 				log("To Robot (first command): " + second_command);
+				Sleep(250);
 				// If robot is moving
-				if (state == 40) {
+				if (this->state == 40) {
 					second_command_sent = true;
 					this->request_id++;
 				}
 			}
 		}
-		Sleep(2000);
-
+		
 		// Third command
 		while (!third_command_sent) {
 			// If robot is ready
@@ -188,13 +206,12 @@ public:
 				log("To Robot (first command): " + third_command);
 				Sleep(250);
 				// If robot is moving
-				if (state == 40) {
+				if (this->state == 40) {
 					third_command_sent = true;
 					this->request_id++;
 				}
 			}
 		}
-		Sleep(2000);
 	}
 
 	/*------------------------------
