@@ -6,7 +6,8 @@
 class Arduino {
 
 private:
-	char rcv_buffer[100];
+	//short int buffuer_size = 120;
+	char rcv_buffer[120];
 	UDPSocket socket;
 	std::string server_ip;
 	std::string client_ip;
@@ -52,14 +53,14 @@ public:
 	-------------------------------*/
 
 	void rcvAny() {
-		char buffer[100];
-		this->socket.recvFrom(buffer, 100, (std::string)client_ip, this->continuous_port);
+		char buffer[120];
+		this->socket.recvFrom(buffer, 120, (std::string)client_ip, this->continuous_port);
 		log("Arduino has started.");
 	}
 
 	void rcvData() {
-		this->socket.recvFrom(this->rcv_buffer, 100, (std::string)client_ip, this->continuous_port);
-		log("From Arduino: " + (std::string)this->rcv_buffer);
+		this->socket.recvFrom(this->rcv_buffer, 120, (std::string)client_ip, this->continuous_port);
+		//log("From Arduino: " + (std::string)this->rcv_buffer);
 
 		int roll=0, pitch=0, yaw=0, depth=0;
 		int ret = sscanf(this->rcv_buffer, "E,%d,%d,%d,%d", &roll, &pitch, &yaw, &depth);
@@ -75,13 +76,13 @@ public:
 	-------------------------------*/
 	void dvlOn() {
 		std::string on = "DVLON\n";
-		socket.sendTo(on.c_str(), 100, ARDUINO_IP, ARDUINO_REQUEST_PORT);
+		socket.sendTo(on.c_str(), 120, ARDUINO_IP, ARDUINO_REQUEST_PORT);
 		log("To Arduino: " + on);
 	}
 
 	void dvlOff() {
 		std::string off = "DVLOFF\n";
-		socket.sendTo(off.c_str(), 100, ARDUINO_IP, ARDUINO_REQUEST_PORT);
+		socket.sendTo(off.c_str(), 120, ARDUINO_IP, ARDUINO_REQUEST_PORT);
 		log("To Arduino: " + off);
 	}
 

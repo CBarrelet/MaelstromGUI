@@ -13,10 +13,8 @@ private:
 
 	UDPSocket socket_request;
 
-	
-
 	float vx = 0, vy = 0;
-	float distances[4]{ 0,0,0,0 };
+	float distances[4]{ 0,0,0,0 }; // Altitude
 	float imu[3] = { 0,0,0 }; // roll, pitch, yaw (degree)
 
 
@@ -45,7 +43,7 @@ public:
 	-------------------------------*/
 	void rcvData() {
 		this->socket.recvFrom(this->rcv_buffer, 100, (std::string)client_ip, this->continuous_port);
-		log("From DVL: " + (std::string)rcv_buffer);
+		//log("From DVL: " + (std::string)rcv_buffer);
 
 		float vx=0, vy=0;
 		float distances[4]{ 0,0,0,0 };

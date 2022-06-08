@@ -1,6 +1,7 @@
 #pragma once
 #include "PracticalSocket.h"
 #include "config.h"
+#include <random>
 
 class Robot {
 
@@ -44,9 +45,12 @@ public:
 	int gripper_state = -1;
 	int pump_state = -1;
 
-	int request_id = 1;
+	unsigned short request_id = 1;
+	int rcv_request_id = 0;
 	
 	float target[4] = { 0,0,0,0 }; // x, y, z, delta z
+
+	float scanning_depth;
 	
 
 public:
@@ -66,6 +70,13 @@ public:
 		this->request_socket.init();
 		this->request_socket.setLocalAddressAndPort(this->server_ip, this->request_port);
 		this->request_socket.setBroadcast();
+
+		std::random_device dev;
+		std::mt19937 rng(dev());
+		std::uniform_int_distribution<std::mt19937::result_type> dist6(1, 10000); // distribution in range [1, 6]
+		this->request_id = dist6(rng);
+
+		this->scanning_depth = 0;
 	}
 
 	~Robot() {}
@@ -75,32 +86,15 @@ public:
 	-------------------------------*/
 	void rcvData() {
 		this->continuous_socket.recvFrom(this->rcv_buffer, 300, (std::string)client_ip, this->continuous_port);
-		log("From Robot: " + (std::string)this->rcv_buffer);
-		// Positions
-		float pos[3] = { 0,0,0 }; // (mm)
-		float angles[3] = { 0,0,0 }; // (mrad)
-		// Motor positions
-		int motors[8] = { 0,0,0,0,0,0,0,0 };
-		// Robot state
-		int state = -1;
-		// Actuators state
-		int gripper_state = -1;
-		int pump_state = -1;
 
 		int ret = sscanf(this->rcv_buffer,
-			"*%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d",
-			&pos[0], &pos[1], &pos[2],
-			&angles[0], &angles[1], &angles[2],
-			&motors[0], &motors[1], &motors[2], &motors[3], &motors[4], &motors[5], &motors[6], &motors[7],
-			&state, &gripper_state, &pump_state);
+			"*%d;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d",
+			&this->rcv_request_id,
+			&this->pos[0], &this->pos[1], &this->pos[2],
+			&this->angles[0], &this->angles[1], &this->angles[2],
+			&this->motors[0], &this->motors[1], &this->motors[2], &this->motors[3], &this->motors[4], &this->motors[5], &this->motors[6], &this->motors[7],
+			&this->state, &this->gripper_state, &this->pump_state);
 
-		memcpy(this->pos, pos, 3);
-		memcpy(this->angles, angles, 3);
-		memcpy(this->motors, motors, 8);
-
-		this->state = state;
-		this->gripper_state = gripper_state;
-		this->pump_state = pump_state;
 
 		ZeroMemory(this->rcv_buffer, 300);
 	}
@@ -136,6 +130,9 @@ public:
 		float y = this->target[1];
 		float z = this->target[2];
 		float delta_z = this->target[3];
+
+		z = 0;
+		delta_z = 0.05;
 		goTo(x, y, z, delta_z);
 	}
 
@@ -168,56 +165,101 @@ public:
 		std::string second_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(c_x) + ";" + std::to_string(c_y) + ";" + std::to_string(c_z) + "#";
 		std::string third_command  = "*" + std::to_string(this->request_id) + ";" + std::to_string(d_x) + ";" + std::to_string(d_y) + ";" + std::to_string(d_z) + "#";
 
-		// First command
-		while (!first_command_sent) {
-			// If robot is ready
-			if (this->state == 10) {
-				request_socket.sendTo(first_command.c_str(), 100, this->client_ip, request_port);
-				log("To Robot (first command): " + first_command);
-				Sleep(250);
-				// If robot is moving
-				if (this->state == 40) {
-					first_command_sent = true;
-					this->request_id++;
-				}
-			}
+		log("Sending first command...");
+		while (this->state != 10) {
+			Sleep(100);
+			//std::cout << this->state << std::endl;
 		}
+		first_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(b_x) + ";" + std::to_string(b_y) + ";" + std::to_string(b_z) + "#";
+		request_socket.sendTo(first_command.c_str(), 100, this->client_ip, request_port);
+		log("To Robot (first command): " + first_command);
+		this->request_id++;
+		Sleep(250);
 
-		// Second command
-		while (!second_command_sent) {
-			// If robot is ready
-			if (this->state == 10) {
-				request_socket.sendTo(second_command.c_str(), 100, this->client_ip, request_port);
-				log("To Robot (first command): " + second_command);
-				Sleep(250);
-				// If robot is moving
-				if (this->state == 40) {
-					second_command_sent = true;
-					this->request_id++;
-				}
-			}
+		log("Sending second command...");
+		while (this->state != 10) {
+			Sleep(100);
+			//std::cout << this->state << std::endl;
 		}
-		
-		// Third command
-		while (!third_command_sent) {
-			// If robot is ready
-			if (this->state == 10) {
-				request_socket.sendTo(third_command.c_str(), 100, this->client_ip, request_port);
-				log("To Robot (first command): " + third_command);
-				Sleep(250);
-				// If robot is moving
-				if (this->state == 40) {
-					third_command_sent = true;
-					this->request_id++;
-				}
-			}
+		second_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(c_x) + ";" + std::to_string(c_y) + ";" + std::to_string(c_z) + "#";
+		request_socket.sendTo(second_command.c_str(), 100, this->client_ip, request_port);
+		log("To Robot (second command): " + second_command);
+		this->request_id++;
+		Sleep(250);
+
+		log("Sending second command...");
+		while (this->state != 10) {
+			Sleep(100);
+			//std::cout << this->state << std::endl;
+		}
+		third_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(d_x) + ";" + std::to_string(d_y) + ";" + std::to_string(d_z) + "#";
+		request_socket.sendTo(third_command.c_str(), 100, this->client_ip, request_port);
+		log("To Robot (third command): " + third_command);
+		this->request_id++;
+		Sleep(250);
+
+	}
+
+	void sendCommand(cv::Point3d pos) {
+		log("Sending command...");
+		while (this->state != 10) {
+			Sleep(100);
+		}
+		std::string command = "*" + std::to_string(this->request_id) + ";" + std::to_string(pos.x) + ";" + std::to_string(pos.y) + ";" + std::to_string(pos.z) + "#";
+		request_socket.sendTo(command.c_str(), 100, this->client_ip, request_port);
+		this->request_id++;
+	}
+
+	void scan() {
+
+		float z = this->scanning_depth;
+
+		std::vector<cv::Point3d> scan_path;
+		// Init
+		scan_path.push_back(cv::Point3d(-2.0, -2.0, z));
+		// 1st
+		scan_path.push_back(cv::Point3d(-2, 2.0, z));
+		scan_path.push_back(cv::Point3d(-1.5, 2.0, z));
+		// 2nd
+		scan_path.push_back(cv::Point3d(-1.5, -2.0, z));
+		scan_path.push_back(cv::Point3d(-1.0, -2.0, z));
+		// 3th
+		scan_path.push_back(cv::Point3d(-1.0, 2.0, z));
+		scan_path.push_back(cv::Point3d(-0.5, 2.0, z));
+		// 4th
+		scan_path.push_back(cv::Point3d(-0.5, -2.0, z));
+		scan_path.push_back(cv::Point3d(0.0, -2.0, z));
+		// 4th
+		scan_path.push_back(cv::Point3d(0.0, 2.0, z));
+		scan_path.push_back(cv::Point3d(0.5, 2.0, z));
+		// 4th
+		scan_path.push_back(cv::Point3d(0.5, -2.0, z));
+		scan_path.push_back(cv::Point3d(1.0, -2.0, z));
+		// 5th
+		scan_path.push_back(cv::Point3d(1.0, 2.0, z));
+		scan_path.push_back(cv::Point3d(1.5, 2.0, z));
+		// 6th
+		scan_path.push_back(cv::Point3d(1.5, -2.0, z));
+		scan_path.push_back(cv::Point3d(2.0, -2.0, z));
+		// 7th
+		scan_path.push_back(cv::Point3d(2.0, 2.0, z));
+		// Init
+		scan_path.push_back(cv::Point3d(-2.0, -2.0, z));
+
+		for (size_t i = 0; i < scan_path.size(); i++) {
+			log("Scanning: " + std::to_string(i) + "/" + std::to_string(scan_path.size()));
+			sendCommand(scan_path[i]);
+			Sleep(250);
 		}
 	}
 
 	/*------------------------------
 		GETTER
 	-------------------------------*/
-	float* getPos() { return this->pos; }
+	float* getPos() { 
+		//loat* pos_in_m = new float[3]
+		return this->pos; 
+	}
 
 	/*------------------------------
 		SETTER

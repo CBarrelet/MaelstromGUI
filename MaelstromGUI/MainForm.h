@@ -182,9 +182,9 @@ namespace MaelstromGUI {
 			//
 
 			// Camera calibration
-			camera_params.center = cv::Point(3.1950000000000000e+002, 2.3950000000000000e+002);
-			camera_params.fx = 4.2750715468970623e+002;
-			camera_params.fy = 4.2750715468970623e+002;
+			camera_params.center = cv::Point(CAMERA_CX, CAMERA_CY);
+			camera_params.fx = CAMERA_FX;
+			camera_params.fy = CAMERA_FY;
 
 			// Init target points
 			target_point2D = cv::Point(0, 0);
@@ -204,17 +204,27 @@ namespace MaelstromGUI {
 			}
 			log("Start");
 
-			// Init robot/arduino/jetson communication
+			// Robot
+			// // Check if robot has started
+			backgroundWorkerRobotStarted->RunWorkerAsync(1);
 			// To receive continuous data from the robot
 			backgroundWorkerRobot->RunWorkerAsync(1);
+
+			// Arduino
 			// Check if arduino has started
 			backgroundWorkerArduinoStarted->RunWorkerAsync(1);
 			// To receive continuous data from the arduino
-			//backgroundWorkerArduino->RunWorkerAsync(1);
+			backgroundWorkerArduino->RunWorkerAsync(1);
+
+			// Jetson
 			// To receive continuous data from the jetson
 			backgroundWorkerJetson->RunWorkerAsync(1);
+
+			// DVL
 			// To receive continuous data from the dvl
 			backgroundWorkerDVL->RunWorkerAsync(1);
+
+			// Depth map
 			// Display the depth map
 			backgroundWorkerDepthMap->RunWorkerAsync(1);
 
@@ -275,13 +285,21 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ labelMouseY;
 	private: System::Windows::Forms::Label^ label3dZFake;
 	private: System::Windows::Forms::Label^ label3dYFake;
+	private: System::Windows::Forms::Button^ buttonScan;
 	private: System::Windows::Forms::Label^ label3dXFake;
 	private: System::Windows::Forms::Label^ labelLineFake;
 	private: System::Windows::Forms::Label^ labelRobotX;
 
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDepthMap;
 	private: System::Windows::Forms::PictureBox^ ptbDepthMap;
-private: System::Windows::Forms::Label^ labelTarget;
+	private: System::Windows::Forms::Label^ labelTarget;
+	private: System::Windows::Forms::Button^ buttonGoToTarget;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobotStarted;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVLOn;
+private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobotScan;
+private: System::Windows::Forms::TextBox^ textBox1;
+private: System::Windows::Forms::Label^ labelDepthScan;
+
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -349,6 +367,13 @@ private: System::Windows::Forms::Label^ labelTarget;
 			this->ptbDepthMap = (gcnew System::Windows::Forms::PictureBox());
 			this->labelRobotX = (gcnew System::Windows::Forms::Label());
 			this->labelTarget = (gcnew System::Windows::Forms::Label());
+			this->buttonGoToTarget = (gcnew System::Windows::Forms::Button());
+			this->backgroundWorkerRobotStarted = (gcnew System::ComponentModel::BackgroundWorker());
+			this->backgroundWorkerDVLOn = (gcnew System::ComponentModel::BackgroundWorker());
+			this->buttonScan = (gcnew System::Windows::Forms::Button());
+			this->backgroundWorkerRobotScan = (gcnew System::ComponentModel::BackgroundWorker());
+			this->textBox1 = (gcnew System::Windows::Forms::TextBox());
+			this->labelDepthScan = (gcnew System::Windows::Forms::Label());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->BeginInit();
@@ -357,7 +382,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// button_Edition
 			// 
 			this->button_Edition->Enabled = false;
-			this->button_Edition->Location = System::Drawing::Point(1234, 29);
+			this->button_Edition->Location = System::Drawing::Point(1112, 29);
 			this->button_Edition->Name = L"button_Edition";
 			this->button_Edition->Size = System::Drawing::Size(75, 23);
 			this->button_Edition->TabIndex = 35;
@@ -366,7 +391,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// ptbSource
 			// 
 			this->ptbSource->BackColor = System::Drawing::SystemColors::ControlDark;
-			this->ptbSource->Location = System::Drawing::Point(668, 58);
+			this->ptbSource->Location = System::Drawing::Point(546, 58);
 			this->ptbSource->Name = L"ptbSource";
 			this->ptbSource->Size = System::Drawing::Size(640, 480);
 			this->ptbSource->TabIndex = 1;
@@ -379,7 +404,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// button_Browse
 			// 
 			this->button_Browse->Enabled = false;
-			this->button_Browse->Location = System::Drawing::Point(1160, 28);
+			this->button_Browse->Location = System::Drawing::Point(1038, 28);
 			this->button_Browse->Name = L"button_Browse";
 			this->button_Browse->Size = System::Drawing::Size(67, 23);
 			this->button_Browse->TabIndex = 2;
@@ -392,7 +417,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			this->listView1->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(1) { this->columnHeader1 });
 			this->listView1->Enabled = false;
 			this->listView1->HideSelection = false;
-			this->listView1->Location = System::Drawing::Point(1113, 28);
+			this->listView1->Location = System::Drawing::Point(991, 28);
 			this->listView1->Name = L"listView1";
 			this->listView1->Size = System::Drawing::Size(41, 22);
 			this->listView1->TabIndex = 3;
@@ -407,7 +432,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// view_button
 			// 
 			this->view_button->Enabled = false;
-			this->view_button->Location = System::Drawing::Point(1040, 29);
+			this->view_button->Location = System::Drawing::Point(918, 29);
 			this->view_button->Name = L"view_button";
 			this->view_button->Size = System::Drawing::Size(67, 22);
 			this->view_button->TabIndex = 4;
@@ -425,7 +450,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// play_button
 			// 
 			this->play_button->Enabled = false;
-			this->play_button->Location = System::Drawing::Point(754, 588);
+			this->play_button->Location = System::Drawing::Point(632, 588);
 			this->play_button->Name = L"play_button";
 			this->play_button->Size = System::Drawing::Size(80, 23);
 			this->play_button->TabIndex = 5;
@@ -436,7 +461,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// speed_button
 			// 
 			this->speed_button->Enabled = false;
-			this->speed_button->Location = System::Drawing::Point(840, 588);
+			this->speed_button->Location = System::Drawing::Point(718, 588);
 			this->speed_button->Name = L"speed_button";
 			this->speed_button->Size = System::Drawing::Size(80, 23);
 			this->speed_button->TabIndex = 6;
@@ -447,7 +472,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// load_button
 			// 
 			this->load_button->Enabled = false;
-			this->load_button->Location = System::Drawing::Point(668, 588);
+			this->load_button->Location = System::Drawing::Point(546, 588);
 			this->load_button->Name = L"load_button";
 			this->load_button->Size = System::Drawing::Size(80, 23);
 			this->load_button->TabIndex = 7;
@@ -458,7 +483,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// video_trackBar
 			// 
 			this->video_trackBar->Enabled = false;
-			this->video_trackBar->Location = System::Drawing::Point(758, 544);
+			this->video_trackBar->Location = System::Drawing::Point(636, 544);
 			this->video_trackBar->Maximum = 150;
 			this->video_trackBar->Name = L"video_trackBar";
 			this->video_trackBar->Size = System::Drawing::Size(521, 45);
@@ -468,7 +493,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// video_label
 			// 
 			this->video_label->AutoSize = true;
-			this->video_label->Location = System::Drawing::Point(1285, 549);
+			this->video_label->Location = System::Drawing::Point(1163, 549);
 			this->video_label->Name = L"video_label";
 			this->video_label->Size = System::Drawing::Size(24, 13);
 			this->video_label->TabIndex = 9;
@@ -477,10 +502,9 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// record_button
 			// 
 			this->record_button->BackColor = System::Drawing::SystemColors::ControlLight;
-			this->record_button->Enabled = false;
 			this->record_button->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->record_button->Location = System::Drawing::Point(668, 548);
+			this->record_button->Location = System::Drawing::Point(546, 548);
 			this->record_button->Name = L"record_button";
 			this->record_button->Size = System::Drawing::Size(80, 34);
 			this->record_button->TabIndex = 10;
@@ -503,7 +527,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// goToButton
 			// 
 			this->goToButton->Enabled = false;
-			this->goToButton->Location = System::Drawing::Point(973, 588);
+			this->goToButton->Location = System::Drawing::Point(851, 588);
 			this->goToButton->Name = L"goToButton";
 			this->goToButton->Size = System::Drawing::Size(75, 23);
 			this->goToButton->TabIndex = 15;
@@ -515,7 +539,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// xCooText
 			// 
 			this->xCooText->Enabled = false;
-			this->xCooText->Location = System::Drawing::Point(1064, 591);
+			this->xCooText->Location = System::Drawing::Point(942, 591);
 			this->xCooText->Name = L"xCooText";
 			this->xCooText->Size = System::Drawing::Size(68, 20);
 			this->xCooText->TabIndex = 16;
@@ -527,7 +551,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// yCooText
 			// 
 			this->yCooText->Enabled = false;
-			this->yCooText->Location = System::Drawing::Point(1138, 591);
+			this->yCooText->Location = System::Drawing::Point(1016, 591);
 			this->yCooText->Name = L"yCooText";
 			this->yCooText->Size = System::Drawing::Size(68, 20);
 			this->yCooText->TabIndex = 17;
@@ -539,7 +563,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// zCooText
 			// 
 			this->zCooText->Enabled = false;
-			this->zCooText->Location = System::Drawing::Point(1212, 591);
+			this->zCooText->Location = System::Drawing::Point(1090, 591);
 			this->zCooText->Name = L"zCooText";
 			this->zCooText->Size = System::Drawing::Size(68, 20);
 			this->zCooText->TabIndex = 18;
@@ -551,7 +575,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label1
 			// 
 			this->label1->AutoSize = true;
-			this->label1->Location = System::Drawing::Point(1095, 614);
+			this->label1->Location = System::Drawing::Point(973, 614);
 			this->label1->Name = L"label1";
 			this->label1->Size = System::Drawing::Size(37, 13);
 			this->label1->TabIndex = 19;
@@ -561,7 +585,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label2
 			// 
 			this->label2->AutoSize = true;
-			this->label2->Location = System::Drawing::Point(1169, 614);
+			this->label2->Location = System::Drawing::Point(1047, 614);
 			this->label2->Name = L"label2";
 			this->label2->Size = System::Drawing::Size(37, 13);
 			this->label2->TabIndex = 20;
@@ -571,7 +595,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label3
 			// 
 			this->label3->AutoSize = true;
-			this->label3->Location = System::Drawing::Point(1243, 614);
+			this->label3->Location = System::Drawing::Point(1121, 614);
 			this->label3->Name = L"label3";
 			this->label3->Size = System::Drawing::Size(37, 13);
 			this->label3->TabIndex = 21;
@@ -636,6 +660,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// backgroundWorkerRobotCommand
 			// 
 			this->backgroundWorkerRobotCommand->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerRobotCommand_DoWork);
+			this->backgroundWorkerRobotCommand->RunWorkerCompleted += gcnew System::ComponentModel::RunWorkerCompletedEventHandler(this, &MainForm::backgroundWorkerRobotCommand_RunWorkerCompleted);
 			// 
 			// buttonJetsonOn
 			// 
@@ -668,7 +693,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// labelMouseX
 			// 
 			this->labelMouseX->AutoSize = true;
-			this->labelMouseX->Location = System::Drawing::Point(670, 10);
+			this->labelMouseX->Location = System::Drawing::Point(548, 10);
 			this->labelMouseX->Name = L"labelMouseX";
 			this->labelMouseX->Size = System::Drawing::Size(45, 13);
 			this->labelMouseX->TabIndex = 29;
@@ -678,7 +703,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// labelMouseY
 			// 
 			this->labelMouseY->AutoSize = true;
-			this->labelMouseY->Location = System::Drawing::Point(719, 10);
+			this->labelMouseY->Location = System::Drawing::Point(597, 10);
 			this->labelMouseY->Name = L"labelMouseY";
 			this->labelMouseY->Size = System::Drawing::Size(45, 13);
 			this->labelMouseY->TabIndex = 30;
@@ -688,7 +713,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label3dY
 			// 
 			this->label3dY->AutoSize = true;
-			this->label3dY->Location = System::Drawing::Point(720, 26);
+			this->label3dY->Location = System::Drawing::Point(598, 26);
 			this->label3dY->Name = L"label3dY";
 			this->label3dY->Size = System::Drawing::Size(44, 13);
 			this->label3dY->TabIndex = 32;
@@ -698,7 +723,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label3dX
 			// 
 			this->label3dX->AutoSize = true;
-			this->label3dX->Location = System::Drawing::Point(670, 26);
+			this->label3dX->Location = System::Drawing::Point(548, 26);
 			this->label3dX->Name = L"label3dX";
 			this->label3dX->Size = System::Drawing::Size(44, 13);
 			this->label3dX->TabIndex = 31;
@@ -708,7 +733,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label3dZ
 			// 
 			this->label3dZ->AutoSize = true;
-			this->label3dZ->Location = System::Drawing::Point(770, 26);
+			this->label3dZ->Location = System::Drawing::Point(648, 26);
 			this->label3dZ->Name = L"label3dZ";
 			this->label3dZ->Size = System::Drawing::Size(44, 13);
 			this->label3dZ->TabIndex = 33;
@@ -718,7 +743,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// labelDVL
 			// 
 			this->labelDVL->AutoSize = true;
-			this->labelDVL->Location = System::Drawing::Point(630, 42);
+			this->labelDVL->Location = System::Drawing::Point(508, 42);
 			this->labelDVL->Name = L"labelDVL";
 			this->labelDVL->Size = System::Drawing::Size(34, 13);
 			this->labelDVL->TabIndex = 34;
@@ -728,7 +753,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label3dZFake
 			// 
 			this->label3dZFake->AutoSize = true;
-			this->label3dZFake->Location = System::Drawing::Point(770, 42);
+			this->label3dZFake->Location = System::Drawing::Point(648, 42);
 			this->label3dZFake->Name = L"label3dZFake";
 			this->label3dZFake->Size = System::Drawing::Size(44, 13);
 			this->label3dZFake->TabIndex = 38;
@@ -738,7 +763,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label3dYFake
 			// 
 			this->label3dYFake->AutoSize = true;
-			this->label3dYFake->Location = System::Drawing::Point(720, 42);
+			this->label3dYFake->Location = System::Drawing::Point(598, 42);
 			this->label3dYFake->Name = L"label3dYFake";
 			this->label3dYFake->Size = System::Drawing::Size(44, 13);
 			this->label3dYFake->TabIndex = 37;
@@ -748,7 +773,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// label3dXFake
 			// 
 			this->label3dXFake->AutoSize = true;
-			this->label3dXFake->Location = System::Drawing::Point(670, 42);
+			this->label3dXFake->Location = System::Drawing::Point(548, 42);
 			this->label3dXFake->Name = L"label3dXFake";
 			this->label3dXFake->Size = System::Drawing::Size(44, 13);
 			this->label3dXFake->TabIndex = 36;
@@ -758,7 +783,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// labelLine
 			// 
 			this->labelLine->AutoSize = true;
-			this->labelLine->Location = System::Drawing::Point(837, 29);
+			this->labelLine->Location = System::Drawing::Point(715, 29);
 			this->labelLine->Name = L"labelLine";
 			this->labelLine->Size = System::Drawing::Size(59, 13);
 			this->labelLine->TabIndex = 39;
@@ -768,7 +793,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// labelLineFake
 			// 
 			this->labelLineFake->AutoSize = true;
-			this->labelLineFake->Location = System::Drawing::Point(837, 42);
+			this->labelLineFake->Location = System::Drawing::Point(715, 42);
 			this->labelLineFake->Name = L"labelLineFake";
 			this->labelLineFake->Size = System::Drawing::Size(59, 13);
 			this->labelLineFake->TabIndex = 40;
@@ -782,37 +807,101 @@ private: System::Windows::Forms::Label^ labelTarget;
 			// ptbDepthMap
 			// 
 			this->ptbDepthMap->BackColor = System::Drawing::SystemColors::ControlDark;
-			this->ptbDepthMap->Location = System::Drawing::Point(12, 58);
+			this->ptbDepthMap->Location = System::Drawing::Point(13, 58);
 			this->ptbDepthMap->Name = L"ptbDepthMap";
-			this->ptbDepthMap->Size = System::Drawing::Size(520, 320);
+			this->ptbDepthMap->Size = System::Drawing::Size(320, 520);
 			this->ptbDepthMap->TabIndex = 41;
 			this->ptbDepthMap->TabStop = false;
 			// 
 			// labelRobotX
 			// 
 			this->labelRobotX->AutoSize = true;
-			this->labelRobotX->Location = System::Drawing::Point(12, 390);
+			this->labelRobotX->Location = System::Drawing::Point(336, 58);
 			this->labelRobotX->Name = L"labelRobotX";
-			this->labelRobotX->Size = System::Drawing::Size(107, 13);
+			this->labelRobotX->Size = System::Drawing::Size(104, 13);
 			this->labelRobotX->TabIndex = 42;
-			this->labelRobotX->Text = L"Robot position: None";
+			this->labelRobotX->Text = L"Robot (x, y, z): None";
 			this->labelRobotX->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// labelTarget
 			// 
 			this->labelTarget->AutoSize = true;
-			this->labelTarget->Location = System::Drawing::Point(180, 390);
+			this->labelTarget->Location = System::Drawing::Point(336, 80);
 			this->labelTarget->Name = L"labelTarget";
-			this->labelTarget->Size = System::Drawing::Size(70, 13);
+			this->labelTarget->Size = System::Drawing::Size(106, 13);
 			this->labelTarget->TabIndex = 43;
-			this->labelTarget->Text = L"Target: None";
+			this->labelTarget->Text = L"Target (x, y, z): None";
 			this->labelTarget->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// buttonGoToTarget
+			// 
+			this->buttonGoToTarget->Enabled = false;
+			this->buttonGoToTarget->Location = System::Drawing::Point(339, 105);
+			this->buttonGoToTarget->Name = L"buttonGoToTarget";
+			this->buttonGoToTarget->Size = System::Drawing::Size(72, 35);
+			this->buttonGoToTarget->TabIndex = 44;
+			this->buttonGoToTarget->Text = L"Go to target";
+			this->buttonGoToTarget->UseVisualStyleBackColor = true;
+			this->buttonGoToTarget->Click += gcnew System::EventHandler(this, &MainForm::buttonGoToTarget_Click);
+			// 
+			// backgroundWorkerRobotStarted
+			// 
+			this->backgroundWorkerRobotStarted->WorkerReportsProgress = true;
+			this->backgroundWorkerRobotStarted->WorkerSupportsCancellation = true;
+			this->backgroundWorkerRobotStarted->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerRobotStarted_DoWork);
+			this->backgroundWorkerRobotStarted->RunWorkerCompleted += gcnew System::ComponentModel::RunWorkerCompletedEventHandler(this, &MainForm::backgroundWorkerRobotStarted_RunWorkerCompleted);
+			// 
+			// backgroundWorkerDVLOn
+			// 
+			this->backgroundWorkerDVLOn->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerDVLOn_DoWork);
+			// 
+			// buttonScan
+			// 
+			this->buttonScan->Enabled = false;
+			this->buttonScan->Location = System::Drawing::Point(339, 156);
+			this->buttonScan->Name = L"buttonScan";
+			this->buttonScan->Size = System::Drawing::Size(72, 35);
+			this->buttonScan->TabIndex = 45;
+			this->buttonScan->Text = L"Scan";
+			this->buttonScan->UseVisualStyleBackColor = true;
+			this->buttonScan->Click += gcnew System::EventHandler(this, &MainForm::buttonScan_Click);
+			// 
+			// backgroundWorkerRobotScan
+			// 
+			this->backgroundWorkerRobotScan->WorkerReportsProgress = true;
+			this->backgroundWorkerRobotScan->WorkerSupportsCancellation = true;
+			this->backgroundWorkerRobotScan->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerRobotScan_DoWork);
+			this->backgroundWorkerRobotScan->RunWorkerCompleted += gcnew System::ComponentModel::RunWorkerCompletedEventHandler(this, &MainForm::backgroundWorkerRobotScan_RunWorkerCompleted);
+			// 
+			// textBox1
+			// 
+			this->textBox1->Location = System::Drawing::Point(427, 171);
+			this->textBox1->Name = L"textBox1";
+			this->textBox1->Size = System::Drawing::Size(68, 20);
+			this->textBox1->TabIndex = 46;
+			this->textBox1->Text = L"0";
+			this->textBox1->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBox1->TextChanged += gcnew System::EventHandler(this, &MainForm::textBox1_TextChanged);
+			// 
+			// labelDepthScan
+			// 
+			this->labelDepthScan->AutoSize = true;
+			this->labelDepthScan->Location = System::Drawing::Point(444, 156);
+			this->labelDepthScan->Name = L"labelDepthScan";
+			this->labelDepthScan->Size = System::Drawing::Size(36, 13);
+			this->labelDepthScan->TabIndex = 47;
+			this->labelDepthScan->Text = L"Depth";
+			this->labelDepthScan->TextAlign = System::Drawing::ContentAlignment::MiddleCenter;
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(1320, 634);
+			this->ClientSize = System::Drawing::Size(1209, 634);
+			this->Controls->Add(this->labelDepthScan);
+			this->Controls->Add(this->textBox1);
+			this->Controls->Add(this->buttonScan);
+			this->Controls->Add(this->buttonGoToTarget);
 			this->Controls->Add(this->labelTarget);
 			this->Controls->Add(this->labelRobotX);
 			this->Controls->Add(this->ptbDepthMap);
@@ -945,22 +1034,22 @@ private: System::Windows::Forms::Label^ labelTarget;
 
 			float* distances = dvl.getDistances();
 			float d = distances[0];
+
+			d = 0.715;
+
+
 			int u = target_point2D.x - camera_params.center.x;
 			int v = target_point2D.y - camera_params.center.y;
-			target_point3D = cv::Point3d(u * d / camera_params.fx, v * d / camera_params.fy, d);
+			//target_point3D = cv::Point3d(u * d / camera_params.fx, v * d / camera_params.fy, d);
+			target_point3D = cv::Point3d(-v * d / camera_params.fy, -u * d / camera_params.fx, d);
 
 			robot.setTarget(target_point3D);
 
-			
+			this->labelTarget->Text = "Target (x, y, z): " + getPrecision(target_point3D.x, 3) + " m " +
+				getPrecision(target_point3D.y, 3) + " m " +
+				getPrecision(target_point3D.z, 3) + " m";
 
-			this->labelTarget->Text = "Target: " +	getPrecision(target_point3D.x, 3) + " " + 
-													getPrecision(target_point3D.y, 3) + " " + 
-													getPrecision(target_point3D.z, 3);
-	
 			draw_target = true;
-
-
-
 
 		}
 		//// Zoom
@@ -1174,7 +1263,8 @@ private: System::Windows::Forms::Label^ labelTarget;
 
 			// Start video writer
 			std::string vid_path = getNewVideoPath();
-			output_video.open(vid_path, VideoWriter::fourcc('a', 'v', 'c', '1'), 15, cv::Size(640, 480), true);
+			//output_video.open(vid_path, VideoWriter::fourcc('a', 'v', 'c', '1'), 15, cv::Size(640, 480), true);
+			output_video.open(vid_path, VideoWriter::fourcc('m', 'p', '4', 'v'), 15, cv::Size(640, 480), true);
 			log("From video recording: " + vid_path + " created");
 		}
 		else {
@@ -1258,9 +1348,8 @@ private: System::Windows::Forms::Label^ labelTarget;
 		   // Receive data from robot continuously
 	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
-
-			backgroundWorkerRobot->ReportProgress(robot.pos[0]);
 			robot.rcvData();
+			backgroundWorkerRobot->ReportProgress(robot.pos[0]);
 			//Sleep(150);
 		}
 	}
@@ -1306,12 +1395,23 @@ private: System::Windows::Forms::Label^ labelTarget;
 				jetson.decodeFrame(long_buffer, total_pack);
 				stream_frame = jetson.getFrame();
 
+				// Draw center
+				cv::line(stream_frame, cv::Point(0, FRAME_HEIGHT / 2), cv::Point(FRAME_WIDTH, FRAME_HEIGHT / 2), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+				cv::line(stream_frame, cv::Point(FRAME_WIDTH / 2, 0), cv::Point(FRAME_WIDTH / 2, FRAME_HEIGHT), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+
+				// Draw target
+				if (draw_target) {
+					cv::circle(stream_frame, target_point2D, 5, cv::Scalar(0, 255, 0), 1);
+					cv::line(stream_frame, cv::Point(FRAME_WIDTH / 2, FRAME_HEIGHT / 2), target_point2D, cv::Scalar(0, 150, 0), 1, cv::LINE_AA);
+				}
+
 				// Record the stream
 				if (camera_recording)
 					output_video.write(stream_frame);
 				else
 					output_video.release();
 
+				// Draw measurement line
 				if (draw_measure) {
 					if (measure.a.x > 0 && measure.a.y > 0 && measure.b.x > 0 && measure.b.y)
 						cv::line(stream_frame, measure.a, measure.b, cv::Scalar(0, 0, 255), 1);
@@ -1319,13 +1419,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 					cv::circle(stream_frame, measure.b, 3, cv::Scalar(0, 0, 255), -1);
 				}
 
-				cv::line(stream_frame, cv::Point(0, FRAME_HEIGHT / 2), cv::Point(FRAME_WIDTH, FRAME_HEIGHT / 2), cv::Scalar(150, 150, 150), 1, cv::LINE_AA);
-				cv::line(stream_frame, cv::Point(FRAME_WIDTH / 2, 0), cv::Point(FRAME_WIDTH / 2, FRAME_HEIGHT), cv::Scalar(150, 150, 150), 1, cv::LINE_AA);
 
-				if (draw_target) {
-					cv::circle(stream_frame, target_point2D, 5, cv::Scalar(0, 255, 0), 1);
-					cv::line(stream_frame, cv::Point(FRAME_WIDTH / 2, FRAME_HEIGHT / 2), target_point2D, cv::Scalar(0, 150, 0), 1, cv::LINE_AA);
-				}
 
 				// Display the stream
 				if (camera_show)
@@ -1350,6 +1444,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 		   // Start DVL
 	private: System::Void buttonDVLon_Click(System::Object^ sender, System::EventArgs^ e) {
 		if (this->buttonDVLon->Text == L"DVL on") {
+			MessageBox::Show("Please make sure the DVL is underwater. It will break if not turned on underwtaer.");
 			this->labelDVLon->Visible = true;
 			this->buttonDVLyes->Visible = true;
 			this->buttonDVLno->Visible = true;
@@ -1366,6 +1461,8 @@ private: System::Windows::Forms::Label^ labelTarget;
 		this->buttonDVLyes->Visible = false;
 		this->buttonDVLno->Visible = false;
 		arduino.dvlOn();
+		backgroundWorkerDVLOn->RunWorkerAsync(1); // 30s and exceute DVL reader
+
 	}
 	private: System::Void buttonDVLno_Click(System::Object^ sender, System::EventArgs^ e) {
 		this->labelDVLon->Visible = false;
@@ -1447,8 +1544,8 @@ private: System::Windows::Forms::Label^ labelTarget;
 
 		float d = 1.0;
 
-		float pos_3d_x = u * d / camera_params.fx;
-		float pos_3d_y = v * d / camera_params.fy;
+		float pos_3d_x = -v * d / camera_params.fy;
+		float pos_3d_y = -u * d / camera_params.fx;
 		float pos_3d_z = d;
 
 		this->labelMouseX->Text = "u: " + u.ToString() + " p";
@@ -1462,8 +1559,8 @@ private: System::Windows::Forms::Label^ labelTarget;
 		float* distances = dvl.getDistances();
 		d = distances[0];
 
-		pos_3d_x = u * d / camera_params.fx;
-		pos_3d_y = v * d / camera_params.fy;
+		pos_3d_x = -v * d / camera_params.fy;
+		pos_3d_y = -u * d / camera_params.fx;
 		pos_3d_z = d;
 
 		this->label3dXFake->Text = "x: " + getPrecision(pos_3d_x, 3) + " m";
@@ -1486,6 +1583,7 @@ private: System::Windows::Forms::Label^ labelTarget;
 		}
 		if (measure.a.x > 0 && measure.a.y > 0 && measure.b.x > 0 && measure.b.y) {
 			float d = 1.0;
+			d = 0.715;
 			int u = measure.a.x - camera_params.center.x;
 			int v = measure.a.y - camera_params.center.y;
 			cv::Point3d p1 = cv::Point3d(u * d / camera_params.fx, v * d / camera_params.fy, d);
@@ -1493,11 +1591,14 @@ private: System::Windows::Forms::Label^ labelTarget;
 			v = measure.b.y - camera_params.center.y;
 			cv::Point3d p2 = cv::Point3d(u * d / camera_params.fx, v * d / camera_params.fy, d);
 			double result = cv::norm(p1 - p2);
-			this->labelLine->Text = "Line: " + getPrecision(result, 3) + " m";
+			//this->labelLine->Text = "Line: " + getPrecision(result, 3) + " m";
+
+			this->labelLine->Text = "Line: u1:" + (measure.a.x - camera_params.center.x) + " - u2 : " + (measure.b.x - camera_params.center.x);
 
 			// Fake
 			float* distances = dvl.getDistances();
 			d = distances[0];
+			d = 0.715;
 			u = measure.a.x - camera_params.center.x;
 			v = measure.a.y - camera_params.center.y;
 			p1 = cv::Point3d(u * d / camera_params.fx, v * d / camera_params.fy, d);
@@ -1527,9 +1628,71 @@ private: System::Windows::Forms::Label^ labelTarget;
 
 		   // Display robot state in real-time
 	private: System::Void backgroundWorkerRobot_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		
-		this->labelRobotX->Text = "Robot position (x,y,z): " + robot.pos[0] + " " + robot.pos[1] + " " + robot.pos[2];
+		// Only for display, x and y should be inversed in order to make more sense within the image
+		this->labelRobotX->Text = "Robot (x, y, z): " + getPrecision(robot.pos[1], 3) + " m " + getPrecision(robot.pos[0], 3) + " m " + getPrecision(robot.pos[2], 3) + " m";
 	}
 
+		   // Go to target
+	private: System::Void buttonGoToTarget_Click(System::Object^ sender, System::EventArgs^ e) {
+		log("Go to target");
+		this->buttonGoToTarget->Enabled = false;
+		backgroundWorkerRobotCommand->RunWorkerAsync(1);
+	}
+	private: System::Void backgroundWorkerRobotCommand_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
+		log("Robot command done");
+		this->buttonGoToTarget->Enabled = true;
+	}
+		   // Has the robot started to communicate ?
+	private: System::Void backgroundWorkerRobotStarted_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		robot.rcvData();
+		backgroundWorkerRobotStarted->CancelAsync();
+		e->Cancel = true;
+	}
+		   // Enable go to target button
+	private: System::Void backgroundWorkerRobotStarted_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
+		log("Robot started");
+		this->buttonGoToTarget->Enabled = true;
+		this->buttonScan->Enabled = true;
+
+		//jetson.turnOff();
+		//Sleep(25000); // Sleep 25s to let the jetson shutdown
+		//arduino.jetsonOff();
+		//log("OK");
+	}
+
+		   // Start DVL UDP reader
+	private: System::Void backgroundWorkerDVLOn_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		log("DVL initialization");
+		Sleep(30000);
+		char* path = "D:\projects\cyril\soft_lecture_DVL_envoi_UDP_Maelstrom_v0_5\executable_dvl_module.exe";
+		int result = system(path);
+		backgroundWorkerDVLOn->CancelAsync();
+		e->Cancel = true;
+	}
+
+
+	// Scanning the zone button
+	private: System::Void buttonScan_Click(System::Object^ sender, System::EventArgs^ e) {
+		this->buttonScan->Enabled = false;
+		this->textBox1->Enabled = false;
+		backgroundWorkerRobotScan->RunWorkerAsync(1);
+
+	}
+	private: System::Void backgroundWorkerRobotScan_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		log("Start scanning");
+		robot.scan();
+		backgroundWorkerRobotScan->CancelAsync();
+		e->Cancel = true;
+	}
+
+	private: System::Void backgroundWorkerRobotScan_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
+		this->buttonScan->Enabled = true;
+		this->textBox1->Enabled = true;
+		log("Scanning completed");
+	}
+	private: System::Void textBox1_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+		std::string depth_str = ConvertString2Char(textBox1->Text);
+		robot.scanning_depth = std::stof(depth_str);
+	}
 };
 }
