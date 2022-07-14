@@ -51,3 +51,6 @@
 // DVL info
 #define DVL_IP "127.0.0.1"
 #define DVL_CONTINUOUS_PORT 8888
+
+// Maths
+#define PI 3.141592653589793238462

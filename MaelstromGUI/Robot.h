@@ -2,6 +2,7 @@
 #include "PracticalSocket.h"
 #include "config.h"
 #include <random>
+#include <map>
 
 class Robot {
 
@@ -18,10 +19,16 @@ private:
 public:
 	float pos[3] = {0,0,0}; // x, y, z
 	float angles[3] = { 0,0,0 };
+	cv::Point3f coordinates = cv::Point3f(0,0,0);
 	// Motor positions
 	int motors[8] = { 0,0,0,0,0,0,0,0 };
 	// Robot state
 	int state = -1;
+
+	std::map<std::string, std::string> state_name;
+	std::string current_state;
+
+	
 	/*
 	States:
 		0 wait
@@ -42,8 +49,10 @@ public:
 		100 error
 	*/
 	// Actuators state
-	int gripper_state = -1;
-	int pump_state = -1;
+	std::string gripper_state_str = "FALSE";
+	std::string pump_state_str = "FALSE";
+	int gripper_state = 0;
+	int pump_state = 0;
 
 	unsigned short request_id = 1;
 	int rcv_request_id = 0;
@@ -51,6 +60,13 @@ public:
 	float target[4] = { 0,0,0,0 }; // x, y, z, delta z
 
 	float scanning_depth;
+
+	// Plateform: working zone 
+	int max_x = 7; // Shall be divised by two, the 0 is in the center
+	int max_y = 4; // Shall be divised by two, the 0 is in the center
+	float start_x = - float(max_x) / 2, start_y = - float(max_y) / 2;
+	float end_x = float(max_x) / 2, end_y = float(max_y) / 2;
+
 	
 
 public:
@@ -76,7 +92,26 @@ public:
 		std::uniform_int_distribution<std::mt19937::result_type> dist6(1, 10000); // distribution in range [1, 6]
 		this->request_id = dist6(rng);
 
-		this->scanning_depth = 0;
+		this->scanning_depth = 0; // Bottom of the pillars. Water should be around -1.5m. 
+
+		this->state_name["0"] = "Wait";
+		this->state_name["1"] = "Home";
+		this->state_name["10"] = "Ready";
+		this->state_name["20"] = "Init";
+		this->state_name["21"] = "Advanced init";
+		this->state_name["22"] = "Check init";
+		this->state_name["23"] = "Finalize advanced init";
+		this->state_name["30"] = "All pos";
+		this->state_name["31"] = "All neg";
+		this->state_name["32"] = "Single pos";
+		this->state_name["33"] = "Single neg";
+		this->state_name["40"] = "Control move";
+		this->state_name["41"] = "Manual move";
+		this->state_name["42"] = "P2P write file";
+		this->state_name["50"] = "Stop";
+		this->state_name["100"] = "Error";
+
+		
 	}
 
 	~Robot() {}
@@ -87,15 +122,38 @@ public:
 	void rcvData() {
 		this->continuous_socket.recvFrom(this->rcv_buffer, 300, (std::string)client_ip, this->continuous_port);
 
+		//log("From Robot: " + (std::string)this->rcv_buffer);
+
 		int ret = sscanf(this->rcv_buffer,
-			"*%d;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d",
+			"*%d;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s",
 			&this->rcv_request_id,
 			&this->pos[0], &this->pos[1], &this->pos[2],
 			&this->angles[0], &this->angles[1], &this->angles[2],
 			&this->motors[0], &this->motors[1], &this->motors[2], &this->motors[3], &this->motors[4], &this->motors[5], &this->motors[6], &this->motors[7],
-			&this->state, &this->gripper_state, &this->pump_state);
+			&this->state, &this->gripper_state_str, &this->pump_state_str);
 
+		// Update coordinates
+		this->coordinates = cv::Point3f(this->pos[0], this->pos[1], this->pos[2]);
 
+		// Update gripper state
+		if (this->gripper_state_str == "TRUE")
+			this->gripper_state = 1;
+		else
+			this->gripper_state = 0;
+
+		// Update pump state
+		if (this->pump_state_str == "TRUE")
+			this->pump_state = 1;
+		else
+			this->pump_state = 0;
+
+		// Set mrad in degree
+		this->angles[0] = this->angles[0]  * 180 / PI;
+		this->angles[1] = this->angles[1]  * 180 / PI;
+		this->angles[2] = this->angles[2]  * 180 / PI;
+
+		// Update state
+		this->current_state = this->state_name[std::to_string(this->state)];
 		ZeroMemory(this->rcv_buffer, 300);
 	}
 
@@ -211,46 +269,64 @@ public:
 	}
 
 	void scan() {
+		// +/-3.5x +/-2y (7m - 4m)
 
+		/*
+			  Plateform
+			 ___________
+			|           |
+			|           |		x
+			|           |		|
+			|           |		|___ y
+			|     0     | +- 3.5m
+			|           |
+			|           |
+			|			|
+			 -----------
+				+- 2.0
+		*/
 		float z = this->scanning_depth;
 
+		float step = 0.5;
+		int n_step = this->max_x / step;
+
+		float x = 0, y = 0;
+
 		std::vector<cv::Point3d> scan_path;
-		// Init
-		scan_path.push_back(cv::Point3d(-2.0, -2.0, z));
-		// 1st
-		scan_path.push_back(cv::Point3d(-2, 2.0, z));
-		scan_path.push_back(cv::Point3d(-1.5, 2.0, z));
-		// 2nd
-		scan_path.push_back(cv::Point3d(-1.5, -2.0, z));
-		scan_path.push_back(cv::Point3d(-1.0, -2.0, z));
-		// 3th
-		scan_path.push_back(cv::Point3d(-1.0, 2.0, z));
-		scan_path.push_back(cv::Point3d(-0.5, 2.0, z));
-		// 4th
-		scan_path.push_back(cv::Point3d(-0.5, -2.0, z));
-		scan_path.push_back(cv::Point3d(0.0, -2.0, z));
-		// 4th
-		scan_path.push_back(cv::Point3d(0.0, 2.0, z));
-		scan_path.push_back(cv::Point3d(0.5, 2.0, z));
-		// 4th
-		scan_path.push_back(cv::Point3d(0.5, -2.0, z));
-		scan_path.push_back(cv::Point3d(1.0, -2.0, z));
-		// 5th
-		scan_path.push_back(cv::Point3d(1.0, 2.0, z));
-		scan_path.push_back(cv::Point3d(1.5, 2.0, z));
-		// 6th
-		scan_path.push_back(cv::Point3d(1.5, -2.0, z));
-		scan_path.push_back(cv::Point3d(2.0, -2.0, z));
-		// 7th
-		scan_path.push_back(cv::Point3d(2.0, 2.0, z));
-		// Init
-		scan_path.push_back(cv::Point3d(-2.0, -2.0, z));
+
+		for (int i = 0; i < n_step+1; i++) {
+			if (i == 0) {	
+				x = this->start_x;
+				y = this->start_y;
+				scan_path.push_back(cv::Point3d(x, y, z));
+				y = this->end_y;
+				scan_path.push_back(cv::Point3d(x, y, z));
+			}
+			else {
+				if (i % 2 != 0) {
+					x += step;
+					scan_path.push_back(cv::Point3d(x, y, z));
+					y = this->start_y;
+					scan_path.push_back(cv::Point3d(x, y, z));
+				}
+				else {
+					x += step;
+					scan_path.push_back(cv::Point3d(x, y, z));
+					y = this->end_y;
+					scan_path.push_back(cv::Point3d(x, y, z));
+				}
+			}
+			log(std::to_string(x) + " - " + std::to_string(y));
+		}
 
 		for (size_t i = 0; i < scan_path.size(); i++) {
 			log("Scanning: " + std::to_string(i) + "/" + std::to_string(scan_path.size()));
 			sendCommand(scan_path[i]);
+			log(std::to_string(scan_path[i].x) + " - " + std::to_string(scan_path[i].y));
+
 			Sleep(250);
 		}
+
 	}
 
 	/*------------------------------

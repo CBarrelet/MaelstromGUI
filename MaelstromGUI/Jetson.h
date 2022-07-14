@@ -70,6 +70,7 @@ public:
 
 	void turnOn() {
 		char buffer[100];
+		ZeroMemory(buffer, 100);
 		this->socket.recvFrom(buffer, 100, this->client_ip, this->request_port);
 		log("From Jetson: " + (std::string)buffer);
 	}

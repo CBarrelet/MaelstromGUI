@@ -13,8 +13,10 @@ private:
 
 	UDPSocket socket_request;
 
+public:
 	float vx = 0, vy = 0;
 	float distances[4]{ 0,0,0,0 }; // Altitude
+	cv::Point3f coordinates[4]; // Coordinates of each points
 	float imu[3] = { 0,0,0 }; // roll, pitch, yaw (degree)
 
 
@@ -71,6 +73,42 @@ public:
 			
 		ZeroMemory(this->rcv_buffer, 100);
 	}
+
+	/*------------------------------
+		SETTER
+	-------------------------------*/
+	void set_coordinates() {
+
+	/*	
+		Calcule les coordonnées des points d'imapct du dvl dans le repère du DVL. 
+		En considérant que le connecteur est orienté avec l'axe -x_dvl et on a z_dvl vers le haut.
+	*/
+
+		double sincos = 0.27059805; // sin(22.5°) * cos(45°)
+		double cosalpha = 0.9238795; // cos(22.5°)
+
+		float x1 = - this->distances[0] * sincos;
+		float y1 = - this->distances[0] * sincos;
+		float z1 = - this->distances[0] * cosalpha;
+		this->coordinates[0] = cv::Point3f(x1, y1, z1);
+
+		float x2 = - this->distances[1] * sincos;
+		float y2 =   this->distances[1] * sincos;
+		float z2 = - this->distances[1] * cosalpha;
+		this->coordinates[1] = cv::Point3f(x2, y2, z2);
+
+		float x3 =   this->distances[2] * sincos;
+		float y3 =   this->distances[2] * sincos;
+		float z3 = - this->distances[2] * cosalpha;
+		this->coordinates[2] = cv::Point3f(x3, y3, z3);
+
+		float x4 =   this->distances[3] * sincos;
+		float y4 = - this->distances[3] * sincos;
+		float z4 = - this->distances[3] * cosalpha;
+		this->coordinates[3] = cv::Point3f(x4, y4, z4);
+	}
+
+
 
 
 	/*------------------------------
