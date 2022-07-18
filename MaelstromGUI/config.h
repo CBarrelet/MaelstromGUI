@@ -28,10 +28,10 @@
 #define BUF_LEN 65540
 
 // Camera calibration
-#define CAMERA_CX 3.1950000000000000e+002
-#define CAMERA_CY 2.3950000000000000e+002
-#define CAMERA_FX 4.2750715468970623e+002
-#define CAMERA_FY 4.2750715468970623e+002
+#define CAMERA_CX 3.1913643429071089e+002 // In air 3.1950000000000000e+002
+#define CAMERA_CY 2.3907733418623138e+002 // In air 2.3950000000000000e+002
+#define CAMERA_FX 7.1820477294921875e+002 // In air 4.2750715468970623e+002
+#define CAMERA_FY 7.1790618896484375e+002 // In air 4.2750715468970623e+002
 
 // GUI info
 #define GUI_IP "192.168.0.11"
@@ -51,6 +51,44 @@
 // DVL info
 #define DVL_IP "127.0.0.1"
 #define DVL_CONTINUOUS_PORT 8888
+// Barometer info
+#define BAROMETER_IP "192.168.0.253"
+#define BAROMETER_CONTINUOUS_PORT 5819
+
+// IMU + Barometer plateform info
+#define PLATEFORM_IP "127.0.0.1"
+#define PLATEFORM_S_CONTINUOUS_PORT 5823 // STARBOARD (tribord, côté du y négatif du robot)
+#define PLATEFORM_P_CONTINUOUS_PORT 5825 // PORT (babord, côté du y positif du robot)
 
 // Maths
 #define PI 3.141592653589793238462
+
+// Arduino pressure sensor offset
+#define PRESSURE_SENSOR_OFFSET 0.15
+#define SALINITY_GRAVITY_COEFF 100.91
+
+// Logs dir
+#define LOGS_DIR "D:/projects/cyril/logs/"
+// Videos dir
+#define VIDEOS_DIR "D:/projects/cyril/videos/"
+// Depth map dir
+#define DEPTHMAP_DIR "D:/projects/cyril/depthmaps/"
+
+// DVL reader and closer
+#define DVL_READER_START "start D:/projects/cyril/soft_lecture_DVL_envoi_UDP_Maelstrom_v0_5/executable_dvl_module.exe"
+#define DVL_READER_CLOSE "taskkill /f /im executable_dvl_module.exe"
+
+// IMU reader and closer
+#define IMU_READER_START "start D:/projects/cyril/module_pimu_tampon_smartcam_v0_2/executable2/PIMU_module_Maelstrom.exe"
+#define IMU_READER_CLOSE "taskkill /f /im PIMU_module_Maelstrom.exe"
+
+// IMU starboard reader and closer
+#define IMU_S_READER_START "start D:/projects/cyril/module_PIMU_barometre_A_Maelstrom_2022/executables/PIMU_A_253_barometer.exe"
+#define IMU_S_READER_CLOSE "taskkill /f /im PIMU_A_253_barometer.exe"
+
+// IMU port reader and closer
+#define IMU_P_READER_START "start D:/projects/cyril/module_PIMU_barometre_B_Maelstrom_2022/executables/PIMU_B_252.exe"
+#define IMU_P_READER_CLOSE "taskkill /f /im PIMU_B_252.exe"
+
+
+

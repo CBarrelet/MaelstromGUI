@@ -1,0 +1,20 @@
+-14.731550 -4.957156 32.688975
+0.012987 0.000273 0.000171
+0.000273 0.013125 0.000440
+0.000171 0.000440 0.013069
+../log_IMU/log_PIMU_ repertoire_stockage_fichier_log_A
+0 demande_stockage_magneto_pour_calibration
+
+Attention. bien respecter les espaces et sauts de ligne.
+Les valeurs sont disposées telles qu'elles apparaissent dans la fenetre du logiciel Magneto1.2
+
+1ère ligne de ce fichier = Combined bias
+2ème ligne de ce fichier = Combined scale factors ligne 1
+3ème ligne de ce fichier = Combined scale factors ligne 2
+4ème ligne de ce fichier = Combined scale factors ligne 3
+
+Ne pas considérer les 9 paramètres du bas de la fenêtre de résultats du logiciel Magneto1.2
+Attention: pour les nombres à virgules, utiliser le symbole 'point' (.) et non la 'virgule' (,)
+Pour les nombres rond, écrire .0 après le nombre. Exemple : 5 s'écrit 5.0
+
+demande_stockage_magneto_pour_calibration  est à 1 si on veut enregistrer les magnétos directement au format compatible avec magneto12, et à 0 le reste du temps.

@@ -45,7 +45,7 @@ public:
 	-------------------------------*/
 	void rcvData() {
 		this->socket.recvFrom(this->rcv_buffer, 100, (std::string)client_ip, this->continuous_port);
-		//log("From DVL: " + (std::string)rcv_buffer);
+		log("From DVL: " + (std::string)rcv_buffer);
 
 		float vx=0, vy=0;
 		float distances[4]{ 0,0,0,0 };
@@ -59,17 +59,24 @@ public:
 			&imu[0], &imu[1], &imu[2], 
 			&new_dvl_value, &new_imu_value);
 
+		float min_distance = 0.3;
+
 		if (new_dvl_value) {
-			this->vx = vx;
-			this->vy = vy;
-			memcpy(this->distances, distances, 4);
+			if ((distances[0] > min_distance) && (distances[1] > min_distance) && (distances[2] > min_distance) && (distances[3] > min_distance)) {
+				this->vx = vx;
+				this->vy = vy;
+				this->distances[0] = distances[0];
+				this->distances[1] = distances[1];
+				this->distances[2] = distances[2];
+				this->distances[3] = distances[3];
+			}
+			else
+				log("DVL: " + std::to_string(distances[0]) + " " + std::to_string(distances[1]) + " " + std::to_string(distances[2]) + " " + std::to_string(distances[3]));
 		}
 
-		if (new_imu_value) {
+		if (new_imu_value)
 			for (int i = 0; i < 3; i++)
-				imu[i] = imu[i] / 10; // In degree
-			memcpy(this->imu, imu, 4);
-		}
+				this->imu[i] = imu[i] / 10; // In degree
 			
 		ZeroMemory(this->rcv_buffer, 100);
 	}
@@ -77,7 +84,7 @@ public:
 	/*------------------------------
 		SETTER
 	-------------------------------*/
-	void set_coordinates() {
+	void set_coordinates(float depth) {
 
 	/*	
 		Calcule les coordonnées des points d'imapct du dvl dans le repère du DVL. 
@@ -89,27 +96,25 @@ public:
 
 		float x1 = - this->distances[0] * sincos;
 		float y1 = - this->distances[0] * sincos;
-		float z1 = - this->distances[0] * cosalpha;
+		float z1 = - this->distances[0] * cosalpha - depth;
 		this->coordinates[0] = cv::Point3f(x1, y1, z1);
 
 		float x2 = - this->distances[1] * sincos;
 		float y2 =   this->distances[1] * sincos;
-		float z2 = - this->distances[1] * cosalpha;
+		float z2 = - this->distances[1] * cosalpha - depth;
 		this->coordinates[1] = cv::Point3f(x2, y2, z2);
 
 		float x3 =   this->distances[2] * sincos;
 		float y3 =   this->distances[2] * sincos;
-		float z3 = - this->distances[2] * cosalpha;
+		float z3 = - this->distances[2] * cosalpha - depth;
 		this->coordinates[2] = cv::Point3f(x3, y3, z3);
 
 		float x4 =   this->distances[3] * sincos;
 		float y4 = - this->distances[3] * sincos;
-		float z4 = - this->distances[3] * cosalpha;
+		float z4 = - this->distances[3] * cosalpha - depth;
 		this->coordinates[3] = cv::Point3f(x4, y4, z4);
+
 	}
-
-
-
 
 	/*------------------------------
 		GETTER

@@ -138,6 +138,7 @@
     <ClCompile Include="DVL.cpp" />
     <ClCompile Include="Jetson.cpp" />
     <ClCompile Include="MainForm.cpp" />
+    <ClCompile Include="Plateform.cpp" />
     <ClCompile Include="PracticalSocket.cpp" />
     <ClCompile Include="Robot.cpp" />
     <ClCompile Include="Server.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="MainForm.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="Plateform.h" />
     <ClInclude Include="PracticalSocket.h" />
     <ClInclude Include="Robot.h" />
     <ClInclude Include="Server.h" />

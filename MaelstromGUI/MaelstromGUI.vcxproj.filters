@@ -48,6 +48,9 @@
     <ClCompile Include="Jetson.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Plateform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainForm.h">
@@ -84,6 +87,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Jetson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Plateform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

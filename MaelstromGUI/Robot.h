@@ -28,6 +28,8 @@ public:
 	std::map<std::string, std::string> state_name;
 	std::string current_state;
 
+	bool has_started = false;
+
 	
 	/*
 	States:
@@ -121,6 +123,7 @@ public:
 	-------------------------------*/
 	void rcvData() {
 		this->continuous_socket.recvFrom(this->rcv_buffer, 300, (std::string)client_ip, this->continuous_port);
+		
 
 		//log("From Robot: " + (std::string)this->rcv_buffer);
 
@@ -155,6 +158,8 @@ public:
 		// Update state
 		this->current_state = this->state_name[std::to_string(this->state)];
 		ZeroMemory(this->rcv_buffer, 300);
+
+		this->has_started = true;
 	}
 
 	/*------------------------------

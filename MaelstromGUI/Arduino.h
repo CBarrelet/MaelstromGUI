@@ -8,9 +8,14 @@ class Arduino {
 private:
 	//short int buffuer_size = 120;
 	char rcv_buffer[120];
-	UDPSocket socket;
-	std::string server_ip;
-	std::string client_ip;
+	UDPSocket request_socket;
+	std::string request_server_ip;
+	std::string request_client_ip;
+	unsigned short request_port;
+
+	UDPSocket continuous_socket; // To receive data from the program created by Vincent
+	std::string continuous_server_ip;
+	std::string continuous_client_ip;
 	unsigned short continuous_port;
 
 	// Socket to turn off the Jetson
@@ -22,8 +27,11 @@ private:
 	char jetson_buffer[100];
 	bool is_jetson_on = false;
 	
-	float imu[3] = {0,0,0}; // roll, pitch, yaw (degree)
+	float imu[3] = {0, 0, 0}; // roll, pitch, yaw (degree)
+	float v_gyro[3] = { 0,0,0 }; // Gyro x, y, z in °.s^-1
+
 	float depth = 0; // pressure sensor (meter)
+	float pressure_sm = 0; // Pressure from the smart cam in mbar
 
 	
 public:
@@ -32,20 +40,30 @@ public:
 		CONSTRUCTOR / DESTRUCTOR
 	-------------------------------*/
 	Arduino() {
-		this->server_ip = GUI_IP;
-		this->client_ip = ARDUINO_IP;
+		this->request_server_ip = GUI_IP;
+		this->request_client_ip = ARDUINO_IP;
+		this->request_port = ARDUINO_CONTINUOUS_PORT;
+		this->request_socket.init();
+		this->request_socket.setLocalAddressAndPort(this->request_server_ip, this->request_port);
+		this->request_socket.setBroadcast();
+
+		this->continuous_server_ip = LOCAL_IP;
+		this->continuous_client_ip = LOCAL_IP;
 		this->continuous_port = ARDUINO_CONTINUOUS_PORT;
-		this->socket.init();
-		this->socket.setLocalAddressAndPort(this->server_ip, this->continuous_port);
-		this->socket.setBroadcast();
+		this->continuous_socket.init();
+		this->continuous_socket.setLocalAddressAndPort(this->continuous_server_ip, this->continuous_port);
+		this->continuous_socket.setBroadcast();
+
 
 		this->jetson_socket.init();
-		this->jetson_socket.setLocalAddressAndPort(this->server_ip, this->jetson_request_port);
+		this->jetson_socket.setLocalAddressAndPort(this->request_server_ip, this->jetson_request_port);
 		this->jetson_socket.setBroadcast();
 	}
 
 	~Arduino() {
-		this->socket.disconnect();
+		this->request_socket.disconnect();
+		this->continuous_socket.disconnect();
+		this->jetson_socket.disconnect();
 	}
 
 	/*------------------------------
@@ -54,21 +72,32 @@ public:
 
 	void rcvAny() {
 		char buffer[120];
-		this->socket.recvFrom(buffer, 120, (std::string)client_ip, this->continuous_port);
+		this->continuous_socket.recvFrom(buffer, 120, (std::string)continuous_client_ip, this->continuous_port);
 		log("Arduino has started.");
+		ZeroMemory(this->rcv_buffer, 100);
 	}
 
-	void rcvData() {
-		this->socket.recvFrom(this->rcv_buffer, 120, (std::string)client_ip, this->continuous_port);
-		//log("From Arduino: " + (std::string)this->rcv_buffer);
+	void rcvData(float barometer_pressure) {
+		this->continuous_socket.recvFrom(this->rcv_buffer, 120, (std::string)continuous_client_ip, this->continuous_port);
+		log("From Arduino: " + (std::string)this->rcv_buffer);
 
-		int roll=0, pitch=0, yaw=0, depth=0;
-		int ret = sscanf(this->rcv_buffer, "E,%d,%d,%d,%d", &roll, &pitch, &yaw, &depth);
+		float roll = 0, pitch = 0, yaw = 0, depth = 0, gyrx = 0, gyry = 0, gyrz = 0;
+		int pressure_sm = 0;
+		//int ret = sscanf(this->rcv_buffer, "E,%d,%d,%d,%d", &roll, &pitch, &yaw, &depth);
 
-		this->imu[0] = (float)roll / 10;
-		this->imu[1] = (float)pitch / 10;
-		this->imu[2] = (float)yaw / 10;
-		this->depth = (float)depth / 100;
+		int ret = sscanf(this->rcv_buffer, "S,%f,%f,%f,%f,%f,%f,%d", &roll, &pitch, &yaw, &gyrx, &gyry, &gyrz, &pressure_sm);
+
+		this->pressure_sm = pressure_sm;
+
+		this->imu[0] = roll;
+		this->imu[1] = pitch;
+		this->imu[2] = yaw;
+
+		this->v_gyro[0] = gyrx;
+		this->v_gyro[1] = gyry;
+		this->v_gyro[2] = gyrz;
+
+		this->depth = ((float)pressure_sm - barometer_pressure) / SALINITY_GRAVITY_COEFF - PRESSURE_SENSOR_OFFSET;
 		ZeroMemory(this->rcv_buffer, 100);
 	}
 	/*------------------------------
@@ -76,13 +105,13 @@ public:
 	-------------------------------*/
 	void dvlOn() {
 		std::string on = "DVLON\n";
-		socket.sendTo(on.c_str(), 120, ARDUINO_IP, ARDUINO_REQUEST_PORT);
+		request_socket.sendTo(on.c_str(), 120, ARDUINO_IP, ARDUINO_REQUEST_PORT);
 		log("To Arduino: " + on);
 	}
 
 	void dvlOff() {
 		std::string off = "DVLOFF\n";
-		socket.sendTo(off.c_str(), 120, ARDUINO_IP, ARDUINO_REQUEST_PORT);
+		request_socket.sendTo(off.c_str(), 120, ARDUINO_IP, ARDUINO_REQUEST_PORT);
 		log("To Arduino: " + off);
 	}
 
@@ -91,13 +120,13 @@ public:
 	-------------------------------*/
 	void jetsonOn() {
 		std::string on = "JETON\n";
-		socket.sendTo(on.c_str(), 100, ARDUINO_IP, ARDUINO_REQUEST_PORT);
+		request_socket.sendTo(on.c_str(), 100, ARDUINO_IP, ARDUINO_REQUEST_PORT);
 		log("To Arduino: " + on);
 	}
 
 	void jetsonOff() {
 		std::string off = "JETOFF\n";
-		socket.sendTo(off.c_str(), 100, ARDUINO_IP, ARDUINO_REQUEST_PORT);
+		request_socket.sendTo(off.c_str(), 100, ARDUINO_IP, ARDUINO_REQUEST_PORT);
 		log("To Arduino: " + off);
 	}
 

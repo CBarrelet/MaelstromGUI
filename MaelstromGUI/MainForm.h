@@ -16,6 +16,7 @@
 #include "Robot.h"
 #include "Jetson.h"
 #include "DepthMap.h"
+#include "Plateform.h"
 
 #include "config.h"
 
@@ -97,8 +98,10 @@ namespace MaelstromGUI {
 	using namespace cv;
 
 	// Logs path
-	string log_dir_path("D:/projects/cyril/logs/");
-	string videos_dir_path("D:/projects/cyril/videos/");
+	string log_dir_path(LOGS_DIR);
+	string videos_dir_path(VIDEOS_DIR);
+	string depthmap_dir_path(DEPTHMAP_DIR);
+
 
 	// Date and time
 	struct tm newtime;
@@ -156,6 +159,8 @@ namespace MaelstromGUI {
 
 	DepthMap depth_map;
 
+	Plateform plateform;
+
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
 	vector<Bbx> null_bbx_vector;
@@ -176,7 +181,26 @@ namespace MaelstromGUI {
 	public:
 		MainForm(void)
 		{
+			// Keep track of logs
+			if (false) {
+				string log_path = log_dir_path + getTime() + ".txt";
+				freopen(log_path.c_str(), "w", stdout);
+			}
+			log("Start");
+
 			InitializeComponent();
+
+			// Start DVL reader
+			system(DVL_READER_START);
+
+			// Start IMU reader
+			system(IMU_READER_START);
+
+			// Start IMU starboard reader
+			system(IMU_S_READER_START);
+
+			// Start IMU port reader
+			system(IMU_P_READER_START);
 
 			// Camera calibration
 			camera_params.center = cv::Point(CAMERA_CX, CAMERA_CY);
@@ -187,39 +211,33 @@ namespace MaelstromGUI {
 			target_point2D = cv::Point(0, 0);
 			target_point3D = cv::Point3d(0, 0, 0);
 
-
 			// Measurment points
 			measure.a = cv::Point(-10, -10);
 			measure.b = cv::Point(-10, -10);
 
-			cout << getTimeStamp() << endl;
-
-			// Keep track of logs
-			if (false) {
-				string log_path = log_dir_path + getTime() + ".txt";
-				freopen(log_path.c_str(), "w", stdout);
-			}
-			log("Start");
-
 			// Robot
-			// // Check if robot has started
-			backgroundWorkerRobotStarted->RunWorkerAsync(1);
-			// To receive continuous data from the robot
-			backgroundWorkerRobot->RunWorkerAsync(1);
+			backgroundWorkerRobotStarted->RunWorkerAsync(1); // Check if robot has started
+			backgroundWorkerRobot->RunWorkerAsync(1); // To receive continuous data from the robot
+
 			// Arduino
-			// Check if arduino has started
-			backgroundWorkerArduinoStarted->RunWorkerAsync(1);
-			// To receive continuous data from the arduino
-			backgroundWorkerArduino->RunWorkerAsync(1);
+			backgroundWorkerArduinoStarted->RunWorkerAsync(1); // Check if arduino has started
+			backgroundWorkerArduino->RunWorkerAsync(1); // To receive continuous data from the arduino
+
 			// Jetson
-			// To receive continuous data from the jetson
-			backgroundWorkerJetson->RunWorkerAsync(1);
+			backgroundWorkerJetson->RunWorkerAsync(1); // To receive continuous data from the jetson
+
 			// DVL
-			// To receive continuous data from the dvl
-			backgroundWorkerDVL->RunWorkerAsync(1);
+			backgroundWorkerDVL->RunWorkerAsync(1); // To receive continuous data from the dvl
+
 			// Depth map
-			// Display the depth map
-			backgroundWorkerDepthMap->RunWorkerAsync(1);
+			backgroundWorkerDepthMap->RunWorkerAsync(1); // Display the depth map*
+
+			// Plateform starboard
+			backgroundWorkerPlateformS->RunWorkerAsync(1); // To receive continuous data from the plateform starboard
+
+			// Plateform port
+			backgroundWorkerPlateformP->RunWorkerAsync(1); // To receive continuous data from the plateform port
+
 		}
 
 	protected:
@@ -247,7 +265,6 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::TrackBar^ video_trackBar;
 	private: System::Windows::Forms::Label^ video_label;
 	private: System::Windows::Forms::Button^ record_button;
-
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerJetson;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobot;
 	private: System::Windows::Forms::Label^ label1;
@@ -269,14 +286,12 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ label3dX;
 	private: System::Windows::Forms::Label^ label3dZ;
 	private: System::Windows::Forms::Label^ labelDVL;
-
 	private: System::Windows::Forms::Label^ label3dZFake;
 	private: System::Windows::Forms::Label^ label3dYFake;
 	private: System::Windows::Forms::Button^ buttonScan;
 	private: System::Windows::Forms::Label^ label3dXFake;
 	private: System::Windows::Forms::Label^ labelLineFake;
 	private: System::Windows::Forms::Label^ labelRobotX;
-
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDepthMap;
 	private: System::Windows::Forms::PictureBox^ ptbDepthMap;
 	private: System::Windows::Forms::Label^ labelTarget;
@@ -290,15 +305,19 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ labelRobotState;
 	private: System::Windows::Forms::Label^ labelArduinoIMU;
 	private: System::Windows::Forms::Label^ labelArduinoDepth;
-private: System::Windows::Forms::Label^ labelGripper;
-private: System::Windows::Forms::Label^ labelPump;
-private: System::Windows::Forms::Label^ labelDvlV;
-private: System::Windows::Forms::Label^ labelDvlImu;
-private: System::Windows::Forms::Label^ labelDvlDistances;
-private: System::Windows::Forms::Button^ buttonResolutionMap;
+	private: System::Windows::Forms::Label^ labelGripper;
+	private: System::Windows::Forms::Label^ labelPump;
+	private: System::Windows::Forms::Label^ labelDvlV;
+	private: System::Windows::Forms::Label^ labelDvlImu;
+	private: System::Windows::Forms::Label^ labelDvlDistances;
+	private: System::Windows::Forms::Label^ labelPlateformS; private: System::Windows::Forms::Label^ label5;
+	private: System::Windows::Forms::Label^ labelPlateformP;
+	private: System::Windows::Forms::Label^ labelAtmPressure;
+	private: System::Windows::Forms::Button^ buttonResolutionMap;
 
-
-
+	private: System::Windows::Forms::Button^ buttonSaveDepthMap;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformS;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformP;
 
 	private: System::ComponentModel::IContainer^ components;
 
@@ -376,6 +395,12 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			this->labelDvlImu = (gcnew System::Windows::Forms::Label());
 			this->labelDvlDistances = (gcnew System::Windows::Forms::Label());
 			this->buttonResolutionMap = (gcnew System::Windows::Forms::Button());
+			this->buttonSaveDepthMap = (gcnew System::Windows::Forms::Button());
+			this->backgroundWorkerPlateformS = (gcnew System::ComponentModel::BackgroundWorker());
+			this->backgroundWorkerPlateformP = (gcnew System::ComponentModel::BackgroundWorker());
+			this->labelPlateformS = (gcnew System::Windows::Forms::Label());
+			this->labelPlateformP = (gcnew System::Windows::Forms::Label());
+			this->labelAtmPressure = (gcnew System::Windows::Forms::Label());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->BeginInit();
@@ -902,7 +927,7 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			// 
 			this->labelDvlV->AutoSize = true;
 			this->labelDvlV->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->labelDvlV->Location = System::Drawing::Point(341, 308);
+			this->labelDvlV->Location = System::Drawing::Point(341, 330);
 			this->labelDvlV->Name = L"labelDvlV";
 			this->labelDvlV->Size = System::Drawing::Size(97, 13);
 			this->labelDvlV->TabIndex = 54;
@@ -913,7 +938,7 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			// 
 			this->labelDvlImu->AutoSize = true;
 			this->labelDvlImu->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->labelDvlImu->Location = System::Drawing::Point(341, 330);
+			this->labelDvlImu->Location = System::Drawing::Point(341, 352);
 			this->labelDvlImu->Name = L"labelDvlImu";
 			this->labelDvlImu->Size = System::Drawing::Size(136, 13);
 			this->labelDvlImu->TabIndex = 55;
@@ -924,7 +949,7 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			// 
 			this->labelDvlDistances->AutoSize = true;
 			this->labelDvlDistances->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->labelDvlDistances->Location = System::Drawing::Point(341, 352);
+			this->labelDvlDistances->Location = System::Drawing::Point(341, 375);
 			this->labelDvlDistances->Name = L"labelDvlDistances";
 			this->labelDvlDistances->Size = System::Drawing::Size(135, 13);
 			this->labelDvlDistances->TabIndex = 56;
@@ -935,16 +960,79 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			// 
 			this->buttonResolutionMap->Location = System::Drawing::Point(12, 584);
 			this->buttonResolutionMap->Name = L"buttonResolutionMap";
-			this->buttonResolutionMap->Size = System::Drawing::Size(75, 23);
+			this->buttonResolutionMap->Size = System::Drawing::Size(119, 23);
 			this->buttonResolutionMap->TabIndex = 57;
-			this->buttonResolutionMap->Text = L"Resolution";
+			this->buttonResolutionMap->Text = L"Resolution 25x25 cm";
 			this->buttonResolutionMap->UseVisualStyleBackColor = true;
+			this->buttonResolutionMap->Click += gcnew System::EventHandler(this, &MainForm::buttonResolutionMap_Click);
+			// 
+			// buttonSaveDepthMap
+			// 
+			this->buttonSaveDepthMap->Location = System::Drawing::Point(258, 584);
+			this->buttonSaveDepthMap->Name = L"buttonSaveDepthMap";
+			this->buttonSaveDepthMap->Size = System::Drawing::Size(75, 23);
+			this->buttonSaveDepthMap->TabIndex = 59;
+			this->buttonSaveDepthMap->Text = L"Save";
+			this->buttonSaveDepthMap->UseVisualStyleBackColor = true;
+			this->buttonSaveDepthMap->Click += gcnew System::EventHandler(this, &MainForm::buttonSaveDepthMap_Click);
+			// 
+			// backgroundWorkerPlateformS
+			// 
+			this->backgroundWorkerPlateformS->WorkerReportsProgress = true;
+			this->backgroundWorkerPlateformS->WorkerSupportsCancellation = true;
+			this->backgroundWorkerPlateformS->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerPlateformS_DoWork);
+			this->backgroundWorkerPlateformS->ProgressChanged += gcnew System::ComponentModel::ProgressChangedEventHandler(this, &MainForm::backgroundWorkerPlateformS_ProgressChanged);
+			// 
+			// backgroundWorkerPlateformP
+			// 
+			this->backgroundWorkerPlateformP->WorkerReportsProgress = true;
+			this->backgroundWorkerPlateformP->WorkerSupportsCancellation = true;
+			this->backgroundWorkerPlateformP->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerPlateformP_DoWork);
+			this->backgroundWorkerPlateformP->ProgressChanged += gcnew System::ComponentModel::ProgressChangedEventHandler(this, &MainForm::backgroundWorkerPlateformP_ProgressChanged);
+			// 
+			// labelPlateformS
+			// 
+			this->labelPlateformS->AutoSize = true;
+			this->labelPlateformS->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->labelPlateformS->Location = System::Drawing::Point(341, 397);
+			this->labelPlateformS->Name = L"labelPlateformS";
+			this->labelPlateformS->Size = System::Drawing::Size(182, 13);
+			this->labelPlateformS->TabIndex = 60;
+			this->labelPlateformS->Text = L"IMU starboard (roll, pitch, yaw): None";
+			this->labelPlateformS->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// labelPlateformP
+			// 
+			this->labelPlateformP->AutoSize = true;
+			this->labelPlateformP->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->labelPlateformP->Location = System::Drawing::Point(341, 419);
+			this->labelPlateformP->Name = L"labelPlateformP";
+			this->labelPlateformP->Size = System::Drawing::Size(156, 13);
+			this->labelPlateformP->TabIndex = 61;
+			this->labelPlateformP->Text = L"IMU port (roll, pitch, yaw): None";
+			this->labelPlateformP->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// labelAtmPressure
+			// 
+			this->labelAtmPressure->AutoSize = true;
+			this->labelAtmPressure->ForeColor = System::Drawing::Color::Firebrick;
+			this->labelAtmPressure->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->labelAtmPressure->Location = System::Drawing::Point(341, 308);
+			this->labelAtmPressure->Name = L"labelAtmPressure";
+			this->labelAtmPressure->Size = System::Drawing::Size(100, 13);
+			this->labelAtmPressure->TabIndex = 62;
+			this->labelAtmPressure->Text = L"Atm pressure: None";
+			this->labelAtmPressure->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1404, 624);
+			this->Controls->Add(this->labelAtmPressure);
+			this->Controls->Add(this->labelPlateformP);
+			this->Controls->Add(this->labelPlateformS);
+			this->Controls->Add(this->buttonSaveDepthMap);
 			this->Controls->Add(this->buttonResolutionMap);
 			this->Controls->Add(this->labelDvlDistances);
 			this->Controls->Add(this->labelDvlImu);
@@ -992,6 +1080,7 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			this->Controls->Add(this->button_Edition);
 			this->Name = L"MainForm";
 			this->Text = L"Maelstrom GUI";
+			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MainForm::MainForm_FormClosing);
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->EndInit();
@@ -1004,8 +1093,10 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 
 	/* --------------------------------------------------
 	*
-	*	Some cool functions
+	* 
+	*		Some cool functions
 	*
+	* 
 	----------------------------------------------------- */
 	public:
 		// Video path creation with timestamp
@@ -1052,9 +1143,11 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 
 	/* --------------------------------------------------
 	*
-	*	Video related functions
+	* 
+	*		Video related functions
 	*
-	----------------------------------------------------- */
+	* 
+	* ---------------------------------------------------- */
 
 	// Bbx edition
 	private: System::Void Edition_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -1334,7 +1427,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		System::String^ name = gcnew System::String(s.c_str());
 		this->video_label->Text = name;
 	}
-	
 	// Record the video
 	private: System::Void record_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		camera_recording = !camera_recording;
@@ -1365,20 +1457,14 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		}
 	}
 
-	/*----------------------------------------------------------------------------------------------------
-			Background workers:
-				- Arduino
-				- DVL
-				- Robot
-				- Robot command
-				- Jetson
-	------------------------------------------------------------------------------------------------------*/
 
-	/*-------------------------------
+	/*--------------------------------------------------------------
 	* 
-	*  ARDUINO workers
 	* 
-	* -------------------------------*/
+	*		ARDUINO
+	* 
+	* 
+	* --------------------------------------------------------------*/
 
 	// Check if Arduino has started
 	private: System::Void backgroundWorkerArduinoStarted_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
@@ -1386,7 +1472,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		backgroundWorkerArduinoStarted->CancelAsync();
 		e->Cancel = true;
 	}
-
 	// Enable Jetson and DVL starting
 	private: System::Void backgroundWorkerArduinoStarted_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
 		this->buttonJetsonOn->Text = L"Jetson on";
@@ -1394,26 +1479,27 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		this->buttonDVLon->Text = L"DVL on";
 		this->buttonDVLon->Enabled = true;
 	}
-
 	// Receive data from Arduino continuously
 	private: System::Void backgroundWorkerArduino_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
-			arduino.rcvData();
-			backgroundWorkerArduino->ReportProgress(arduino.depth);
+			arduino.rcvData(plateform.atm_pressure);
+			backgroundWorkerArduino->ReportProgress(arduino.depth); // To change
 		}
 	}
-
 	// Display arduino state in real-time
 	private: System::Void backgroundWorkerArduino_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
 		this->labelArduinoIMU->Text = "Arduino IMU (roll, pitch, yaw): " + getPrecision(arduino.imu[0], 3) + "° " + getPrecision(arduino.imu[1], 3) + "° " + getPrecision(arduino.imu[2], 3) + "° ";
 		this->labelArduinoDepth->Text = "Arduino depth: " + getPrecision(arduino.depth, 3) + " m";
+		//this->labelArduinoDepth->Text = "Arduino pressure sm: " + getPrecision(arduino.pressure_sm, 3) + " mbar";
 	}
 	
-	/*-------------------------------
+	/*--------------------------------------------------------------
 	*
-	*  ROBOT workers
+	* 
+	*		ROBOT
 	*
-	* -------------------------------*/
+	* 
+	* --------------------------------------------------------------*/
 
 	// Has the robot started to communicate ?
 	private: System::Void backgroundWorkerRobotStarted_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
@@ -1421,7 +1507,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		backgroundWorkerRobotStarted->CancelAsync();
 		e->Cancel = true;
 	}
-
 	// Receive data from robot continuously
 	private: System::Void backgroundWorkerRobot_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
@@ -1434,7 +1519,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			//Sleep(150);
 		}
 	}
-
 	// Send a command to the robot
 	private: System::Void backgroundWorkerRobotCommand_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		//robot.goTo(0, 0, 0, 0);
@@ -1443,7 +1527,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		backgroundWorkerRobotCommand->CancelAsync();
 		e->Cancel = true;
 	}
-
 	// Display robot state in real-time
 	private: System::Void backgroundWorkerRobot_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
 		this->labelRobotState->Text = "Robot state: " + gcnew System::String(robot.current_state.c_str());
@@ -1458,20 +1541,17 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		else
 			this->labelPump->Text = "Pump: OFF";
 	}
-	
 	// Check if command is done
 	private: System::Void backgroundWorkerRobotCommand_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
 		log("Robot command done");
 		this->buttonGoToTarget->Enabled = true;
 	}
-	
 	// Enable go to target button
 	private: System::Void backgroundWorkerRobotStarted_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
 		log("Robot started");
 		this->buttonGoToTarget->Enabled = true;
 		this->buttonScan->Enabled = true;
 	}
-	
 	// Start scanning
 	private: System::Void backgroundWorkerRobotScan_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		log("Start scanning");
@@ -1484,17 +1564,38 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		this->textBox1->Enabled = true;
 		log("Scanning completed");
 	}
+	// Go to target
+	private: System::Void buttonGoToTarget_Click(System::Object^ sender, System::EventArgs^ e) {
+		log("Go to target");
+		this->buttonGoToTarget->Enabled = false;
+		backgroundWorkerRobotCommand->RunWorkerAsync(1);
+	}
+	// Scanning the zone button
+	private: System::Void buttonScan_Click(System::Object^ sender, System::EventArgs^ e) {
+		this->buttonScan->Enabled = false;
+		this->textBox1->Enabled = false;
+		backgroundWorkerRobotScan->RunWorkerAsync(1);
 
-	/*-------------------------------
+	}
+	// Chose the scanning depth
+	private: System::Void textBox1_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+		std::string depth_str = ConvertString2Char(textBox1->Text);
+		robot.scanning_depth = std::stof(depth_str);
+	}
+
+	/*--------------------------------------------------------------
 	*
-	*  DVL workers
+	* 
+	*		DVL
 	*
-	* -------------------------------*/
+	* 
+	* --------------------------------------------------------------*/
 
 	// Receive data from DVL continuously
 	private: System::Void backgroundWorkerDVL_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
 			dvl.rcvData();
+			dvl.set_coordinates(arduino.depth);
 			backgroundWorkerDVL->ReportProgress(dvl.vx);
 			backgroundWorkerDVL->ReportProgress(dvl.vy);
 			backgroundWorkerDVL->ReportProgress(dvl.imu[0]);
@@ -1503,17 +1604,23 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			backgroundWorkerDVL->ReportProgress(dvl.distances[0]);
 			backgroundWorkerDVL->ReportProgress(dvl.distances[1]);
 			backgroundWorkerDVL->ReportProgress(dvl.distances[2]);
+			backgroundWorkerDVL->ReportProgress(dvl.distances[3]);
 		}
 	}
-
 	// Display DVL state in real-time
 	private: System::Void backgroundWorkerDVL_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
 		this->labelDvlV->Text = "DVL (vx, vy): " + getPrecision(dvl.vx, 3) + "m.s^-1 " + getPrecision(dvl.vy, 3) + "m.s^-1 ";
 		this->labelDvlImu->Text = "DVL (roll, pitch, yaw): " + getPrecision(dvl.imu[0], 3) + "° " + getPrecision(dvl.imu[1], 3) + "° " + getPrecision(dvl.imu[2], 3) + "° ";
 		this->labelDvlDistances->Text = "DVL (d0, d1, d2, d3): " + getPrecision(dvl.distances[0], 3) + "m " + getPrecision(dvl.distances[1], 3) + "m " + getPrecision(dvl.distances[2], 3) + "m " + getPrecision(dvl.distances[3], 3) + "m ";
 	}
-
-	// Start DVL
+	// Start DVL and UDP reader
+	private: System::Void backgroundWorkerDVLOn_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		log("DVL initialization");
+		Sleep(30000);
+		backgroundWorkerDVLOn->CancelAsync();
+		e->Cancel = true;
+	}
+	// Start DVL button
 	private: System::Void buttonDVLon_Click(System::Object^ sender, System::EventArgs^ e) {
 		if (this->buttonDVLon->Text == L"DVL on") {
 			MessageBox::Show("Please make sure the DVL is underwater. It will break if not turned on underwtaer.");
@@ -1542,22 +1649,14 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		this->buttonDVLno->Visible = false;
 	}
 
-	// Start DVL UDP reader
-	private: System::Void backgroundWorkerDVLOn_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
-		log("DVL initialization");
-		Sleep(30000);
-		char* path = "start D:/projects/cyril/soft_lecture_DVL_envoi_UDP_Maelstrom_v0_5/executable_dvl_module.exe";
-		int result = system(path);
-		backgroundWorkerDVLOn->CancelAsync();
-		e->Cancel = true;
-	}
 
-
-	/*-------------------------------
+	/*--------------------------------------------------------------
 	*
-	*  JETSON workers
+	* 
+	*		JETSON
 	*
-	* -------------------------------*/
+	* 
+	* --------------------------------------------------------------*/
 
 	// Receive video stream from Jetson
 	private: System::Void backgroundWorkerJetson_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
@@ -1625,7 +1724,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			free(long_buffer);
 		}
 	}
-
 	// Start Jetson
 	private: System::Void buttonJetsonOn_Click(System::Object^ sender, System::EventArgs^ e) {
 
@@ -1650,7 +1748,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 			backgroundWorkerJetsonOff->RunWorkerAsync(1);
 		}
 	}
-	
 	// Check if Jetsin is on
 	private: System::Void backgroundWorkerJetsonOn_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		// Order is important
@@ -1664,7 +1761,6 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		this->buttonJetsonOn->Enabled = true;
 		this->record_button->Enabled = true;
 	}
-	
 	// Turn off the Jetson
 	private: System::Void backgroundWorkerJetsonOff_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		// Order is important
@@ -1679,36 +1775,109 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		buttonJetsonOn->Enabled = true;
 	}
 
-	/*-------------------------------
+	/*--------------------------------------------------------------
 	*
-	*  Depth map workers
+	* 
+	*		Depth map
 	*
-	* -------------------------------*/
+	* 
+	* --------------------------------------------------------------*/
 
 	// Compute and display the depth map
 	private: System::Void backgroundWorkerDepthMap_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 
 		while (true) {
-			depth_map.init();
-			depth_map.update(dvl.coordinates, robot.coordinates);
-			//depth_map.setDepthMap();
-			depth_map.drawGrid();
-			depth_map.setPos(robot.pos[0], robot.pos[1]);
-			depth_map.drawRobot();
-			if (draw_target) {
-				depth_map.drawTarget(cv::Point2f(robot.target[0], robot.target[1]));
+			if(robot.has_started) {
+				depth_map.init();
+				depth_map.update(dvl.coordinates, robot.coordinates, dvl.distances, arduino.depth);
+				depth_map.setDepthMap();
+				depth_map.drawGrid();
+				depth_map.setPos(robot.pos[0], robot.pos[1]);
+				depth_map.drawRobot();
+				if (draw_target) {
+					depth_map.drawTarget(cv::Point2f(robot.target[0], robot.target[1]));
+				}
+
+				display(depth_map.getMap(), 1);
 			}
-			
-			display(depth_map.getMap(), 1);
-			Sleep(100);
+			Sleep(50);
 		}
 	}
+	// Change resolution of the depth map
+	private: System::Void buttonResolutionMap_Click(System::Object^ sender, System::EventArgs^ e) {
+		depth_map.which_res = !depth_map.which_res;
+		if (depth_map.which_res)
+			buttonResolutionMap->Text = "Resolution 25x25 cm";
+		else
+			buttonResolutionMap->Text = "Resolution 50x50 cm";
 
-	/*-------------------------------
+	}
+	// Button to save both the image and the data.altitude of the depth map. Should add timestamp and more data in the future
+	private: System::Void buttonSaveDepthMap_Click(System::Object^ sender, System::EventArgs^ e) {
+		string img_path = depthmap_dir_path + "map_" + getTime() + ".png";
+		string data_path = depthmap_dir_path + "map_" + getTime() + ".yml";
+
+		cv::imwrite(img_path, depth_map.map);
+
+		Mat_<double> data(depth_map.high_depth_map.size(), depth_map.high_depth_map[0].size());
+
+		for (size_t i = 0; i < depth_map.high_depth_map.size(); i++)
+			for (size_t j = 0; j < depth_map.high_depth_map[i].size(); j++)
+				data[i][j] = depth_map.high_depth_map[i][j].altitude;
+
+		cv::FileStorage fs(data_path, cv::FileStorage::WRITE); // create FileStorage object
+		fs << "depthMap" << data; // command to save the data
+		fs.release(); // releasing the file.
+		log("Depthmap saved!");
+	}
+
+	/*--------------------------------------------------------------
 	*
-	*  Mouse on the picture box, measurement etc.
+	* 
+	*		Plateform (Starboard IMU, Port IMU and atmospherical pressure)
 	*
-	* -------------------------------*/
+	* 
+	* --------------------------------------------------------------*/
+
+	// Receive data from starboard plateform continuously (imu + atm pressure)
+	private: System::Void backgroundWorkerPlateformS_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while(true) {
+			plateform.rcvDataS();
+			backgroundWorkerPlateformS->ReportProgress(plateform.imu_S[0]);
+			backgroundWorkerPlateformS->ReportProgress(plateform.imu_S[1]);
+			backgroundWorkerPlateformS->ReportProgress(plateform.imu_S[2]);
+			backgroundWorkerPlateformS->ReportProgress(plateform.atm_pressure);
+		}
+		
+	}
+	// Receive data from port plateform continuously
+	private: System::Void backgroundWorkerPlateformP_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while (true) {
+			plateform.rcvDataP();
+			backgroundWorkerPlateformP->ReportProgress(plateform.imu_P[0]);
+			backgroundWorkerPlateformP->ReportProgress(plateform.imu_P[1]);
+			backgroundWorkerPlateformP->ReportProgress(plateform.imu_P[2]);
+		}
+	}
+	// Display data from starboard continuously
+	private: System::Void backgroundWorkerPlateformS_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
+		this->labelPlateformS->Text = "IMU starboard (roll, pitch, yaw): " + getPrecision(plateform.imu_S[0], 3) + "° " + getPrecision(plateform.imu_S[1], 3) + "° " + getPrecision(plateform.imu_S[2], 3) + "° ";
+		this->labelAtmPressure->Text = "Atm pressure: " + getPrecision(plateform.atm_pressure, 3);
+		this->labelAtmPressure->ForeColor = System::Drawing::Color::Black;
+
+	}
+	// Display data from port continuously
+	private: System::Void backgroundWorkerPlateformP_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
+		this->labelPlateformP->Text = "IMU port (roll, pitch, yaw): " + getPrecision(plateform.imu_P[0], 3) + "° " + getPrecision(plateform.imu_P[1], 3) + "° " + getPrecision(plateform.imu_P[2], 3) + "° ";
+	}
+
+	/*--------------------------------------------------------------
+	*
+	* 
+	*		Mouse on the picture box, measurement etc.
+	*
+	* 
+	* --------------------------------------------------------------*/
 
 	// Display mouse coordinate when moved on the picture box
 	private: System::Void ptbSource_MouseMove(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
@@ -1780,31 +1949,24 @@ private: System::Windows::Forms::Button^ buttonResolutionMap;
 		}
 	}
 
-	/*-------------------------------
+	/*--------------------------------------------------------------
 	*
-	*  Robot command:
-	*	- Scanning
-	*	- Go to target
+	* 
+	*		Close secondary programs
 	*
-	* -------------------------------*/
-
-	// Go to target
-	private: System::Void buttonGoToTarget_Click(System::Object^ sender, System::EventArgs^ e) {
-		log("Go to target");
-		this->buttonGoToTarget->Enabled = false;
-		backgroundWorkerRobotCommand->RunWorkerAsync(1);
-	}
-	// Scanning the zone button
-	private: System::Void buttonScan_Click(System::Object^ sender, System::EventArgs^ e) {
-		this->buttonScan->Enabled = false;
-		this->textBox1->Enabled = false;
-		backgroundWorkerRobotScan->RunWorkerAsync(1);
-
-	}
-	// Chose the scanning depth
-	private: System::Void textBox1_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-		std::string depth_str = ConvertString2Char(textBox1->Text);
-		robot.scanning_depth = std::stof(depth_str);
+	* 
+	* --------------------------------------------------------------*/
+	
+	// Close imu and dvl readers when the form is closed
+	private: System::Void MainForm_FormClosing(System::Object^ sender, System::Windows::Forms::FormClosingEventArgs^ e) {
+		// Close dvl reader
+		system(DVL_READER_CLOSE);
+		// Close imu reader
+		system(IMU_READER_CLOSE);
+		// Close imu starboard  reader
+		system(IMU_S_READER_CLOSE);
+		// Close imu port  reader
+		system(IMU_P_READER_CLOSE);
 	}
 
 };

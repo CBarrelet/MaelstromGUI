@@ -1,0 +1,5 @@
+5820 port_local_du_PC_recevant_les_donnees_provenant_de_la_carte_arduino
+127.0.0.1 adresse_ip_vers_laquelle_on_envoie_les_donnees_traitees
+5817 port_de_destination_des_donnees_traitees
+Dans ce fichier texte, conserver la mise en page (espaces et sauts de ligne) et ne surtout pas fragmenter
+les noms décrivants chaque champ (chaque nom est lu comme une chaîne de caractères).
