@@ -72,7 +72,7 @@
 // Videos dir
 #define VIDEOS_DIR "D:/projects/cyril/videos/"
 // Depth map dir
-#define DEPTHMAP_DIR "D:/projects/cyril/depthmaps/"
+#define DEPTHMAP_DIR "D:/projects/cyril/depthmap/"
 
 // DVL reader and closer
 #define DVL_READER_START "start D:/projects/cyril/soft_lecture_DVL_envoi_UDP_Maelstrom_v0_5/executable_dvl_module.exe"

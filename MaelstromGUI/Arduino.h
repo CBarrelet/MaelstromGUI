@@ -79,7 +79,7 @@ public:
 
 	void rcvData(float barometer_pressure) {
 		this->continuous_socket.recvFrom(this->rcv_buffer, 120, (std::string)continuous_client_ip, this->continuous_port);
-		log("From Arduino: " + (std::string)this->rcv_buffer);
+		//log("From Arduino: " + (std::string)this->rcv_buffer);
 
 		float roll = 0, pitch = 0, yaw = 0, depth = 0, gyrx = 0, gyry = 0, gyrz = 0;
 		int pressure_sm = 0;

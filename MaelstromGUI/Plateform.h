@@ -55,12 +55,12 @@ public:
 	void rcvDataS() {
 		ZeroMemory(this->rcv_buffer_S, 300);
 		this->continuous_S_socket.recvFrom(this->rcv_buffer_S, 300, (std::string)client_ip, this->continuous_S_port);
-		log("From Plateform S: " + (std::string)this->rcv_buffer_S);
+		//log("From Plateform S: " + (std::string)this->rcv_buffer_S);
 
 		float roll = 0, pitch = 0, yaw = 0, depth = 0, gyrx = 0, gyry = 0, gyrz = 0;
 		int atm_pressure = 0;
 
-		int ret = sscanf(this->rcv_buffer_S, "S,%f,%f,%f,%f,%f,%f,%d", &roll, &pitch, &yaw, &gyrx, &gyry, &gyrz, &atm_pressure);
+		int ret = sscanf(this->rcv_buffer_S, "A,%f,%f,%f,%f,%f,%f,%d", &roll, &pitch, &yaw, &gyrx, &gyry, &gyrz, &atm_pressure);
 
 		this->atm_pressure = atm_pressure;
 		this->imu_S[0] = roll;
@@ -76,12 +76,12 @@ public:
 	void rcvDataP() {
 		ZeroMemory(this->rcv_buffer_P, 300);
 		this->continuous_P_socket.recvFrom(this->rcv_buffer_P, 300, (std::string)client_ip, this->continuous_P_port);
-		log("From Plateform P: " + (std::string)this->rcv_buffer_P);
+		//log("From Plateform P: " + (std::string)this->rcv_buffer_P);
 
 		float roll = 0, pitch = 0, yaw = 0, depth = 0, gyrx = 0, gyry = 0, gyrz = 0;
 		int atm_pressure = 0;
 
-		int ret = sscanf(this->rcv_buffer_S, "S,%f,%f,%f,%f,%f,%f,%d", &roll, &pitch, &yaw, &gyrx, &gyry, &gyrz, &atm_pressure);
+		int ret = sscanf(this->rcv_buffer_P, "B,%f,%f,%f,%f,%f,%f,%d", &roll, &pitch, &yaw, &gyrx, &gyry, &gyrz, &atm_pressure);
 
 		//this->atm_pressure = atm_pressure;
 		this->imu_P[0] = roll;

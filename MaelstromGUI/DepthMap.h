@@ -17,7 +17,13 @@ private:
 
 public:
 	std::vector<std::vector<map_elmt>> high_depth_map;
+	std::vector<std::vector<map_elmt>> freezed_high_depth_map;
 	std::vector<std::vector<float>> low_depth_map;
+
+	// Dvl beams in high map space
+	cv::Point beams[4];
+
+	bool is_freezed = false;
 
 private:
 	int high_resolution = 25; // 10 cm
@@ -37,6 +43,8 @@ private:
 	cv::Point p4;
 	cv::Point robot_center;
 
+	
+
 	int robot_size = 150;
 	int robot_thickness = 3;
 	float radius = 0.5;
@@ -51,9 +59,12 @@ private:
 
 	// Last dvl values
 	float last_distances[4][4]; // Altitude buffer with the 4 last values
+	float coeff_filter = 1.8;
 
 public:
 	bool which_res = true; // Means high resolution else low resolution
+	float tide = 0;
+	float tide_coeff = 0.001;
 
 public:
 	DepthMap() {
@@ -79,6 +90,7 @@ public:
 				v1.push_back(elmt);
 			}
 			this->high_depth_map.push_back(v1);
+			this->freezed_high_depth_map.push_back(v1);
 		}
 
 		// Init low depth map
@@ -114,15 +126,14 @@ public:
 		robot_coo.x = robot_coo.x * this->low_resolution * 2;
 		robot_coo.y = robot_coo.y * this->low_resolution * 2 * -1;
 
-		cv::Point beams[4];
 		for (size_t i = 0; i < 4; i++) {
-			beams[i] = cv::Point(dvl_coo[i].x + robot_coo.x, dvl_coo[i].y + robot_coo.y) + this->center;
-			beams[i].x = int(beams[i].x / this->high_resolution);
-			beams[i].y = int(beams[i].y / this->high_resolution);
+			this->beams[i] = cv::Point(dvl_coo[i].x + robot_coo.x, dvl_coo[i].y + robot_coo.y) + this->center;
+			this->beams[i].x = int(this->beams[i].x / this->high_resolution);
+			this->beams[i].y = int(this->beams[i].y / this->high_resolution);
 		}
 			
 		// Filter artefacts and set the depth map
-		valuesFiltering(dvl_distances, dvl_coo, beams);
+		valuesFiltering(dvl_distances, dvl_coo);
 
 		// Update last_value and shift the buffer
 		updateLastDvlValues(dvl_distances);
@@ -158,30 +169,31 @@ private:
 		}
 	}
 
-	void valuesFiltering(float dvl_distances[4], cv::Point3f dvl_coo[4], cv::Point beams[4]) {
-		float coeff_filter = 1.8;
+	void valuesFiltering(float dvl_distances[4], cv::Point3f dvl_coo[4]) {
+		
 		bool is_good_value = true;
 
 		// Check value for each DVL beam
 		for (size_t i = 0; i < 4; i++) {
 			is_good_value = true;
 
-			if ((beams[i].x >= 0) && (beams[i].y >= 0) && (beams[i].x <= this->high_depth_map.size()) && (beams[i].y <= this->high_depth_map[0].size())) {
+			if ((this->beams[i].x >= 0) && (this->beams[i].y >= 0) && (this->beams[i].x <= this->high_depth_map.size()) && (this->beams[i].y <= this->high_depth_map[0].size())) {
 				// Check value for the 4 last values
 				for (size_t j = 0; j < 4; j++) {
 					// Filter some artefacts, if at least one value is wrong, is_good_value == false
-					if ((coeff_filter * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] / coeff_filter < dvl_distances[i])) 	
+					if ((this->coeff_filter * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] / this->coeff_filter < dvl_distances[i]))
 						is_good_value *= true;
 					else
 						is_good_value *= false;
 				}
 
 				if (is_good_value) {
-					if (this->high_depth_map[beams[i].x][beams[i].y].altitude < 0)
-						this->high_depth_map[beams[i].x][beams[i].y].altitude = max(high_depth_map[beams[i].x][beams[i].y].altitude, dvl_coo[0].z);
+					if (this->high_depth_map[this->beams[i].x][this->beams[i].y].altitude < 0) 
+						this->high_depth_map[this->beams[i].x][this->beams[i].y].altitude = max(high_depth_map[this->beams[i].x][this->beams[i].y].altitude, dvl_coo[i].z);
 					else
-						this->high_depth_map[beams[i].x][beams[i].y].altitude = dvl_coo[0].z;
+						this->high_depth_map[this->beams[i].x][this->beams[i].y].altitude = dvl_coo[i].z;
 				}
+
 			}
 		}
 	}
@@ -199,6 +211,37 @@ private:
 	}
 
 public:
+
+	void setTide(cv::Point3f dvl_coo[4]) {
+		float new_tide = 0;
+		float delta[4] = { 0, 0, 0, 0 };
+		if (this->is_freezed) {
+
+			for (size_t i = 0; i < 4; i++) {
+
+				if ((this->beams[i].x >= 0) && (this->beams[i].y >= 0) && (this->beams[i].x <= this->high_depth_map.size()) && (this->beams[i].y <= this->high_depth_map[0].size())) {
+
+					if (this->freezed_high_depth_map[this->beams[i].x][this->beams[i].y].altitude < 0)
+						delta[i] = this->freezed_high_depth_map[this->beams[i].x][this->beams[i].y].altitude - dvl_coo[i].z;
+
+				}
+			}
+				
+			for (size_t i = 0; i < 4; i++)
+				new_tide += delta[i];
+			new_tide /= 4;
+
+			this->tide = this->tide_coeff * new_tide + (1 - this->tide_coeff) * tide;
+		}
+	}
+
+	void freezeDepthMap() {
+		// Init high depth map
+		for (size_t i = 0; i < this->high_depth_map.size(); i++)
+			for (size_t j = 0; j < this->high_depth_map[0].size(); j++)
+				this->freezed_high_depth_map[i][j].altitude = this->high_depth_map[i][j].altitude;
+		this->is_freezed = true;
+	}
 
 	void setDepthMap() {
 		unsigned char altitude_color = 0;
@@ -226,11 +269,12 @@ public:
 				low_grid_x = int(j / this->resolution_ratio);
 				low_grid_y = int(i / this->resolution_ratio);
 
-				if (low_depth_map[low_grid_x][low_grid_y] < 0)
-					low_depth_map[low_grid_x][low_grid_y] = min(low_depth_map[low_grid_x][low_grid_y], high_depth_map[j][i].altitude);
-
+				if (low_depth_map[low_grid_x][low_grid_y] < 0) {
+					if (high_depth_map[j][i].altitude < 0)
+						low_depth_map[low_grid_x][low_grid_y] = max(low_depth_map[low_grid_x][low_grid_y], high_depth_map[j][i].altitude);
+				}
 				else
-					low_depth_map[low_grid_x][low_grid_y] = high_depth_map[j][i].altitude;	
+					low_depth_map[low_grid_x][low_grid_y] = high_depth_map[j][i].altitude;		
 			}
 		}
 
