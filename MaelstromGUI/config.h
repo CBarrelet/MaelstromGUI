@@ -55,10 +55,13 @@
 #define BAROMETER_IP "192.168.0.253"
 #define BAROMETER_CONTINUOUS_PORT 5819
 
-// IMU + Barometer plateform info
+// IMU + Barometer + GPS plateform info
 #define PLATEFORM_IP "127.0.0.1"
 #define PLATEFORM_S_CONTINUOUS_PORT 5823 // STARBOARD (tribord, côté du y négatif du robot)
 #define PLATEFORM_P_CONTINUOUS_PORT 5825 // PORT (babord, côté du y positif du robot)
+#define PLATEFORM_GPS_S_CONTINUOUS_PORT 5827 // STARBOARD (tribord, côté du y négatif du robot)
+#define PLATEFORM_GPS_P_CONTINUOUS_PORT 5829 // PORT (babord, côté du y positif du robot)
+
 
 // Maths
 #define PI 3.141592653589793238462

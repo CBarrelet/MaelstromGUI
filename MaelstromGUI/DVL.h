@@ -19,6 +19,8 @@ public:
 	cv::Point3f coordinates[4]; // Coordinates of each points
 	float imu[3] = { 0,0,0 }; // roll, pitch, yaw (degree)
 
+	int init_time = 30000;
+
 
 public:
 

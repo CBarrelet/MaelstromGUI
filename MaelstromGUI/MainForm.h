@@ -235,6 +235,12 @@ namespace MaelstromGUI {
 			// Plateform port
 			backgroundWorkerPlateformP->RunWorkerAsync(1); // To receive continuous data from the plateform port
 
+			// Plateform GPS starboard
+			backgroundWorkerPlateformGPSS->RunWorkerAsync(1); // To receive continuous data from the plateform starboard
+
+			// Plateform GPS port
+			backgroundWorkerPlateformGPSP->RunWorkerAsync(1); // To receive continuous data from the plateform port
+
 		}
 
 	protected:
@@ -264,8 +270,6 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Button^ record_button;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerJetson;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobot;
-
-
 
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerArduino;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL;
@@ -298,19 +302,6 @@ namespace MaelstromGUI {
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobotScan;
 	private: System::Windows::Forms::TextBox^ textBox1;
 	private: System::Windows::Forms::Label^ labelDepthScan;
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	private: System::Windows::Forms::Button^ buttonResolutionMap;
 
@@ -408,6 +399,8 @@ private: System::Windows::Forms::Label^ label32;
 private: System::Windows::Forms::Label^ label33;
 private: System::Windows::Forms::PictureBox^ pictureBoxLogoLirmm;
 private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
+private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSP;
+private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS;
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -564,6 +557,8 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label33 = (gcnew System::Windows::Forms::Label());
 			this->pictureBoxLogoLirmm = (gcnew System::Windows::Forms::PictureBox());
 			this->pictureBoxLogoUM = (gcnew System::Windows::Forms::PictureBox());
+			this->backgroundWorkerPlateformGPSP = (gcnew System::ComponentModel::BackgroundWorker());
+			this->backgroundWorkerPlateformGPSS = (gcnew System::ComponentModel::BackgroundWorker());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->BeginInit();
@@ -849,7 +844,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			// labelDVL
 			// 
 			this->labelDVL->AutoSize = true;
-			this->labelDVL->Location = System::Drawing::Point(789, 42);
+			this->labelDVL->Location = System::Drawing::Point(785, 42);
 			this->labelDVL->Name = L"labelDVL";
 			this->labelDVL->Size = System::Drawing::Size(34, 13);
 			this->labelDVL->TabIndex = 34;
@@ -949,6 +944,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			// backgroundWorkerDVLOn
 			// 
 			this->backgroundWorkerDVLOn->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerDVLOn_DoWork);
+			this->backgroundWorkerDVLOn->RunWorkerCompleted += gcnew System::ComponentModel::RunWorkerCompletedEventHandler(this, &MainForm::backgroundWorkerDVLOn_RunWorkerCompleted);
 			// 
 			// buttonScan
 			// 
@@ -1039,7 +1035,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxTide->ReadOnly = true;
 			this->textBoxTide->Size = System::Drawing::Size(47, 20);
 			this->textBoxTide->TabIndex = 65;
-			this->textBoxTide->Text = L"0";
+			this->textBoxTide->Text = L"None";
 			this->textBoxTide->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxRobotX
@@ -1049,7 +1045,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxRobotX->ReadOnly = true;
 			this->textBoxRobotX->Size = System::Drawing::Size(47, 20);
 			this->textBoxRobotX->TabIndex = 68;
-			this->textBoxRobotX->Text = L"0";
+			this->textBoxRobotX->Text = L"None";
 			this->textBoxRobotX->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxRobotX->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxRobotX_TextChanged);
 			// 
@@ -1060,7 +1056,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxRobotY->ReadOnly = true;
 			this->textBoxRobotY->Size = System::Drawing::Size(47, 20);
 			this->textBoxRobotY->TabIndex = 69;
-			this->textBoxRobotY->Text = L"0";
+			this->textBoxRobotY->Text = L"None";
 			this->textBoxRobotY->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxRobotY->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxRobotY_TextChanged);
 			// 
@@ -1071,7 +1067,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxRobotZ->ReadOnly = true;
 			this->textBoxRobotZ->Size = System::Drawing::Size(47, 20);
 			this->textBoxRobotZ->TabIndex = 70;
-			this->textBoxRobotZ->Text = L"0";
+			this->textBoxRobotZ->Text = L"None";
 			this->textBoxRobotZ->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxRobotZ->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxRobotZ_TextChanged);
 			// 
@@ -1080,9 +1076,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxRobotState->Location = System::Drawing::Point(41, 24);
 			this->textBoxRobotState->Name = L"textBoxRobotState";
 			this->textBoxRobotState->ReadOnly = true;
-			this->textBoxRobotState->Size = System::Drawing::Size(100, 20);
+			this->textBoxRobotState->Size = System::Drawing::Size(117, 20);
 			this->textBoxRobotState->TabIndex = 71;
-			this->textBoxRobotState->Text = L"0";
+			this->textBoxRobotState->Text = L"None";
 			this->textBoxRobotState->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxRobotYaw
@@ -1092,7 +1088,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxRobotYaw->ReadOnly = true;
 			this->textBoxRobotYaw->Size = System::Drawing::Size(47, 20);
 			this->textBoxRobotYaw->TabIndex = 74;
-			this->textBoxRobotYaw->Text = L"0";
+			this->textBoxRobotYaw->Text = L"None";
 			this->textBoxRobotYaw->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxRobotYaw->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxRobotYaw_TextChanged);
 			// 
@@ -1103,7 +1099,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxRobotPitch->ReadOnly = true;
 			this->textBoxRobotPitch->Size = System::Drawing::Size(47, 20);
 			this->textBoxRobotPitch->TabIndex = 73;
-			this->textBoxRobotPitch->Text = L"0";
+			this->textBoxRobotPitch->Text = L"None";
 			this->textBoxRobotPitch->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxRobotPitch->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxRobotPitch_TextChanged);
 			// 
@@ -1114,7 +1110,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxRobotRoll->ReadOnly = true;
 			this->textBoxRobotRoll->Size = System::Drawing::Size(47, 20);
 			this->textBoxRobotRoll->TabIndex = 72;
-			this->textBoxRobotRoll->Text = L"0";
+			this->textBoxRobotRoll->Text = L"None";
 			this->textBoxRobotRoll->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxRobotRoll->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxRobotRoll_TextChanged);
 			// 
@@ -1125,7 +1121,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxGripper->ReadOnly = true;
 			this->textBoxGripper->Size = System::Drawing::Size(47, 20);
 			this->textBoxGripper->TabIndex = 75;
-			this->textBoxGripper->Text = L"0";
+			this->textBoxGripper->Text = L"OFF";
 			this->textBoxGripper->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPump
@@ -1135,7 +1131,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPump->ReadOnly = true;
 			this->textBoxPump->Size = System::Drawing::Size(47, 20);
 			this->textBoxPump->TabIndex = 76;
-			this->textBoxPump->Text = L"0";
+			this->textBoxPump->Text = L"OFF";
 			this->textBoxPump->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxArduinoYaw
@@ -1145,7 +1141,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxArduinoYaw->ReadOnly = true;
 			this->textBoxArduinoYaw->Size = System::Drawing::Size(47, 20);
 			this->textBoxArduinoYaw->TabIndex = 79;
-			this->textBoxArduinoYaw->Text = L"0";
+			this->textBoxArduinoYaw->Text = L"None";
 			this->textBoxArduinoYaw->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxArduinoPitch
@@ -1155,7 +1151,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxArduinoPitch->ReadOnly = true;
 			this->textBoxArduinoPitch->Size = System::Drawing::Size(47, 20);
 			this->textBoxArduinoPitch->TabIndex = 78;
-			this->textBoxArduinoPitch->Text = L"0";
+			this->textBoxArduinoPitch->Text = L"None";
 			this->textBoxArduinoPitch->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxArduinoRoll
@@ -1165,7 +1161,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxArduinoRoll->ReadOnly = true;
 			this->textBoxArduinoRoll->Size = System::Drawing::Size(47, 20);
 			this->textBoxArduinoRoll->TabIndex = 77;
-			this->textBoxArduinoRoll->Text = L"0";
+			this->textBoxArduinoRoll->Text = L"None";
 			this->textBoxArduinoRoll->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxArduinoDepth
@@ -1175,7 +1171,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxArduinoDepth->ReadOnly = true;
 			this->textBoxArduinoDepth->Size = System::Drawing::Size(47, 20);
 			this->textBoxArduinoDepth->TabIndex = 80;
-			this->textBoxArduinoDepth->Text = L"0";
+			this->textBoxArduinoDepth->Text = L"None";
 			this->textBoxArduinoDepth->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxAtmPressure
@@ -1185,7 +1181,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxAtmPressure->ReadOnly = true;
 			this->textBoxAtmPressure->Size = System::Drawing::Size(47, 20);
 			this->textBoxAtmPressure->TabIndex = 81;
-			this->textBoxAtmPressure->Text = L"0";
+			this->textBoxAtmPressure->Text = L"None";
 			this->textBoxAtmPressure->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxDVLVy
@@ -1195,7 +1191,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLVy->ReadOnly = true;
 			this->textBoxDVLVy->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLVy->TabIndex = 86;
-			this->textBoxDVLVy->Text = L"0";
+			this->textBoxDVLVy->Text = L"None";
 			this->textBoxDVLVy->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxDVLVy->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxDVLVy_TextChanged);
 			// 
@@ -1206,7 +1202,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLVx->ReadOnly = true;
 			this->textBoxDVLVx->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLVx->TabIndex = 85;
-			this->textBoxDVLVx->Text = L"0";
+			this->textBoxDVLVx->Text = L"None";
 			this->textBoxDVLVx->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			this->textBoxDVLVx->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxDVLVx_TextChanged);
 			// 
@@ -1217,7 +1213,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLYaw->ReadOnly = true;
 			this->textBoxDVLYaw->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLYaw->TabIndex = 89;
-			this->textBoxDVLYaw->Text = L"0";
+			this->textBoxDVLYaw->Text = L"None";
 			this->textBoxDVLYaw->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxDVLPitch
@@ -1227,7 +1223,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLPitch->ReadOnly = true;
 			this->textBoxDVLPitch->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLPitch->TabIndex = 88;
-			this->textBoxDVLPitch->Text = L"0";
+			this->textBoxDVLPitch->Text = L"None";
 			this->textBoxDVLPitch->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxDVLRoll
@@ -1237,7 +1233,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLRoll->ReadOnly = true;
 			this->textBoxDVLRoll->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLRoll->TabIndex = 87;
-			this->textBoxDVLRoll->Text = L"0";
+			this->textBoxDVLRoll->Text = L"None";
 			this->textBoxDVLRoll->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxDVLD2
@@ -1247,7 +1243,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLD2->ReadOnly = true;
 			this->textBoxDVLD2->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLD2->TabIndex = 92;
-			this->textBoxDVLD2->Text = L"0";
+			this->textBoxDVLD2->Text = L"None";
 			this->textBoxDVLD2->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxDVLD1
@@ -1257,7 +1253,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLD1->ReadOnly = true;
 			this->textBoxDVLD1->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLD1->TabIndex = 91;
-			this->textBoxDVLD1->Text = L"0";
+			this->textBoxDVLD1->Text = L"None";
 			this->textBoxDVLD1->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxDVLD0
@@ -1267,7 +1263,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLD0->ReadOnly = true;
 			this->textBoxDVLD0->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLD0->TabIndex = 90;
-			this->textBoxDVLD0->Text = L"0";
+			this->textBoxDVLD0->Text = L"None";
 			this->textBoxDVLD0->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxDVLD3
@@ -1277,7 +1273,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxDVLD3->ReadOnly = true;
 			this->textBoxDVLD3->Size = System::Drawing::Size(47, 20);
 			this->textBoxDVLD3->TabIndex = 93;
-			this->textBoxDVLD3->Text = L"0";
+			this->textBoxDVLD3->Text = L"None";
 			this->textBoxDVLD3->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPYaw
@@ -1287,7 +1283,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPYaw->ReadOnly = true;
 			this->textBoxPYaw->Size = System::Drawing::Size(47, 20);
 			this->textBoxPYaw->TabIndex = 96;
-			this->textBoxPYaw->Text = L"0";
+			this->textBoxPYaw->Text = L"None";
 			this->textBoxPYaw->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPPitch
@@ -1297,7 +1293,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPPitch->ReadOnly = true;
 			this->textBoxPPitch->Size = System::Drawing::Size(47, 20);
 			this->textBoxPPitch->TabIndex = 95;
-			this->textBoxPPitch->Text = L"0";
+			this->textBoxPPitch->Text = L"None";
 			this->textBoxPPitch->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPRoll
@@ -1307,7 +1303,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPRoll->ReadOnly = true;
 			this->textBoxPRoll->Size = System::Drawing::Size(47, 20);
 			this->textBoxPRoll->TabIndex = 94;
-			this->textBoxPRoll->Text = L"0";
+			this->textBoxPRoll->Text = L"None";
 			this->textBoxPRoll->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPGyrZ
@@ -1317,7 +1313,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPGyrZ->ReadOnly = true;
 			this->textBoxPGyrZ->Size = System::Drawing::Size(47, 20);
 			this->textBoxPGyrZ->TabIndex = 99;
-			this->textBoxPGyrZ->Text = L"0";
+			this->textBoxPGyrZ->Text = L"None";
 			this->textBoxPGyrZ->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPGyrY
@@ -1327,7 +1323,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPGyrY->ReadOnly = true;
 			this->textBoxPGyrY->Size = System::Drawing::Size(47, 20);
 			this->textBoxPGyrY->TabIndex = 98;
-			this->textBoxPGyrY->Text = L"0";
+			this->textBoxPGyrY->Text = L"None";
 			this->textBoxPGyrY->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPGyrX
@@ -1337,7 +1333,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPGyrX->ReadOnly = true;
 			this->textBoxPGyrX->Size = System::Drawing::Size(47, 20);
 			this->textBoxPGyrX->TabIndex = 97;
-			this->textBoxPGyrX->Text = L"0";
+			this->textBoxPGyrX->Text = L"None";
 			this->textBoxPGyrX->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSYaw
@@ -1347,7 +1343,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSYaw->ReadOnly = true;
 			this->textBoxSYaw->Size = System::Drawing::Size(47, 20);
 			this->textBoxSYaw->TabIndex = 102;
-			this->textBoxSYaw->Text = L"0";
+			this->textBoxSYaw->Text = L"None";
 			this->textBoxSYaw->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSPitch
@@ -1357,7 +1353,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSPitch->ReadOnly = true;
 			this->textBoxSPitch->Size = System::Drawing::Size(47, 20);
 			this->textBoxSPitch->TabIndex = 101;
-			this->textBoxSPitch->Text = L"0";
+			this->textBoxSPitch->Text = L"None";
 			this->textBoxSPitch->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSRoll
@@ -1367,7 +1363,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSRoll->ReadOnly = true;
 			this->textBoxSRoll->Size = System::Drawing::Size(47, 20);
 			this->textBoxSRoll->TabIndex = 100;
-			this->textBoxSRoll->Text = L"0";
+			this->textBoxSRoll->Text = L"None";
 			this->textBoxSRoll->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSGyrZ
@@ -1377,7 +1373,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSGyrZ->ReadOnly = true;
 			this->textBoxSGyrZ->Size = System::Drawing::Size(47, 20);
 			this->textBoxSGyrZ->TabIndex = 105;
-			this->textBoxSGyrZ->Text = L"0";
+			this->textBoxSGyrZ->Text = L"None";
 			this->textBoxSGyrZ->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSGyrY
@@ -1387,7 +1383,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSGyrY->ReadOnly = true;
 			this->textBoxSGyrY->Size = System::Drawing::Size(47, 20);
 			this->textBoxSGyrY->TabIndex = 104;
-			this->textBoxSGyrY->Text = L"0";
+			this->textBoxSGyrY->Text = L"None";
 			this->textBoxSGyrY->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSGyrX
@@ -1397,7 +1393,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSGyrX->ReadOnly = true;
 			this->textBoxSGyrX->Size = System::Drawing::Size(47, 20);
 			this->textBoxSGyrX->TabIndex = 103;
-			this->textBoxSGyrX->Text = L"0";
+			this->textBoxSGyrX->Text = L"None";
 			this->textBoxSGyrX->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSGPSY
@@ -1407,7 +1403,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSGPSY->ReadOnly = true;
 			this->textBoxSGPSY->Size = System::Drawing::Size(47, 20);
 			this->textBoxSGPSY->TabIndex = 107;
-			this->textBoxSGPSY->Text = L"0";
+			this->textBoxSGPSY->Text = L"None";
 			this->textBoxSGPSY->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSGPSX
@@ -1417,7 +1413,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSGPSX->ReadOnly = true;
 			this->textBoxSGPSX->Size = System::Drawing::Size(47, 20);
 			this->textBoxSGPSX->TabIndex = 106;
-			this->textBoxSGPSX->Text = L"0";
+			this->textBoxSGPSX->Text = L"None";
 			this->textBoxSGPSX->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPGPSY
@@ -1427,7 +1423,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPGPSY->ReadOnly = true;
 			this->textBoxPGPSY->Size = System::Drawing::Size(47, 20);
 			this->textBoxPGPSY->TabIndex = 110;
-			this->textBoxPGPSY->Text = L"0";
+			this->textBoxPGPSY->Text = L"None";
 			this->textBoxPGPSY->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPGPSX
@@ -1437,7 +1433,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPGPSX->ReadOnly = true;
 			this->textBoxPGPSX->Size = System::Drawing::Size(47, 20);
 			this->textBoxPGPSX->TabIndex = 109;
-			this->textBoxPGPSX->Text = L"0";
+			this->textBoxPGPSX->Text = L"None";
 			this->textBoxPGPSX->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// labelGPSP
@@ -1489,7 +1485,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->groupBoxRobot->Controls->Add(this->textBox1);
 			this->groupBoxRobot->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->groupBoxRobot->Location = System::Drawing::Point(397, 58);
+			this->groupBoxRobot->Location = System::Drawing::Point(393, 58);
 			this->groupBoxRobot->Name = L"groupBoxRobot";
 			this->groupBoxRobot->Size = System::Drawing::Size(370, 128);
 			this->groupBoxRobot->TabIndex = 113;
@@ -1535,9 +1531,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label7->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label7->Location = System::Drawing::Point(109, 88);
 			this->label7->Name = L"label7";
-			this->label7->Size = System::Drawing::Size(28, 13);
+			this->label7->Size = System::Drawing::Size(41, 13);
 			this->label7->TabIndex = 121;
-			this->label7->Text = L"Yaw";
+			this->label7->Text = L"Yaw (°)";
 			this->label7->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label6
@@ -1546,9 +1542,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label6->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label6->Location = System::Drawing::Point(56, 88);
 			this->label6->Name = L"label6";
-			this->label6->Size = System::Drawing::Size(31, 13);
+			this->label6->Size = System::Drawing::Size(44, 13);
 			this->label6->TabIndex = 120;
-			this->label6->Text = L"Pitch";
+			this->label6->Text = L"Pitch (°)";
 			this->label6->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label4
@@ -1602,7 +1598,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxPRTK->ReadOnly = true;
 			this->textBoxPRTK->Size = System::Drawing::Size(47, 20);
 			this->textBoxPRTK->TabIndex = 114;
-			this->textBoxPRTK->Text = L"0";
+			this->textBoxPRTK->Text = L"None";
 			this->textBoxPRTK->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxSRTK
@@ -1612,7 +1608,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->textBoxSRTK->ReadOnly = true;
 			this->textBoxSRTK->Size = System::Drawing::Size(47, 20);
 			this->textBoxSRTK->TabIndex = 115;
-			this->textBoxSRTK->Text = L"0";
+			this->textBoxSRTK->Text = L"None";
 			this->textBoxSRTK->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// labelTide
@@ -1640,7 +1636,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->groupBox1->Controls->Add(this->textBoxArduinoYaw);
 			this->groupBox1->Controls->Add(this->textBoxArduinoDepth);
 			this->groupBox1->Controls->Add(this->textBoxAtmPressure);
-			this->groupBox1->Location = System::Drawing::Point(397, 192);
+			this->groupBox1->Location = System::Drawing::Point(393, 192);
 			this->groupBox1->Name = L"groupBox1";
 			this->groupBox1->Size = System::Drawing::Size(370, 67);
 			this->groupBox1->TabIndex = 117;
@@ -1675,9 +1671,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label11->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label11->Location = System::Drawing::Point(109, 25);
 			this->label11->Name = L"label11";
-			this->label11->Size = System::Drawing::Size(55, 13);
+			this->label11->Size = System::Drawing::Size(41, 13);
 			this->label11->TabIndex = 124;
-			this->label11->Text = L"Yaw (deg)";
+			this->label11->Text = L"Yaw (°)";
 			this->label11->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label12
@@ -1686,9 +1682,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label12->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label12->Location = System::Drawing::Point(56, 25);
 			this->label12->Name = L"label12";
-			this->label12->Size = System::Drawing::Size(58, 13);
+			this->label12->Size = System::Drawing::Size(44, 13);
 			this->label12->TabIndex = 123;
-			this->label12->Text = L"Pitch (deg)";
+			this->label12->Text = L"Pitch (°)";
 			this->label12->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label13
@@ -1697,9 +1693,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label13->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label13->Location = System::Drawing::Point(3, 25);
 			this->label13->Name = L"label13";
-			this->label13->Size = System::Drawing::Size(52, 13);
+			this->label13->Size = System::Drawing::Size(38, 13);
 			this->label13->TabIndex = 122;
-			this->label13->Text = L"Roll (deg)";
+			this->label13->Text = L"Roll (°)";
 			this->label13->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// groupBoxDVL
@@ -1723,7 +1719,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLD3);
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLVx);
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLVy);
-			this->groupBoxDVL->Location = System::Drawing::Point(397, 265);
+			this->groupBoxDVL->Location = System::Drawing::Point(393, 265);
 			this->groupBoxDVL->Name = L"groupBoxDVL";
 			this->groupBoxDVL->Size = System::Drawing::Size(370, 113);
 			this->groupBoxDVL->TabIndex = 118;
@@ -1747,9 +1743,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label24->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label24->Location = System::Drawing::Point(222, 24);
 			this->label24->Name = L"label24";
-			this->label24->Size = System::Drawing::Size(53, 13);
+			this->label24->Size = System::Drawing::Size(56, 13);
 			this->label24->TabIndex = 132;
-			this->label24->Text = L"Vx (m.s-1)";
+			this->label24->Text = L"Vx ( m.s-1)";
 			this->label24->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label22
@@ -1758,9 +1754,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label22->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label22->Location = System::Drawing::Point(162, 71);
 			this->label22->Name = L"label22";
-			this->label22->Size = System::Drawing::Size(35, 13);
+			this->label22->Size = System::Drawing::Size(38, 13);
 			this->label22->TabIndex = 131;
-			this->label22->Text = L"D4(m)";
+			this->label22->Text = L"D4 (m)";
 			this->label22->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label19
@@ -1769,9 +1765,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label19->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label19->Location = System::Drawing::Point(109, 71);
 			this->label19->Name = L"label19";
-			this->label19->Size = System::Drawing::Size(35, 13);
+			this->label19->Size = System::Drawing::Size(38, 13);
 			this->label19->TabIndex = 130;
-			this->label19->Text = L"D3(m)";
+			this->label19->Text = L"D3 (m)";
 			this->label19->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label20
@@ -1780,9 +1776,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label20->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label20->Location = System::Drawing::Point(56, 71);
 			this->label20->Name = L"label20";
-			this->label20->Size = System::Drawing::Size(35, 13);
+			this->label20->Size = System::Drawing::Size(38, 13);
 			this->label20->TabIndex = 129;
-			this->label20->Text = L"D1(m)";
+			this->label20->Text = L"D1 (m)";
 			this->label20->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label21
@@ -1802,9 +1798,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label16->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label16->Location = System::Drawing::Point(109, 24);
 			this->label16->Name = L"label16";
-			this->label16->Size = System::Drawing::Size(55, 13);
+			this->label16->Size = System::Drawing::Size(41, 13);
 			this->label16->TabIndex = 127;
-			this->label16->Text = L"Yaw (deg)";
+			this->label16->Text = L"Yaw (°)";
 			this->label16->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label17
@@ -1813,9 +1809,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label17->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label17->Location = System::Drawing::Point(56, 24);
 			this->label17->Name = L"label17";
-			this->label17->Size = System::Drawing::Size(58, 13);
+			this->label17->Size = System::Drawing::Size(44, 13);
 			this->label17->TabIndex = 126;
-			this->label17->Text = L"Pitch (deg)";
+			this->label17->Text = L"Pitch (°)";
 			this->label17->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label18
@@ -1824,9 +1820,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label18->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label18->Location = System::Drawing::Point(3, 24);
 			this->label18->Name = L"label18";
-			this->label18->Size = System::Drawing::Size(52, 13);
+			this->label18->Size = System::Drawing::Size(38, 13);
 			this->label18->TabIndex = 125;
-			this->label18->Text = L"Roll (deg)";
+			this->label18->Text = L"Roll (°)";
 			this->label18->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// groupBoxPort
@@ -1848,7 +1844,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->groupBoxPort->Controls->Add(this->textBoxPGPSX);
 			this->groupBoxPort->Controls->Add(this->textBoxPGyrY);
 			this->groupBoxPort->Controls->Add(this->textBoxPGyrZ);
-			this->groupBoxPort->Location = System::Drawing::Point(397, 384);
+			this->groupBoxPort->Location = System::Drawing::Point(393, 384);
 			this->groupBoxPort->Name = L"groupBoxPort";
 			this->groupBoxPort->Size = System::Drawing::Size(182, 170);
 			this->groupBoxPort->TabIndex = 119;
@@ -1861,9 +1857,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label28->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label28->Location = System::Drawing::Point(111, 71);
 			this->label28->Name = L"label28";
-			this->label28->Size = System::Drawing::Size(19, 13);
+			this->label28->Size = System::Drawing::Size(49, 13);
 			this->label28->TabIndex = 130;
-			this->label28->Text = L"Vz";
+			this->label28->Text = L"Vz (°.s-1)";
 			this->label28->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label29
@@ -1872,9 +1868,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label29->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label29->Location = System::Drawing::Point(58, 71);
 			this->label29->Name = L"label29";
-			this->label29->Size = System::Drawing::Size(19, 13);
+			this->label29->Size = System::Drawing::Size(49, 13);
 			this->label29->TabIndex = 129;
-			this->label29->Text = L"Vy";
+			this->label29->Text = L"Vy (°.s-1)";
 			this->label29->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label30
@@ -1883,9 +1879,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label30->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label30->Location = System::Drawing::Point(5, 71);
 			this->label30->Name = L"label30";
-			this->label30->Size = System::Drawing::Size(19, 13);
+			this->label30->Size = System::Drawing::Size(49, 13);
 			this->label30->TabIndex = 128;
-			this->label30->Text = L"Vx";
+			this->label30->Text = L"Vx (°.s-1)";
 			this->label30->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label25
@@ -1894,9 +1890,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label25->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label25->Location = System::Drawing::Point(109, 23);
 			this->label25->Name = L"label25";
-			this->label25->Size = System::Drawing::Size(28, 13);
+			this->label25->Size = System::Drawing::Size(41, 13);
 			this->label25->TabIndex = 127;
-			this->label25->Text = L"Yaw";
+			this->label25->Text = L"Yaw (°)";
 			this->label25->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label26
@@ -1905,9 +1901,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label26->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label26->Location = System::Drawing::Point(56, 23);
 			this->label26->Name = L"label26";
-			this->label26->Size = System::Drawing::Size(31, 13);
+			this->label26->Size = System::Drawing::Size(44, 13);
 			this->label26->TabIndex = 126;
-			this->label26->Text = L"Pitch";
+			this->label26->Text = L"Pitch (°)";
 			this->label26->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label27
@@ -1916,9 +1912,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label27->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label27->Location = System::Drawing::Point(3, 23);
 			this->label27->Name = L"label27";
-			this->label27->Size = System::Drawing::Size(25, 13);
+			this->label27->Size = System::Drawing::Size(38, 13);
 			this->label27->TabIndex = 125;
-			this->label27->Text = L"Roll";
+			this->label27->Text = L"Roll (°)";
 			this->label27->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// groupBoxStarboard
@@ -1940,7 +1936,7 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrZ);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrX);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrY);
-			this->groupBoxStarboard->Location = System::Drawing::Point(585, 384);
+			this->groupBoxStarboard->Location = System::Drawing::Point(581, 384);
 			this->groupBoxStarboard->Name = L"groupBoxStarboard";
 			this->groupBoxStarboard->Size = System::Drawing::Size(182, 170);
 			this->groupBoxStarboard->TabIndex = 120;
@@ -1953,9 +1949,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label34->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label34->Location = System::Drawing::Point(110, 71);
 			this->label34->Name = L"label34";
-			this->label34->Size = System::Drawing::Size(19, 13);
+			this->label34->Size = System::Drawing::Size(49, 13);
 			this->label34->TabIndex = 133;
-			this->label34->Text = L"Vz";
+			this->label34->Text = L"Vz (°.s-1)";
 			this->label34->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label35
@@ -1964,9 +1960,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label35->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label35->Location = System::Drawing::Point(57, 71);
 			this->label35->Name = L"label35";
-			this->label35->Size = System::Drawing::Size(19, 13);
+			this->label35->Size = System::Drawing::Size(49, 13);
 			this->label35->TabIndex = 132;
-			this->label35->Text = L"Vy";
+			this->label35->Text = L"Vy (°.s-1)";
 			this->label35->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label31
@@ -1975,9 +1971,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label31->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label31->Location = System::Drawing::Point(110, 23);
 			this->label31->Name = L"label31";
-			this->label31->Size = System::Drawing::Size(28, 13);
+			this->label31->Size = System::Drawing::Size(41, 13);
 			this->label31->TabIndex = 133;
-			this->label31->Text = L"Yaw";
+			this->label31->Text = L"Yaw (°)";
 			this->label31->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label36
@@ -1986,9 +1982,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label36->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label36->Location = System::Drawing::Point(4, 71);
 			this->label36->Name = L"label36";
-			this->label36->Size = System::Drawing::Size(19, 13);
+			this->label36->Size = System::Drawing::Size(49, 13);
 			this->label36->TabIndex = 131;
-			this->label36->Text = L"Vx";
+			this->label36->Text = L"Vx (°.s-1)";
 			this->label36->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label32
@@ -1997,9 +1993,9 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label32->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label32->Location = System::Drawing::Point(57, 23);
 			this->label32->Name = L"label32";
-			this->label32->Size = System::Drawing::Size(31, 13);
+			this->label32->Size = System::Drawing::Size(44, 13);
 			this->label32->TabIndex = 132;
-			this->label32->Text = L"Pitch";
+			this->label32->Text = L"Pitch (°)";
 			this->label32->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label33
@@ -2008,15 +2004,15 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			this->label33->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			this->label33->Location = System::Drawing::Point(4, 23);
 			this->label33->Name = L"label33";
-			this->label33->Size = System::Drawing::Size(25, 13);
+			this->label33->Size = System::Drawing::Size(38, 13);
 			this->label33->TabIndex = 131;
-			this->label33->Text = L"Roll";
+			this->label33->Text = L"Roll (°)";
 			this->label33->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// pictureBoxLogoLirmm
 			// 
 			this->pictureBoxLogoLirmm->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoLirmm.Image")));
-			this->pictureBoxLogoLirmm->Location = System::Drawing::Point(536, 561);
+			this->pictureBoxLogoLirmm->Location = System::Drawing::Point(532, 561);
 			this->pictureBoxLogoLirmm->Name = L"pictureBoxLogoLirmm";
 			this->pictureBoxLogoLirmm->Size = System::Drawing::Size(177, 50);
 			this->pictureBoxLogoLirmm->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
@@ -2026,12 +2022,26 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 			// pictureBoxLogoUM
 			// 
 			this->pictureBoxLogoUM->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoUM.Image")));
-			this->pictureBoxLogoUM->Location = System::Drawing::Point(438, 561);
+			this->pictureBoxLogoUM->Location = System::Drawing::Point(434, 561);
 			this->pictureBoxLogoUM->Name = L"pictureBoxLogoUM";
 			this->pictureBoxLogoUM->Size = System::Drawing::Size(62, 50);
 			this->pictureBoxLogoUM->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
 			this->pictureBoxLogoUM->TabIndex = 122;
 			this->pictureBoxLogoUM->TabStop = false;
+			// 
+			// backgroundWorkerPlateformGPSP
+			// 
+			this->backgroundWorkerPlateformGPSP->WorkerReportsProgress = true;
+			this->backgroundWorkerPlateformGPSP->WorkerSupportsCancellation = true;
+			this->backgroundWorkerPlateformGPSP->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerPlateformGPSP_DoWork);
+			this->backgroundWorkerPlateformGPSP->ProgressChanged += gcnew System::ComponentModel::ProgressChangedEventHandler(this, &MainForm::backgroundWorkerPlateformGPSP_ProgressChanged);
+			// 
+			// backgroundWorkerPlateformGPSS
+			// 
+			this->backgroundWorkerPlateformGPSS->WorkerReportsProgress = true;
+			this->backgroundWorkerPlateformGPSS->WorkerSupportsCancellation = true;
+			this->backgroundWorkerPlateformGPSS->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerPlateformGPSS_DoWork);
+			this->backgroundWorkerPlateformGPSS->ProgressChanged += gcnew System::ComponentModel::ProgressChangedEventHandler(this, &MainForm::backgroundWorkerPlateformGPSS_ProgressChanged);
 			// 
 			// MainForm
 			// 
@@ -2500,15 +2510,23 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 	}
 		   // Display arduino state in real-time
 	private: System::Void backgroundWorkerArduino_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		//this->labelArduinoIMU->Text = "Arduino IMU (roll, pitch, yaw): " + getPrecision(arduino.imu[0], 3) + "° " + getPrecision(arduino.imu[1], 3) + "° " + getPrecision(arduino.imu[2], 3) + "° ";
 		
 		this->textBoxArduinoRoll->Text = "" + getPrecision(arduino.imu[0], 3);
 		this->textBoxArduinoPitch->Text = "" + getPrecision(arduino.imu[1], 3);
 		this->textBoxArduinoYaw->Text = "" + getPrecision(arduino.imu[2], 3);
 		
-		//this->labelArduinoDepth->Text = "Arduino depth: " + getPrecision(arduino.depth, 3) + " m";
 		this->textBoxArduinoDepth->Text = "" + getPrecision(arduino.depth, 3);
-		//this->labelArduinoDepth->Text = "Arduino pressure sm: " + getPrecision(arduino.pressure_sm, 3) + " mbar";
+
+		if (arduino.depth >= 0.5) {
+			arduino.dvlOff();
+			system(DVL_READER_CLOSE);
+			MessageBox::Show("DVL turned off. Minimal depth (-0.5m) reached.");
+			this->buttonDVLon->Text = L"DVL on";
+			this->labelDVLon->Visible = true;
+			this->buttonDVLyes->Visible = true;
+			this->buttonDVLno->Visible = true;
+			log("DVL turned off automatically. Minimal depth (-0.5m) reached.");
+		}
 	}
 
 		   /*--------------------------------------------------------------
@@ -2651,19 +2669,32 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 		this->textBoxDVLD1->Text = "" + getPrecision(dvl.distances[1], 3);
 		this->textBoxDVLD2->Text = "" + getPrecision(dvl.distances[2], 3);
 		this->textBoxDVLD3->Text = "" + getPrecision(dvl.distances[3], 3);
-
-		// this->labelDvlV->Text = "DVL (vx, vy): " + getPrecision(dvl.vx, 3) + "m.s^-1 " + getPrecision(dvl.vy, 3) + "m.s^-1 ";
-		// this->labelDvlImu->Text = "DVL (roll, pitch, yaw): " + getPrecision(dvl.imu[0], 3) + "° " + getPrecision(dvl.imu[1], 3) + "° " + getPrecision(dvl.imu[2], 3) + "° ";
-		// this->labelDvlDistances->Text = "DVL (d0, d1, d2, d3): " + getPrecision(dvl.distances[0], 3) + "m " + getPrecision(dvl.distances[1], 3) + "m " + getPrecision(dvl.distances[2], 3) + "m " + getPrecision(dvl.distances[3], 3) + "m ";
 	}
 		   // Start DVL and UDP reader
 	private: System::Void backgroundWorkerDVLOn_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		log("DVL initialization");
-		Sleep(30000);
-		// Start DVL reader
-		system(DVL_READER_START);
+		if (arduino.depth < -0.5) {
+			//arduino.dvlOn();
+			Sleep(dvl.init_time);
+			// Start DVL reader
+			system(DVL_READER_START);
+			log("DVL turned on successfully.");
+		}
+		else
+			log("DVL cannot be turned on. Minimal depth (-0.5m) not reached.");
 		backgroundWorkerDVLOn->CancelAsync();
 		e->Cancel = true;
+	}
+		   // Set the DVL button to "On" (which means dvl currently off) if minimal depth hasn't be reached
+	private: System::Void backgroundWorkerDVLOn_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
+		if (arduino.depth >= -0.5) {
+			this->buttonDVLon->Text = L"DVL on";
+			this->labelDVLon->Visible = true;
+			this->buttonDVLyes->Visible = true;
+			this->buttonDVLno->Visible = true;
+			MessageBox::Show("The DVL cannot be turned on. Minimal depth (-0.5m) not reached.");
+		}
+
 	}
 		   // Start DVL button
 	private: System::Void buttonDVLon_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -2685,7 +2716,6 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 		this->labelDVLon->Visible = false;
 		this->buttonDVLyes->Visible = false;
 		this->buttonDVLno->Visible = false;
-		arduino.dvlOn();
 		backgroundWorkerDVLOn->RunWorkerAsync(1); // 30s and exceute DVL reader
 
 	}
@@ -2852,6 +2882,12 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 		}
 	}
 
+		   // Display tide in real time when possible
+	private: System::Void backgroundWorkerDepthMap_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
+		if(depth_map.is_freezed)
+			this->textBoxTide->Text = "" + getPrecision(depth_map.tide, 4);
+	}
+
 
 		   // Change resolution of the depth map
 	private: System::Void buttonResolutionMap_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -2880,6 +2916,31 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 		fs.release(); // releasing the file.
 		log("Depthmap saved! " + img_path);
 		log("Depthmap saved! " + data_path);
+	}
+
+		   // Show values
+	private: System::Void ptbDepthMap_MouseHover(System::Object^ sender, System::EventArgs^ e) {
+	}
+
+	private: System::Void buttonFreezeDM_Click(System::Object^ sender, System::EventArgs^ e) {
+		depth_map.freezeDepthMap();
+
+		string img_path = depthmap_dir_path + "freezed_map_" + getTime() + ".png";
+		string data_path = depthmap_dir_path + "freezed_map_" + getTime() + ".yml";
+
+		cv::imwrite(img_path, depth_map.map);
+
+		Mat_<double> data(depth_map.freezed_high_depth_map.size(), depth_map.freezed_high_depth_map[0].size());
+
+		for (size_t i = 0; i < depth_map.freezed_high_depth_map.size(); i++)
+			for (size_t j = 0; j < depth_map.freezed_high_depth_map[i].size(); j++)
+				data[i][j] = depth_map.freezed_high_depth_map[i][j].altitude;
+
+		cv::FileStorage fs(data_path, cv::FileStorage::WRITE); // create FileStorage object
+		fs << "freezedDepthMap" << data; // command to save the data
+		fs.release(); // releasing the file.
+		log("Freezed depthmap saved! " + img_path);
+		log("Freezed depthmap saved! " + data_path);
 	}
 
 		   /*--------------------------------------------------------------
@@ -2940,6 +3001,37 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 		this->textBoxPGyrY->Text = "" + getPrecision(plateform.v_gyro_P[1], 3);
 		this->textBoxPGyrZ->Text = "" + getPrecision(plateform.v_gyro_P[2], 3);
 
+	}
+
+		   // Receive GPS from port side continuously
+	private: System::Void backgroundWorkerPlateformGPSP_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while (true) {
+			plateform.rcvDataGpsP();
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.gps_P[0]);
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.gps_P[1]);
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.gps_rtk_P);
+		}
+	}
+		   // Receive GPS from starboard side continuously
+	private: System::Void backgroundWorkerPlateformGPSS_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while (true) {
+			plateform.rcvDataGpsS();
+			backgroundWorkerPlateformGPSS->ReportProgress(plateform.gps_S[0]);
+			backgroundWorkerPlateformGPSS->ReportProgress(plateform.gps_S[1]);
+			backgroundWorkerPlateformGPSS->ReportProgress(plateform.gps_rtk_S);
+		}
+	}
+		   // Display GPS from port side continuously
+	private: System::Void backgroundWorkerPlateformGPSP_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
+		this->textBoxPGPSX->Text = "OK 1";
+		this->textBoxPGPSY->Text = "OK 2";
+		this->textBoxPRTK->Text = "OK 3";
+	}
+		   // Display GPS from starboard side continuously
+	private: System::Void backgroundWorkerPlateformGPSS_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
+		this->textBoxSGPSX->Text = "OK 4";
+		this->textBoxSGPSY->Text = "OK 5";
+		this->textBoxSRTK->Text = "OK 6";
 	}
 
 		   /*--------------------------------------------------------------
@@ -3040,35 +3132,11 @@ private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
 		system(IMU_P_READER_CLOSE);
 	}
 
-		   // Show values
-	private: System::Void ptbDepthMap_MouseHover(System::Object^ sender, System::EventArgs^ e) {
-	}
 
-	private: System::Void buttonFreezeDM_Click(System::Object^ sender, System::EventArgs^ e) {
-		depth_map.freezeDepthMap();
 
-		string img_path = depthmap_dir_path + "freezed_map_" + getTime() + ".png";
-		string data_path = depthmap_dir_path + "freezed_map_" + getTime() + ".yml";
 
-		cv::imwrite(img_path, depth_map.map);
 
-		Mat_<double> data(depth_map.freezed_high_depth_map.size(), depth_map.freezed_high_depth_map[0].size());
 
-		for (size_t i = 0; i < depth_map.freezed_high_depth_map.size(); i++)
-			for (size_t j = 0; j < depth_map.freezed_high_depth_map[i].size(); j++)
-				data[i][j] = depth_map.freezed_high_depth_map[i][j].altitude;
-
-		cv::FileStorage fs(data_path, cv::FileStorage::WRITE); // create FileStorage object
-		fs << "freezedDepthMap" << data; // command to save the data
-		fs.release(); // releasing the file.
-		log("Freezed depthmap saved! " + img_path);
-		log("Freezed depthmap saved! " + data_path);
-	}
-
-		   // Display tide in real time when possible
-	private: System::Void backgroundWorkerDepthMap_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		this->textBoxTide->Text = ""+ getPrecision(depth_map.tide, 3);
-	}
 
 private: System::Void textBoxRobotYaw_TextChanged(System::Object^ sender, System::EventArgs^ e) {
 }
@@ -3088,5 +3156,8 @@ private: System::Void textBoxDVLVx_TextChanged(System::Object^ sender, System::E
 }
 private: System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e) {
 }
+
+
+
 };
 }

@@ -7,21 +7,35 @@ private:
 	char rcv_buffer_S[300]; // Starboard (tribord)
 	char rcv_buffer_P[300]; // Port (babord)
 
+	char rcv_buffer_GPS_S[300]; // Starboard (tribord)
+	char rcv_buffer_GPS_P[300]; // Port (babord)
+
 	UDPSocket continuous_S_socket; 
 	UDPSocket continuous_P_socket; 
+	UDPSocket continuous_GPS_S_socket;
+	UDPSocket continuous_GPS_P_socket;
 
 	std::string server_ip;
 	std::string client_ip;
 
 	unsigned short continuous_S_port;
 	unsigned short continuous_P_port;
+	unsigned short continuous_GPS_S_port;
+	unsigned short continuous_GPS_P_port;
 
 public:
 	float atm_pressure = 0;
-	float imu_S[3] = { 0, 0, 0 }; // roll, pitch, yaw (degree)
-	float v_gyro_S[3] = { 0, 0, 0 }; // Gyro x, y, z  (deg.s^-1)
+
+	float imu_S[3] = { 0, 0, 0 };		// roll, pitch, yaw (degree)
+	float v_gyro_S[3] = { 0, 0, 0 };	// Gyro x, y, z  (deg.s^-1)
+	float gps_S[2] = { 0, 0 };			// Latitude, longitude
+	bool gps_rtk_S = false;				// Valid measure
+
 	float imu_P[3] = { 0, 0, 0 };
 	float v_gyro_P[3] = { 0, 0, 0 };
+	float gps_P[2] = { 0, 0 }; 
+	bool gps_rtk_P = false; 
+
 
 public:
 	/*------------------------------
@@ -34,6 +48,9 @@ public:
 		this->continuous_S_port = PLATEFORM_S_CONTINUOUS_PORT;
 		this->continuous_P_port = PLATEFORM_P_CONTINUOUS_PORT;
 
+		this->continuous_GPS_S_port = PLATEFORM_GPS_S_CONTINUOUS_PORT;
+		this->continuous_GPS_P_port = PLATEFORM_GPS_P_CONTINUOUS_PORT;
+
 		this->continuous_S_socket.init();
 		this->continuous_S_socket.setLocalAddressAndPort(this->server_ip, this->continuous_S_port);
 		this->continuous_S_socket.setBroadcast();
@@ -41,6 +58,14 @@ public:
 		this->continuous_P_socket.init();
 		this->continuous_P_socket.setLocalAddressAndPort(this->server_ip, this->continuous_P_port);
 		this->continuous_P_socket.setBroadcast();
+
+		this->continuous_GPS_S_socket.init();
+		this->continuous_GPS_S_socket.setLocalAddressAndPort(this->server_ip, this->continuous_GPS_S_port);
+		this->continuous_GPS_S_socket.setBroadcast();
+
+		this->continuous_GPS_P_socket.init();
+		this->continuous_GPS_P_socket.setLocalAddressAndPort(this->server_ip, this->continuous_GPS_P_port);
+		this->continuous_GPS_P_socket.setBroadcast();
 	}
 
 	~Plateform() {
@@ -51,7 +76,23 @@ public:
 	/*------------------------------
 		Receive data continuously
 	-------------------------------*/
-	// Receive data from starboard side
+
+	// Receive data from starboard GPS
+	void rcvDataGpsS() {
+		ZeroMemory(this->rcv_buffer_GPS_S, 300);
+		this->continuous_GPS_S_socket.recvFrom(this->rcv_buffer_GPS_S, 300, (std::string)client_ip, this->continuous_GPS_S_port);
+		//log("From Plateform GPS S: " + (std::string)this->rcv_buffer_GPS_S);
+	}
+
+	// Receive data from port GPS
+	void rcvDataGpsP() {
+		ZeroMemory(this->rcv_buffer_GPS_P, 300);
+		this->continuous_GPS_P_socket.recvFrom(this->rcv_buffer_GPS_P, 300, (std::string)client_ip, this->continuous_GPS_P_port);
+		//log("From Plateform GPS S: " + (std::string)this->rcv_buffer_GPS_P);
+
+	}
+
+	// Receive data from starboard side (imu and barometer)
 	void rcvDataS() {
 		ZeroMemory(this->rcv_buffer_S, 300);
 		this->continuous_S_socket.recvFrom(this->rcv_buffer_S, 300, (std::string)client_ip, this->continuous_S_port);
@@ -72,7 +113,7 @@ public:
 		this->v_gyro_S[2] = gyrz;
 	}
 
-	// Receive data from port side
+	// Receive data from port side (imu and barometer)
 	void rcvDataP() {
 		ZeroMemory(this->rcv_buffer_P, 300);
 		this->continuous_P_socket.recvFrom(this->rcv_buffer_P, 300, (std::string)client_ip, this->continuous_P_port);

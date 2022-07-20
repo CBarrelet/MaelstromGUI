@@ -43,7 +43,6 @@ private:
 	cv::Point p4;
 	cv::Point robot_center;
 
-	
 
 	int robot_size = 150;
 	int robot_thickness = 3;
@@ -217,16 +216,11 @@ public:
 		float delta[4] = { 0, 0, 0, 0 };
 		if (this->is_freezed) {
 
-			for (size_t i = 0; i < 4; i++) {
-
-				if ((this->beams[i].x >= 0) && (this->beams[i].y >= 0) && (this->beams[i].x <= this->high_depth_map.size()) && (this->beams[i].y <= this->high_depth_map[0].size())) {
-
+			for (size_t i = 0; i < 4; i++)
+				if ((this->beams[i].x >= 0) && (this->beams[i].y >= 0) && (this->beams[i].x <= this->high_depth_map.size()) && (this->beams[i].y <= this->high_depth_map[0].size()))
 					if (this->freezed_high_depth_map[this->beams[i].x][this->beams[i].y].altitude < 0)
 						delta[i] = this->freezed_high_depth_map[this->beams[i].x][this->beams[i].y].altitude - dvl_coo[i].z;
-
-				}
-			}
-				
+	
 			for (size_t i = 0; i < 4; i++)
 				new_tide += delta[i];
 			new_tide /= 4;
@@ -310,10 +304,11 @@ public:
 			cv::line(this->map, cv::Point(i, 0), cv::Point(i, this->height), cv::Scalar(255, 255, 255), 1);
 		for (size_t i = 0; i < this->height; i += resolution)
 			cv::line(this->map, cv::Point(0, i), cv::Point(this->width, i), cv::Scalar(255, 255, 255), 1);
-		// Draw center pos
-		cv::circle(this->displayed_map, cv::Point(this->width / 2, this->height / 2), 4, cv::Scalar(255, 255, 255), -1);
 
 		this->displayed_map = this->map.clone();
+
+		// Draw center pos
+		cv::circle(this->displayed_map, cv::Point(this->width / 2, this->height / 2), 4, cv::Scalar(255, 255, 255), -1);
 	}
 
 	cv::Mat getMap() {
