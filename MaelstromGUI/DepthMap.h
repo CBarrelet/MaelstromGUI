@@ -12,10 +12,16 @@ private:
 		int time;
 		float depth;
 		float altitude;
-		float presure;
+		float pressure;
 	};
 
 public:
+
+	std::vector<std::vector<map_elmt>> global_high_depth_map;
+
+	cv::Mat displayed_global_map;
+
+
 	std::vector<std::vector<map_elmt>> high_depth_map;
 	std::vector<std::vector<map_elmt>> freezed_high_depth_map;
 	std::vector<std::vector<float>> low_depth_map;
@@ -43,7 +49,6 @@ private:
 	cv::Point p4;
 	cv::Point robot_center;
 
-
 	int robot_size = 150;
 	int robot_thickness = 3;
 	float radius = 0.5;
@@ -52,6 +57,7 @@ public:
 	cv::Mat map;
 private: 
 	cv::Mat displayed_map;
+	cv::Size displayed_size = cv::Size(320, 520);
 
 	int min_altitude = 0;
 	int max_altitude = 5; // 5 meters for the color map
@@ -70,12 +76,33 @@ public:
 
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 gen(rd()); // seed the generator
-		std::uniform_int_distribution<> distr(50, 200); // define the range
+		std::uniform_int_distribution<> distr1(0, 13); // define the range
+		std::uniform_int_distribution<> distr2(0, 8); // define the range
+
+		std::uniform_int_distribution<> distr3(-5, -1); // define the range
+
+		this->displayed_global_map = cv::Mat(400, 400, CV_8UC1, cv::Scalar(0));
+
 
 		// Init last altitudes values
 		for (size_t i = 0; i < 4; i++)
 			for (size_t j = 0; j < 4; i = j++)
 				last_distances[i][j] = 0;
+
+		
+		// Init global high depth map
+		for (size_t i = 0; i < NB_CASES_COTE_CARTE_GLOBALE; i++) {
+			std::vector<map_elmt> v1;
+			for (size_t j = 0; j < NB_CASES_COTE_CARTE_GLOBALE; j++) {
+				map_elmt elmt;
+				elmt.time = 0;
+				elmt.depth = 0; // distr(gen);
+				elmt.altitude = 4;
+				elmt.pressure = 0;
+				v1.push_back(elmt);
+			}
+			this->global_high_depth_map.push_back(v1);
+		}
 
 		// Init high depth map
 		for (size_t i = 0; i < this->width; i += this->high_resolution) {
@@ -84,8 +111,8 @@ public:
 				map_elmt elmt;
 				elmt.time = 0;
 				elmt.depth = 0; // distr(gen);
-				elmt.altitude = 0;
-				elmt.presure = 0;
+				elmt.altitude = 4;
+				elmt.pressure = 0;
 				v1.push_back(elmt);
 			}
 			this->high_depth_map.push_back(v1);
@@ -103,7 +130,8 @@ public:
 
 		// Center of the map
 		this->center = cv::Point(this->width, this->height) / 2;
-		this->map = cv::Mat::zeros(cv::Size(width, height), CV_8UC3);
+		this->map = cv::Mat::ones(cv::Size(width, height), CV_8UC3) * 204;
+		//this->map = cv::Mat(cv::Size(width, height), CV_8UC3, cv::Scalar(255, 255, 255));
 	}
 
 	~DepthMap() {
@@ -111,28 +139,115 @@ public:
 
 	void init() {
 		this->map *= 0;
+		this->map += 204;
 	}
 
-	void update(cv::Point3f dvl_coo[4], cv::Point3f robot_coo, float dvl_distances[4], float depth) {
+	void update(cv::Point3f dvl_coo[4], cv::Point3f robot_coo, float dvl_distances[4], float depth, double origine_global_map_latitude, double origine_global_map_longitude, double gps_P_latitude, double gps_P_longitude, double gps_S_cap) {
+
+		//std::random_device rd; // obtain a random number from hardware
+		//std::mt19937 gen(rd()); // seed the generator
+		//std::uniform_int_distribution<> distr1(0, 13); // define the range
+		//std::uniform_int_distribution<> distr2(0, 8); // define the range
+
+		//std::uniform_int_distribution<> distr3(-5000, -1000); // define the range
 
 		initFirstDvlValues(dvl_distances);
-		
-		// Set the coorinates in the depth map coordinates space
-		for (size_t i = 0; i < 4; i++) {
-			dvl_coo[i].x = dvl_coo[i].x * this->low_resolution * 2;
-			dvl_coo[i].y = dvl_coo[i].y * this->low_resolution * 2 * -1;
-		}
-		robot_coo.x = robot_coo.x * this->low_resolution * 2;
-		robot_coo.y = robot_coo.y * this->low_resolution * 2 * -1;
 
+		int i_global = 0, j_global = 0;
+		bool is_good_value = true;
+
+		unsigned char altitude_color = 0;
+
+		// Should be filtering 
+		// Set the coorinates in the global depth map coordinates space
 		for (size_t i = 0; i < 4; i++) {
-			this->beams[i] = cv::Point(dvl_coo[i].x + robot_coo.x, dvl_coo[i].y + robot_coo.y) + this->center;
-			this->beams[i].x = int(this->beams[i].x / this->high_resolution);
-			this->beams[i].y = int(this->beams[i].y / this->high_resolution);
+
+			is_good_value = true;
+
+			convertit_coordonnees_x_y_locales_en_i_j_grande_carte(
+				origine_global_map_latitude, origine_global_map_longitude,
+				gps_P_latitude, gps_P_longitude,
+				gps_S_cap,
+				dvl_coo[i].x + robot_coo.x,
+				dvl_coo[i].y + robot_coo.y,
+				&i_global, &j_global);
+
+			if ((i_global >= 0) && (i_global < NB_CASES_COTE_CARTE_GLOBALE) && (j_global >= 0) && (j_global < NB_CASES_COTE_CARTE_GLOBALE)) {
+
+				// Need to filter this
+
+				for (size_t j = 0; j < 4; j++) {
+					// Filter some artefacts, if at least one value is wrong, is_good_value == false
+					if ((this->coeff_filter * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] / this->coeff_filter < dvl_distances[i]))
+						is_good_value *= true;
+					else
+						is_good_value *= false;
+				}
+
+				is_good_value = true;
+
+				//fake_value = distr3(gen)/1000;
+
+				if (is_good_value) {
+					if ( (this->global_high_depth_map[j_global][i_global].altitude < 0))
+						this->global_high_depth_map[j_global][i_global].altitude = max(this->global_high_depth_map[j_global][i_global].altitude, dvl_coo[i].z);
+					else
+						this->global_high_depth_map[j_global][i_global].altitude = dvl_coo[i].z;
+
+					altitude_color = max(min(255, (5 + global_high_depth_map[j_global][i_global].altitude) * 255 / 5), 0);
+
+					// Draw
+					cv::rectangle(this->displayed_global_map, cv::Point(i_global, j_global), cv::Point(i_global, j_global), altitude_color, 1);
+				
+				}	
+			}	
 		}
+
+
+		// Fill the high resolution local space depth map
+		for (size_t i = 0; i < this->high_depth_map.size(); i++)
+		{
+			for (size_t j = 0; j < this->high_depth_map[0].size(); j++)
+			{
+				double x = i * (double)this->high_resolution - (double)this->high_depth_map.size() / 2 * (double)this->high_resolution;
+				double y = j * (double)this->high_resolution - (double)this->high_depth_map[0].size() / 2 * (double)this->high_resolution;
+				x /= 100; // Make it in meter
+				y /= 100;
+				y = -y;   // Make it in the robot coordinate system
+
+				convertit_coordonnees_x_y_locales_en_i_j_grande_carte(
+					origine_global_map_latitude, origine_global_map_longitude,
+					gps_P_latitude, gps_P_longitude,
+					gps_S_cap,
+					x,
+					y,
+					&i_global, &j_global);
+
+				this->high_depth_map[i][j].altitude = this->global_high_depth_map[j_global][i_global].altitude;
+			}
+		}
+
+		//cv::applyColorMap(this->displayed_global_map, this->displayed_global_map, cv::COLORMAP_JET);
+		cv::imshow("Global map", this->displayed_global_map);
+		cv::waitKey(30);
+
+
+		//// Set the coorinates in the depth map coordinates space
+		//for (size_t i = 0; i < 4; i++) {
+		//	dvl_coo[i].x = dvl_coo[i].x * this->low_resolution * 2;
+		//	dvl_coo[i].y = dvl_coo[i].y * this->low_resolution * 2 * -1;
+		//}
+		//robot_coo.x = robot_coo.x * this->low_resolution * 2;
+		//robot_coo.y = robot_coo.y * this->low_resolution * 2 * -1;
+
+		//for (size_t i = 0; i < 4; i++) {
+		//	this->beams[i] = cv::Point(dvl_coo[i].x + robot_coo.x, dvl_coo[i].y + robot_coo.y) + this->center;
+		//	this->beams[i].x = int(this->beams[i].x / this->high_resolution);
+		//	this->beams[i].y = int(this->beams[i].y / this->high_resolution);
+		//}
 			
 		// Filter artefacts and set the depth map
-		valuesFiltering(dvl_distances, dvl_coo);
+		//valuesFiltering(dvl_distances, dvl_coo);
 
 		// Update last_value and shift the buffer
 		updateLastDvlValues(dvl_distances);
@@ -192,9 +307,10 @@ private:
 					else
 						this->high_depth_map[this->beams[i].x][this->beams[i].y].altitude = dvl_coo[i].z;
 				}
-
 			}
 		}
+
+		//this->high_depth_map[5][10].altitude = -3;
 	}
 
 	void updateLastDvlValues(float dvl_distances[4]) {
@@ -203,13 +319,41 @@ private:
 			// Shift values
 			for (size_t j = 1; j < 4; j++)
 				this->last_distances[j][i] = this->last_distances[j - 1][i];
-			
 			// Update first values
 			this->last_distances[0][i] = dvl_distances[i];
 		}
 	}
 
 public:
+
+	float getDepth(cv::Point mouse) {
+
+		// 52 - 32 high_depth_map[51][31]  h = 32 w = 52
+
+		float depth = 0;
+		if (this->which_res) {
+
+			mouse.y = this->displayed_size.height - mouse.y;
+			int row = int(mouse.y / 10);
+			int col = int(mouse.x / 10);
+
+			// Not stable
+			//depth = this->high_depth_map[row][col].altitude;
+		}
+			
+		else {
+
+			mouse.y = this->displayed_size.height - mouse.y;
+			int row = int(mouse.y / 20);
+			int col = int(mouse.x / 20);
+
+			// Not stable
+			//depth = this->low_depth_map[row][col];
+		}
+			
+
+		return depth;
+	}
 
 	void setTide(cv::Point3f dvl_coo[4]) {
 		float new_tide = 0;
@@ -253,8 +397,13 @@ public:
 				p2.x = this->high_resolution * (j + 1);
 				p2.y = this->high_resolution * (i + 1);
 
-				//altitude_color = -(((high_depth_map[j][i].altitude - 0) * (255 - 0)) / (5 - 0)) + 0;	
+
+				/*altitude_color = max(min(255, (6 + high_depth_map[j][i].altitude) * 255 / 6), 3);
+				if(altitude_color < 250)
+					log(std::to_string(altitude_color));*/
+
 				altitude_color = max(min(255, (5 + high_depth_map[j][i].altitude) * 255 / 5), 0);
+				// 
 				//altitude_color = max(min(255, (- high_depth_map[j][i].altitude) * 255 / 5), 0); // To invert the color
 
 				if(this->which_res)
@@ -283,6 +432,7 @@ public:
 				p2.y = this->low_resolution * (i + 1);
 
 				// altitude_color = -(((low_depth_map[j][i] - 0) * (255 - 0)) / (5 - 0)) + 0; // Invert color
+				
 				altitude_color = max(min(255, (5 + low_depth_map[j][i]) * 255 / 5), 0);
 
 				if (!this->which_res)
@@ -394,6 +544,102 @@ public:
 		oss << std::put_time(&bt, "%H:%M:%S"); // HH:MM:SS
 		oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
 		return oss.str();
+	}
+
+	/*------------------------------
+		GPS RELATED
+	-------------------------------*/
+
+	double distance_entre_deux_points_geographiques(double lat1, double long1, double lat2, double long2)
+	{
+		//calcule la distance en mètres entre deux points géographiques exprimés en DD.dddddd.
+		double delta = DEG2RAD * (long2 - long1);
+		double cdlong = cos(delta);
+		lat1 = DEG2RAD * lat1;
+		lat2 = DEG2RAD * lat2;
+		double slat1 = sin(lat1);
+		double clat1 = cos(lat1);
+		double slat2 = sin(lat2);
+		double clat2 = cos(lat2);
+		delta = acos(slat1 * slat2 + clat1 * clat2 * cdlong);
+		return delta * RAYON_TERRE;
+	}
+
+	double cap_pour_aller_du_point_1_au_point_2(double lat1, double long1, double lat2, double long2)
+	{
+		// calcule l'angle d'orientation en radians (entre 0 pour le Nord et 2PI) du vecteur allant de la position 1 à la position 2,
+		// exprimés en DD.dddddd (signés)
+		double dlon = DEG2RAD * (long2 - long1);
+		lat1 = DEG2RAD * lat1;
+		lat2 = DEG2RAD * lat2;
+		double a1 = sin(dlon) * cos(lat2);
+		double a2 = sin(lat1) * cos(lat2) * cos(dlon);
+		a2 = cos(lat1) * sin(lat2) - a2;
+		a2 = atan2(a1, a2);
+		if (a2 < 0.0)
+		{
+			a2 += 2 * PI;
+		}
+		return a2;  //radians
+	}
+
+	void calcul_coordonnees_geo_point(double lat_GPS_babord, double long_GPS_babord, double distance, double azimut, double* lat_P, double* long_P)
+	{
+		//calcule les coordonnées géographiques d'un point défini par sa distance en mètres et son azimut en radians par rapport à un point geographique (dans notre cas, le GPS bâbord)
+		lat_GPS_babord = DEG2RAD * lat_GPS_babord;
+		long_GPS_babord = DEG2RAD * long_GPS_babord;
+		*lat_P = asin(sin(lat_GPS_babord) * cos(distance / RAYON_TERRE) + cos(lat_GPS_babord) * sin(distance / RAYON_TERRE) * cos(azimut));
+		*long_P = long_GPS_babord + atan2(sin(azimut) * sin(distance / RAYON_TERRE) * cos(lat_GPS_babord), cos(distance / RAYON_TERRE) - sin(lat_GPS_babord) * sin(*lat_P));
+		*lat_P *= RAD2DEG;
+		*long_P *= RAD2DEG;
+		return;
+	}
+
+	void calcul_coordonnees_i_j_du_point_P_dans_carte_globale(double lat_orig_carte, double long_orig_carte, double lat_P, double long_P, int nb_cases_cote_carte, int longueur_cote_carte, int* i, int* j)
+	{
+		//origine de la carte en haut à gauche (nord ouest). Axe i orienté vers la droite (est) et Axe j orienté vers le bas (sud)
+		//La fonction renvoie les coordonnées i,j dans la matrice (nb_cases_cote_carte x nb_cases_cote_carte), ou bien renvoie -1 si le point est hors de la carte
+		double distance_par_rapport_origine_carte = distance_entre_deux_points_geographiques(lat_orig_carte, long_orig_carte, lat_P, long_P);
+		double azimut_point_P_par_rapport_origine_carte = cap_pour_aller_du_point_1_au_point_2(lat_orig_carte, long_orig_carte, lat_P, long_P);
+		//printf("distance,azimut du point P par rapport a origine carte globale = %lf m , %lf deg", distance_par_rapport_origine_carte, RAD2DEG*azimut_point_P_par_rapport_origine_carte);
+		double x_carte_globale = distance_par_rapport_origine_carte * sin(azimut_point_P_par_rapport_origine_carte);
+		double y_carte_globale = -distance_par_rapport_origine_carte * cos(azimut_point_P_par_rapport_origine_carte);
+		*i = (int)(x_carte_globale * nb_cases_cote_carte / longueur_cote_carte);
+		*j = (int)(y_carte_globale * nb_cases_cote_carte / longueur_cote_carte);
+		if ((*i < 0) || (*j < 0) || (*i >= nb_cases_cote_carte) || (*j >= nb_cases_cote_carte)) //si le point est hors de la carte
+		{
+			*i = -1;
+			*j = -1;
+		}
+		return;
+	}
+
+	void coordonnees_geo_d_un_point_P_x_y_du_repere_robot(double lat_GPS_babord, double long_GPS_babord, double x, double y, double* lat_P, double* long_P, double cap_GPS_Babord_vers_Tribord)
+	{
+		//Le GPS bâbord est le Master et est le centre du repère GPS
+		double x_dans_repere_gps_babord = x - X_GPS_BABORD_DANS_REPERE_ROBOT;                //Les axes de ce reprèe sont orientés comme ceux du robot. Le centre est sur le poteau du GPS arrière bâbord.
+		double y_dans_repere_gps_babord = y - Y_GPS_BABORD_DANS_REPERE_ROBOT;
+		double azimut_de_P_dans_repere_GPS_babord = -atan2(x_dans_repere_gps_babord, -y_dans_repere_gps_babord); //Angle compté négatif dans le sens horaire à partir de l'axe -y (i.e. l'axe calculé par la fonction GPS RTK qui mesure l'axe Master -> Slave)
+		//printf("azimut local = %lf\n", RAD2DEG*azimut_de_P_dans_repere_GPS_babord);
+		double azimut_de_P_dans_repere_geographique = cap_GPS_Babord_vers_Tribord + azimut_de_P_dans_repere_GPS_babord;
+		//printf("azimut geographique = %lf\n", RAD2DEG*azimut_de_P_dans_repere_geographique);
+		double distance_de_P_par_rapport_au_GPS_babord = sqrt(x_dans_repere_gps_babord * x_dans_repere_gps_babord + y_dans_repere_gps_babord * y_dans_repere_gps_babord);
+		//printf("distance du point P par rapport au GPS babord = %lf\n", distance_de_P_par_rapport_au_GPS_babord);
+		double latP, longP;
+		calcul_coordonnees_geo_point(lat_GPS_babord, long_GPS_babord, distance_de_P_par_rapport_au_GPS_babord, azimut_de_P_dans_repere_geographique, &latP, &longP);
+		//printf("Coordonnees geographiques de P = %lf %lf\n", latP, longP);
+		*lat_P = latP;
+		*long_P = longP;
+		return;
+	}
+
+	void convertit_coordonnees_x_y_locales_en_i_j_grande_carte(double lat_orig_carte, double long_orig_carte, double latitude_GPS_Master_babord, double longitude_GPS_Master_babord, double cap_GPS_babord_vers_tribord, double x_dans_repere_robot, double y_dans_repere_robot, int* i_carte_globale, int* j_carte_globale)
+	{
+		//cette fonction renvoie i = -1 et j =-1 si l'une des coordonnées est hors de la carte globale, sinon ça renvoie les coordonnées i,j de la carte globale en fonction des x,y du repère robot.
+		//origine de la carte en haut à gauche (nord ouest). Axe i orienté vers la droite (est) et Axe j orienté vers le bas (sud)
+		double lat_P_temp, long_P_temp;
+		coordonnees_geo_d_un_point_P_x_y_du_repere_robot(latitude_GPS_Master_babord, longitude_GPS_Master_babord, x_dans_repere_robot, y_dans_repere_robot, &lat_P_temp, &long_P_temp, cap_GPS_babord_vers_tribord);
+		calcul_coordonnees_i_j_du_point_P_dans_carte_globale(lat_orig_carte, long_orig_carte, lat_P_temp, long_P_temp, NB_CASES_COTE_CARTE_GLOBALE, LONGUEUR_COTE_CARTE_GLOBALE, i_carte_globale, j_carte_globale);
 	}
 
 };

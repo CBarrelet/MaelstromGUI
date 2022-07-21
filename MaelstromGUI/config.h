@@ -62,9 +62,13 @@
 #define PLATEFORM_GPS_S_CONTINUOUS_PORT 5827 // STARBOARD (tribord, côté du y négatif du robot)
 #define PLATEFORM_GPS_P_CONTINUOUS_PORT 5829 // PORT (babord, côté du y positif du robot)
 
+#define PLATEFORM_GPS_CONTINUOUS_PORT 5830
+
 
 // Maths
 #define PI 3.141592653589793238462
+#define DEG2RAD        (double)(0.01745329252)
+#define RAD2DEG        (double)(57.2957795131)
 
 // Arduino pressure sensor offset
 #define PRESSURE_SENSOR_OFFSET 0.15
@@ -93,5 +97,10 @@
 #define IMU_P_READER_START "start D:/projects/cyril/module_PIMU_barometre_B_Maelstrom_2022/executables/PIMU_B_252.exe"
 #define IMU_P_READER_CLOSE "taskkill /f /im PIMU_B_252.exe"
 
+#define NB_CASES_COTE_CARTE_GLOBALE        400        // nombre de cases d'un côté de la carte globale
+#define LONGUEUR_COTE_CARTE_GLOBALE        100        // en mètres, longueur d'un côté de la carte globale
+#define X_GPS_BABORD_DANS_REPERE_ROBOT    -5.3054    //coordonnée en mètres du GPS Bâbord dans le repère x,y du robot (x doit être négatif). L'axe x du robot est vers l'avant (face à la fenêtre de la control room).
+#define Y_GPS_BABORD_DANS_REPERE_ROBOT    3.8963    //coordonnée en mètres du GPS Bâbord dans le repère x,y du robot (y doit être positif). L'axe y du robot est orienté vers la gauche (bâbord).
+#define RAYON_TERRE                        6378137        //valeur IGN    // ou bien 6372795 (valeur Tiny GPS)  //Valeur variable selon la sphère concernée (l'essentiel est de garder la même valeur pour tous les calculs).
 
 

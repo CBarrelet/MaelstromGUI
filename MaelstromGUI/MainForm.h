@@ -173,6 +173,8 @@ namespace MaelstromGUI {
 	// Related images in the images list
 	vector< cv::String > realted_img_paths;
 
+	Mat colormap_img = cv::Mat(400, 20, CV_8UC3, cv::Scalar(0, 0, 0));
+
 	/// <summary>
 	/// Summary for MyForm
 	/// </summary>
@@ -182,7 +184,7 @@ namespace MaelstromGUI {
 		MainForm(void)
 		{
 			// Keep track of logs
-			if (false) {
+			if (true) {
 				string log_path = log_dir_path + getTime() + ".txt";
 				freopen(log_path.c_str(), "w", stdout);
 			}
@@ -192,12 +194,15 @@ namespace MaelstromGUI {
 
 			// Start IMU reader
 			system(IMU_READER_START);
+			Sleep(500);
 
 			// Start IMU starboard reader
 			system(IMU_S_READER_START);
+			Sleep(500);
 
 			// Start IMU port reader
 			system(IMU_P_READER_START);
+			Sleep(500);
 
 			// Camera calibration
 			camera_params.center = cv::Point(CAMERA_CX, CAMERA_CY);
@@ -211,6 +216,25 @@ namespace MaelstromGUI {
 			// Measurment points
 			measure.a = cv::Point(-10, -10);
 			measure.b = cv::Point(-10, -10);
+
+
+			int value = 0;
+			double prod = 0;
+			for (size_t i = 0; i < colormap_img.size().height; i++) {
+				for (size_t j = 0; j < colormap_img.size().width; j++) {
+					prod = i * 255;
+					value = (int)(prod / 400 + 0.5);
+					Vec3b& color = colormap_img.at<Vec3b>(i, j);
+					color[0] = 255 - value;
+					color[1] = 255 - value;
+					color[2] = 255 - value;
+				}
+			}
+
+			cv::applyColorMap(colormap_img, colormap_img, cv::COLORMAP_JET);
+
+
+			pictureBoxColorMap->Image = ConvertMat2Bitmap(colormap_img);
 
 			// Robot
 			backgroundWorkerRobotStarted->RunWorkerAsync(1); // Check if robot has started
@@ -270,7 +294,6 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Button^ record_button;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerJetson;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobot;
-
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerArduino;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL;
 	private: System::Windows::Forms::Button^ buttonDVLon;
@@ -292,115 +315,117 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Button^ buttonScan;
 	private: System::Windows::Forms::Label^ label3dXFake;
 	private: System::Windows::Forms::Label^ labelLineFake;
-
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDepthMap;
 	private: System::Windows::Forms::PictureBox^ ptbDepthMap;
-
 	private: System::Windows::Forms::Button^ buttonGoToTarget;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobotStarted;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVLOn;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerRobotScan;
 	private: System::Windows::Forms::TextBox^ textBox1;
 	private: System::Windows::Forms::Label^ labelDepthScan;
-
 	private: System::Windows::Forms::Button^ buttonResolutionMap;
-
 	private: System::Windows::Forms::Button^ buttonSaveDepthMap;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformS;
 	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformP;
-private: System::Windows::Forms::Button^ buttonFreezeDM;
+	private: System::Windows::Forms::Button^ buttonFreezeDM;
+	private: System::Windows::Forms::TextBox^ textBoxTide;
+	private: System::Windows::Forms::TextBox^ textBoxRobotX;
+	private: System::Windows::Forms::TextBox^ textBoxRobotY;
+	private: System::Windows::Forms::TextBox^ textBoxRobotZ;
+	private: System::Windows::Forms::TextBox^ textBoxRobotState;
+	private: System::Windows::Forms::TextBox^ textBoxRobotYaw;
+	private: System::Windows::Forms::TextBox^ textBoxRobotPitch;
+	private: System::Windows::Forms::TextBox^ textBoxRobotRoll;
+	private: System::Windows::Forms::TextBox^ textBoxGripper;
+	private: System::Windows::Forms::TextBox^ textBoxPump;
+	private: System::Windows::Forms::TextBox^ textBoxArduinoYaw;
+	private: System::Windows::Forms::TextBox^ textBoxArduinoPitch;
+	private: System::Windows::Forms::TextBox^ textBoxArduinoRoll;
+	private: System::Windows::Forms::TextBox^ textBoxArduinoDepth;
+	private: System::Windows::Forms::TextBox^ textBoxAtmPressure;
+	private: System::Windows::Forms::TextBox^ textBoxDVLVy;
+	private: System::Windows::Forms::TextBox^ textBoxDVLVx;
+	private: System::Windows::Forms::TextBox^ textBoxDVLYaw;
+	private: System::Windows::Forms::TextBox^ textBoxDVLPitch;
+	private: System::Windows::Forms::TextBox^ textBoxDVLRoll;
+	private: System::Windows::Forms::TextBox^ textBoxDVLD2;
+	private: System::Windows::Forms::TextBox^ textBoxDVLD1;
+	private: System::Windows::Forms::TextBox^ textBoxDVLD0;
+	private: System::Windows::Forms::TextBox^ textBoxDVLD3;
+	private: System::Windows::Forms::TextBox^ textBoxPYaw;
+	private: System::Windows::Forms::TextBox^ textBoxPPitch;
+	private: System::Windows::Forms::TextBox^ textBoxPRoll;
+	private: System::Windows::Forms::TextBox^ textBoxPGyrZ;
+	private: System::Windows::Forms::TextBox^ textBoxPGyrY;
+	private: System::Windows::Forms::TextBox^ textBoxPGyrX;
+	private: System::Windows::Forms::TextBox^ textBoxSYaw;
+	private: System::Windows::Forms::TextBox^ textBoxSPitch;
+	private: System::Windows::Forms::TextBox^ textBoxSRoll;
+	private: System::Windows::Forms::TextBox^ textBoxSGyrZ;
+	private: System::Windows::Forms::TextBox^ textBoxSGyrY;
+	private: System::Windows::Forms::TextBox^ textBoxSGyrX;
+	private: System::Windows::Forms::TextBox^ textBoxSGPSY;
+	private: System::Windows::Forms::TextBox^ textBoxSGPSX;
+	private: System::Windows::Forms::TextBox^ textBoxPGPSY;
+	private: System::Windows::Forms::TextBox^ textBoxPGPSX;
+	private: System::Windows::Forms::Label^ labelGPSP;
+	private: System::Windows::Forms::Label^ labelGPSS;
+	private: System::Windows::Forms::GroupBox^ groupBoxRobot;
+	private: System::Windows::Forms::TextBox^ textBoxSRTK;
 
-private: System::Windows::Forms::TextBox^ textBoxTide;
 
 
-private: System::Windows::Forms::TextBox^ textBoxRobotX;
-private: System::Windows::Forms::TextBox^ textBoxRobotY;
-private: System::Windows::Forms::TextBox^ textBoxRobotZ;
-private: System::Windows::Forms::TextBox^ textBoxRobotState;
-private: System::Windows::Forms::TextBox^ textBoxRobotYaw;
-private: System::Windows::Forms::TextBox^ textBoxRobotPitch;
-private: System::Windows::Forms::TextBox^ textBoxRobotRoll;
-private: System::Windows::Forms::TextBox^ textBoxGripper;
-private: System::Windows::Forms::TextBox^ textBoxPump;
-private: System::Windows::Forms::TextBox^ textBoxArduinoYaw;
-private: System::Windows::Forms::TextBox^ textBoxArduinoPitch;
-private: System::Windows::Forms::TextBox^ textBoxArduinoRoll;
-private: System::Windows::Forms::TextBox^ textBoxArduinoDepth;
-private: System::Windows::Forms::TextBox^ textBoxAtmPressure;
-private: System::Windows::Forms::TextBox^ textBoxDVLVy;
-private: System::Windows::Forms::TextBox^ textBoxDVLVx;
-private: System::Windows::Forms::TextBox^ textBoxDVLYaw;
-private: System::Windows::Forms::TextBox^ textBoxDVLPitch;
-private: System::Windows::Forms::TextBox^ textBoxDVLRoll;
-private: System::Windows::Forms::TextBox^ textBoxDVLD2;
-private: System::Windows::Forms::TextBox^ textBoxDVLD1;
-private: System::Windows::Forms::TextBox^ textBoxDVLD0;
-private: System::Windows::Forms::TextBox^ textBoxDVLD3;
-private: System::Windows::Forms::TextBox^ textBoxPYaw;
-private: System::Windows::Forms::TextBox^ textBoxPPitch;
-private: System::Windows::Forms::TextBox^ textBoxPRoll;
-private: System::Windows::Forms::TextBox^ textBoxPGyrZ;
-private: System::Windows::Forms::TextBox^ textBoxPGyrY;
-private: System::Windows::Forms::TextBox^ textBoxPGyrX;
-private: System::Windows::Forms::TextBox^ textBoxSYaw;
-private: System::Windows::Forms::TextBox^ textBoxSPitch;
-private: System::Windows::Forms::TextBox^ textBoxSRoll;
-private: System::Windows::Forms::TextBox^ textBoxSGyrZ;
-private: System::Windows::Forms::TextBox^ textBoxSGyrY;
-private: System::Windows::Forms::TextBox^ textBoxSGyrX;
-private: System::Windows::Forms::TextBox^ textBoxSGPSY;
-private: System::Windows::Forms::TextBox^ textBoxSGPSX;
-private: System::Windows::Forms::TextBox^ textBoxPGPSY;
-private: System::Windows::Forms::TextBox^ textBoxPGPSX;
-private: System::Windows::Forms::Label^ labelGPSP;
-private: System::Windows::Forms::Label^ labelGPSS;
-private: System::Windows::Forms::GroupBox^ groupBoxRobot;
-private: System::Windows::Forms::TextBox^ textBoxPRTK;
-private: System::Windows::Forms::TextBox^ textBoxSRTK;
-private: System::Windows::Forms::Label^ labelTide;
-private: System::Windows::Forms::Label^ label10;
-private: System::Windows::Forms::Label^ label9;
-private: System::Windows::Forms::Label^ label8;
-private: System::Windows::Forms::Label^ label7;
-private: System::Windows::Forms::Label^ label6;
-private: System::Windows::Forms::Label^ label4;
-private: System::Windows::Forms::Label^ label3;
-private: System::Windows::Forms::Label^ label2;
-private: System::Windows::Forms::Label^ label1;
-private: System::Windows::Forms::GroupBox^ groupBox1;
-private: System::Windows::Forms::Label^ label14;
-private: System::Windows::Forms::Label^ label11;
-private: System::Windows::Forms::Label^ label12;
-private: System::Windows::Forms::Label^ label13;
-private: System::Windows::Forms::Label^ label15;
-private: System::Windows::Forms::GroupBox^ groupBoxDVL;
-private: System::Windows::Forms::Label^ label22;
-private: System::Windows::Forms::Label^ label19;
-private: System::Windows::Forms::Label^ label20;
-private: System::Windows::Forms::Label^ label21;
-private: System::Windows::Forms::Label^ label16;
-private: System::Windows::Forms::Label^ label17;
-private: System::Windows::Forms::Label^ label18;
-private: System::Windows::Forms::Label^ label23;
-private: System::Windows::Forms::Label^ label24;
-private: System::Windows::Forms::GroupBox^ groupBoxPort;
-private: System::Windows::Forms::Label^ label25;
-private: System::Windows::Forms::Label^ label26;
-private: System::Windows::Forms::Label^ label27;
-private: System::Windows::Forms::Label^ label28;
-private: System::Windows::Forms::Label^ label29;
-private: System::Windows::Forms::Label^ label30;
-private: System::Windows::Forms::GroupBox^ groupBoxStarboard;
-private: System::Windows::Forms::Label^ label34;
-private: System::Windows::Forms::Label^ label35;
-private: System::Windows::Forms::Label^ label31;
-private: System::Windows::Forms::Label^ label36;
-private: System::Windows::Forms::Label^ label32;
-private: System::Windows::Forms::Label^ label33;
-private: System::Windows::Forms::PictureBox^ pictureBoxLogoLirmm;
-private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
-private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSP;
-private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS;
+
+	private: System::Windows::Forms::Label^ labelTide;
+	private: System::Windows::Forms::Label^ label10;
+	private: System::Windows::Forms::Label^ label9;
+	private: System::Windows::Forms::Label^ label8;
+	private: System::Windows::Forms::Label^ label7;
+	private: System::Windows::Forms::Label^ label6;
+	private: System::Windows::Forms::Label^ label4;
+	private: System::Windows::Forms::Label^ label3;
+	private: System::Windows::Forms::Label^ label2;
+	private: System::Windows::Forms::Label^ label1;
+	private: System::Windows::Forms::GroupBox^ groupBox1;
+	private: System::Windows::Forms::Label^ label14;
+	private: System::Windows::Forms::Label^ label11;
+	private: System::Windows::Forms::Label^ label12;
+	private: System::Windows::Forms::Label^ label13;
+	private: System::Windows::Forms::Label^ label15;
+	private: System::Windows::Forms::GroupBox^ groupBoxDVL;
+	private: System::Windows::Forms::Label^ label22;
+	private: System::Windows::Forms::Label^ label19;
+	private: System::Windows::Forms::Label^ label20;
+	private: System::Windows::Forms::Label^ label21;
+	private: System::Windows::Forms::Label^ label16;
+	private: System::Windows::Forms::Label^ label17;
+	private: System::Windows::Forms::Label^ label18;
+	private: System::Windows::Forms::Label^ label23;
+	private: System::Windows::Forms::Label^ label24;
+	private: System::Windows::Forms::GroupBox^ groupBoxPort;
+	private: System::Windows::Forms::Label^ label25;
+	private: System::Windows::Forms::Label^ label26;
+	private: System::Windows::Forms::Label^ label27;
+	private: System::Windows::Forms::Label^ label28;
+	private: System::Windows::Forms::Label^ label29;
+	private: System::Windows::Forms::Label^ label30;
+	private: System::Windows::Forms::GroupBox^ groupBoxStarboard;
+	private: System::Windows::Forms::Label^ label34;
+	private: System::Windows::Forms::Label^ label35;
+	private: System::Windows::Forms::Label^ label31;
+	private: System::Windows::Forms::Label^ label36;
+	private: System::Windows::Forms::Label^ label32;
+	private: System::Windows::Forms::Label^ label33;
+	private: System::Windows::Forms::PictureBox^ pictureBoxLogoLirmm;
+	private: System::Windows::Forms::PictureBox^ pictureBoxLogoUM;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSP;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS;
+	private: System::Windows::Forms::TextBox^ textBoxMouseDepth;
+	private: System::Windows::Forms::Label^ label5;
+	private: System::Windows::Forms::PictureBox^ pictureBoxLogoMaelstrom;
+	private: System::Windows::Forms::PictureBox^ pictureBoxColorMap;
+private: System::Windows::Forms::Label^ labelMaxDepth;
+private: System::Windows::Forms::Label^ labelMinDepth;
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -522,7 +547,6 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->label3 = (gcnew System::Windows::Forms::Label());
 			this->label2 = (gcnew System::Windows::Forms::Label());
 			this->label1 = (gcnew System::Windows::Forms::Label());
-			this->textBoxPRTK = (gcnew System::Windows::Forms::TextBox());
 			this->textBoxSRTK = (gcnew System::Windows::Forms::TextBox());
 			this->labelTide = (gcnew System::Windows::Forms::Label());
 			this->groupBox1 = (gcnew System::Windows::Forms::GroupBox());
@@ -559,6 +583,12 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->pictureBoxLogoUM = (gcnew System::Windows::Forms::PictureBox());
 			this->backgroundWorkerPlateformGPSP = (gcnew System::ComponentModel::BackgroundWorker());
 			this->backgroundWorkerPlateformGPSS = (gcnew System::ComponentModel::BackgroundWorker());
+			this->textBoxMouseDepth = (gcnew System::Windows::Forms::TextBox());
+			this->label5 = (gcnew System::Windows::Forms::Label());
+			this->pictureBoxLogoMaelstrom = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxColorMap = (gcnew System::Windows::Forms::PictureBox());
+			this->labelMaxDepth = (gcnew System::Windows::Forms::Label());
+			this->labelMinDepth = (gcnew System::Windows::Forms::Label());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->BeginInit();
@@ -569,6 +599,8 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxStarboard->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoLirmm))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoUM))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoMaelstrom))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxColorMap))->BeginInit();
 			this->SuspendLayout();
 			// 
 			// button_Edition
@@ -741,7 +773,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// 
 			// buttonDVLyes
 			// 
-			this->buttonDVLyes->Location = System::Drawing::Point(209, 25);
+			this->buttonDVLyes->Location = System::Drawing::Point(560, 28);
 			this->buttonDVLyes->Name = L"buttonDVLyes";
 			this->buttonDVLyes->Size = System::Drawing::Size(41, 21);
 			this->buttonDVLyes->TabIndex = 25;
@@ -754,7 +786,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// 
 			this->buttonDVLno->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->buttonDVLno->Location = System::Drawing::Point(275, 25);
+			this->buttonDVLno->Location = System::Drawing::Point(626, 28);
 			this->buttonDVLno->Name = L"buttonDVLno";
 			this->buttonDVLno->Size = System::Drawing::Size(41, 21);
 			this->buttonDVLno->TabIndex = 26;
@@ -768,7 +800,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->labelDVLon->AutoSize = true;
 			this->labelDVLon->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->labelDVLon->Location = System::Drawing::Point(192, 9);
+			this->labelDVLon->Location = System::Drawing::Point(543, 12);
 			this->labelDVLon->Name = L"labelDVLon";
 			this->labelDVLon->Size = System::Drawing::Size(141, 13);
 			this->labelDVLon->TabIndex = 27;
@@ -811,7 +843,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// label3dY
 			// 
 			this->label3dY->AutoSize = true;
-			this->label3dY->Location = System::Drawing::Point(879, 26);
+			this->label3dY->Location = System::Drawing::Point(980, 26);
 			this->label3dY->Name = L"label3dY";
 			this->label3dY->Size = System::Drawing::Size(44, 13);
 			this->label3dY->TabIndex = 32;
@@ -822,7 +854,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// label3dX
 			// 
 			this->label3dX->AutoSize = true;
-			this->label3dX->Location = System::Drawing::Point(829, 26);
+			this->label3dX->Location = System::Drawing::Point(930, 26);
 			this->label3dX->Name = L"label3dX";
 			this->label3dX->Size = System::Drawing::Size(44, 13);
 			this->label3dX->TabIndex = 31;
@@ -833,7 +865,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// label3dZ
 			// 
 			this->label3dZ->AutoSize = true;
-			this->label3dZ->Location = System::Drawing::Point(929, 26);
+			this->label3dZ->Location = System::Drawing::Point(1030, 26);
 			this->label3dZ->Name = L"label3dZ";
 			this->label3dZ->Size = System::Drawing::Size(44, 13);
 			this->label3dZ->TabIndex = 33;
@@ -844,7 +876,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// labelDVL
 			// 
 			this->labelDVL->AutoSize = true;
-			this->labelDVL->Location = System::Drawing::Point(785, 42);
+			this->labelDVL->Location = System::Drawing::Point(886, 42);
 			this->labelDVL->Name = L"labelDVL";
 			this->labelDVL->Size = System::Drawing::Size(34, 13);
 			this->labelDVL->TabIndex = 34;
@@ -855,7 +887,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// label3dZFake
 			// 
 			this->label3dZFake->AutoSize = true;
-			this->label3dZFake->Location = System::Drawing::Point(929, 42);
+			this->label3dZFake->Location = System::Drawing::Point(1030, 42);
 			this->label3dZFake->Name = L"label3dZFake";
 			this->label3dZFake->Size = System::Drawing::Size(44, 13);
 			this->label3dZFake->TabIndex = 38;
@@ -866,7 +898,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// label3dYFake
 			// 
 			this->label3dYFake->AutoSize = true;
-			this->label3dYFake->Location = System::Drawing::Point(879, 42);
+			this->label3dYFake->Location = System::Drawing::Point(980, 42);
 			this->label3dYFake->Name = L"label3dYFake";
 			this->label3dYFake->Size = System::Drawing::Size(44, 13);
 			this->label3dYFake->TabIndex = 37;
@@ -877,7 +909,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// label3dXFake
 			// 
 			this->label3dXFake->AutoSize = true;
-			this->label3dXFake->Location = System::Drawing::Point(829, 42);
+			this->label3dXFake->Location = System::Drawing::Point(930, 42);
 			this->label3dXFake->Name = L"label3dXFake";
 			this->label3dXFake->Size = System::Drawing::Size(44, 13);
 			this->label3dXFake->TabIndex = 36;
@@ -888,7 +920,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// labelLine
 			// 
 			this->labelLine->AutoSize = true;
-			this->labelLine->Location = System::Drawing::Point(996, 29);
+			this->labelLine->Location = System::Drawing::Point(1097, 29);
 			this->labelLine->Name = L"labelLine";
 			this->labelLine->Size = System::Drawing::Size(59, 13);
 			this->labelLine->TabIndex = 39;
@@ -899,7 +931,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// labelLineFake
 			// 
 			this->labelLineFake->AutoSize = true;
-			this->labelLineFake->Location = System::Drawing::Point(996, 42);
+			this->labelLineFake->Location = System::Drawing::Point(1097, 42);
 			this->labelLineFake->Name = L"labelLineFake";
 			this->labelLineFake->Size = System::Drawing::Size(59, 13);
 			this->labelLineFake->TabIndex = 40;
@@ -921,7 +953,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->ptbDepthMap->Size = System::Drawing::Size(320, 520);
 			this->ptbDepthMap->TabIndex = 41;
 			this->ptbDepthMap->TabStop = false;
-			this->ptbDepthMap->MouseHover += gcnew System::EventHandler(this, &MainForm::ptbDepthMap_MouseHover);
+			this->ptbDepthMap->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::ptbDepthMap_MouseMove);
 			// 
 			// buttonGoToTarget
 			// 
@@ -1398,10 +1430,10 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// 
 			// textBoxSGPSY
 			// 
-			this->textBoxSGPSY->Location = System::Drawing::Point(59, 134);
+			this->textBoxSGPSY->Location = System::Drawing::Point(77, 134);
 			this->textBoxSGPSY->Name = L"textBoxSGPSY";
 			this->textBoxSGPSY->ReadOnly = true;
-			this->textBoxSGPSY->Size = System::Drawing::Size(47, 20);
+			this->textBoxSGPSY->Size = System::Drawing::Size(68, 20);
 			this->textBoxSGPSY->TabIndex = 107;
 			this->textBoxSGPSY->Text = L"None";
 			this->textBoxSGPSY->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
@@ -1411,17 +1443,17 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->textBoxSGPSX->Location = System::Drawing::Point(6, 134);
 			this->textBoxSGPSX->Name = L"textBoxSGPSX";
 			this->textBoxSGPSX->ReadOnly = true;
-			this->textBoxSGPSX->Size = System::Drawing::Size(47, 20);
+			this->textBoxSGPSX->Size = System::Drawing::Size(68, 20);
 			this->textBoxSGPSX->TabIndex = 106;
 			this->textBoxSGPSX->Text = L"None";
 			this->textBoxSGPSX->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
 			// textBoxPGPSY
 			// 
-			this->textBoxPGPSY->Location = System::Drawing::Point(58, 134);
+			this->textBoxPGPSY->Location = System::Drawing::Point(76, 134);
 			this->textBoxPGPSY->Name = L"textBoxPGPSY";
 			this->textBoxPGPSY->ReadOnly = true;
-			this->textBoxPGPSY->Size = System::Drawing::Size(47, 20);
+			this->textBoxPGPSY->Size = System::Drawing::Size(68, 20);
 			this->textBoxPGPSY->TabIndex = 110;
 			this->textBoxPGPSY->Text = L"None";
 			this->textBoxPGPSY->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
@@ -1431,7 +1463,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->textBoxPGPSX->Location = System::Drawing::Point(5, 134);
 			this->textBoxPGPSX->Name = L"textBoxPGPSX";
 			this->textBoxPGPSX->ReadOnly = true;
-			this->textBoxPGPSX->Size = System::Drawing::Size(47, 20);
+			this->textBoxPGPSX->Size = System::Drawing::Size(68, 20);
 			this->textBoxPGPSX->TabIndex = 109;
 			this->textBoxPGPSX->Text = L"None";
 			this->textBoxPGPSX->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
@@ -1485,7 +1517,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxRobot->Controls->Add(this->textBox1);
 			this->groupBoxRobot->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->groupBoxRobot->Location = System::Drawing::Point(393, 58);
+			this->groupBoxRobot->Location = System::Drawing::Point(432, 58);
 			this->groupBoxRobot->Name = L"groupBoxRobot";
 			this->groupBoxRobot->Size = System::Drawing::Size(370, 128);
 			this->groupBoxRobot->TabIndex = 113;
@@ -1591,23 +1623,13 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->label1->Text = L"X (m)";
 			this->label1->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
-			// textBoxPRTK
-			// 
-			this->textBoxPRTK->Location = System::Drawing::Point(111, 134);
-			this->textBoxPRTK->Name = L"textBoxPRTK";
-			this->textBoxPRTK->ReadOnly = true;
-			this->textBoxPRTK->Size = System::Drawing::Size(47, 20);
-			this->textBoxPRTK->TabIndex = 114;
-			this->textBoxPRTK->Text = L"None";
-			this->textBoxPRTK->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
-			// 
 			// textBoxSRTK
 			// 
-			this->textBoxSRTK->Location = System::Drawing::Point(112, 134);
+			this->textBoxSRTK->Location = System::Drawing::Point(148, 134);
 			this->textBoxSRTK->Name = L"textBoxSRTK";
 			this->textBoxSRTK->ReadOnly = true;
-			this->textBoxSRTK->Size = System::Drawing::Size(47, 20);
-			this->textBoxSRTK->TabIndex = 115;
+			this->textBoxSRTK->Size = System::Drawing::Size(28, 20);
+			this->textBoxSRTK->TabIndex = 114;
 			this->textBoxSRTK->Text = L"None";
 			this->textBoxSRTK->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			// 
@@ -1636,7 +1658,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBox1->Controls->Add(this->textBoxArduinoYaw);
 			this->groupBox1->Controls->Add(this->textBoxArduinoDepth);
 			this->groupBox1->Controls->Add(this->textBoxAtmPressure);
-			this->groupBox1->Location = System::Drawing::Point(393, 192);
+			this->groupBox1->Location = System::Drawing::Point(432, 192);
 			this->groupBox1->Name = L"groupBox1";
 			this->groupBox1->Size = System::Drawing::Size(370, 67);
 			this->groupBox1->TabIndex = 117;
@@ -1719,7 +1741,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLD3);
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLVx);
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLVy);
-			this->groupBoxDVL->Location = System::Drawing::Point(393, 265);
+			this->groupBoxDVL->Location = System::Drawing::Point(432, 265);
 			this->groupBoxDVL->Name = L"groupBoxDVL";
 			this->groupBoxDVL->Size = System::Drawing::Size(370, 113);
 			this->groupBoxDVL->TabIndex = 118;
@@ -1834,7 +1856,6 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxPort->Controls->Add(this->label25);
 			this->groupBoxPort->Controls->Add(this->textBoxPPitch);
 			this->groupBoxPort->Controls->Add(this->label26);
-			this->groupBoxPort->Controls->Add(this->textBoxPRTK);
 			this->groupBoxPort->Controls->Add(this->label27);
 			this->groupBoxPort->Controls->Add(this->textBoxPRoll);
 			this->groupBoxPort->Controls->Add(this->textBoxPYaw);
@@ -1844,7 +1865,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxPort->Controls->Add(this->textBoxPGPSX);
 			this->groupBoxPort->Controls->Add(this->textBoxPGyrY);
 			this->groupBoxPort->Controls->Add(this->textBoxPGyrZ);
-			this->groupBoxPort->Location = System::Drawing::Point(393, 384);
+			this->groupBoxPort->Location = System::Drawing::Point(432, 384);
 			this->groupBoxPort->Name = L"groupBoxPort";
 			this->groupBoxPort->Size = System::Drawing::Size(182, 170);
 			this->groupBoxPort->TabIndex = 119;
@@ -1925,9 +1946,9 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxStarboard->Controls->Add(this->label31);
 			this->groupBoxStarboard->Controls->Add(this->label36);
 			this->groupBoxStarboard->Controls->Add(this->label32);
-			this->groupBoxStarboard->Controls->Add(this->textBoxSRTK);
 			this->groupBoxStarboard->Controls->Add(this->label33);
 			this->groupBoxStarboard->Controls->Add(this->labelGPSS);
+			this->groupBoxStarboard->Controls->Add(this->textBoxSRTK);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGPSY);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSRoll);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGPSX);
@@ -1936,7 +1957,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrZ);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrX);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrY);
-			this->groupBoxStarboard->Location = System::Drawing::Point(581, 384);
+			this->groupBoxStarboard->Location = System::Drawing::Point(620, 384);
 			this->groupBoxStarboard->Name = L"groupBoxStarboard";
 			this->groupBoxStarboard->Size = System::Drawing::Size(182, 170);
 			this->groupBoxStarboard->TabIndex = 120;
@@ -2012,9 +2033,9 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// pictureBoxLogoLirmm
 			// 
 			this->pictureBoxLogoLirmm->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoLirmm.Image")));
-			this->pictureBoxLogoLirmm->Location = System::Drawing::Point(532, 561);
+			this->pictureBoxLogoLirmm->Location = System::Drawing::Point(651, 563);
 			this->pictureBoxLogoLirmm->Name = L"pictureBoxLogoLirmm";
-			this->pictureBoxLogoLirmm->Size = System::Drawing::Size(177, 50);
+			this->pictureBoxLogoLirmm->Size = System::Drawing::Size(151, 47);
 			this->pictureBoxLogoLirmm->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
 			this->pictureBoxLogoLirmm->TabIndex = 121;
 			this->pictureBoxLogoLirmm->TabStop = false;
@@ -2022,9 +2043,9 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			// pictureBoxLogoUM
 			// 
 			this->pictureBoxLogoUM->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoUM.Image")));
-			this->pictureBoxLogoUM->Location = System::Drawing::Point(434, 561);
+			this->pictureBoxLogoUM->Location = System::Drawing::Point(590, 561);
 			this->pictureBoxLogoUM->Name = L"pictureBoxLogoUM";
-			this->pictureBoxLogoUM->Size = System::Drawing::Size(62, 50);
+			this->pictureBoxLogoUM->Size = System::Drawing::Size(52, 50);
 			this->pictureBoxLogoUM->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
 			this->pictureBoxLogoUM->TabIndex = 122;
 			this->pictureBoxLogoUM->TabStop = false;
@@ -2043,12 +2064,80 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->backgroundWorkerPlateformGPSS->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerPlateformGPSS_DoWork);
 			this->backgroundWorkerPlateformGPSS->ProgressChanged += gcnew System::ComponentModel::ProgressChangedEventHandler(this, &MainForm::backgroundWorkerPlateformGPSS_ProgressChanged);
 			// 
+			// textBoxMouseDepth
+			// 
+			this->textBoxMouseDepth->Location = System::Drawing::Point(286, 31);
+			this->textBoxMouseDepth->Name = L"textBoxMouseDepth";
+			this->textBoxMouseDepth->ReadOnly = true;
+			this->textBoxMouseDepth->Size = System::Drawing::Size(47, 20);
+			this->textBoxMouseDepth->TabIndex = 122;
+			this->textBoxMouseDepth->Text = L"None";
+			this->textBoxMouseDepth->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBoxMouseDepth->Visible = false;
+			// 
+			// label5
+			// 
+			this->label5->AutoSize = true;
+			this->label5->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label5->Location = System::Drawing::Point(283, 15);
+			this->label5->Name = L"label5";
+			this->label5->Size = System::Drawing::Size(36, 13);
+			this->label5->TabIndex = 122;
+			this->label5->Text = L"Depth";
+			this->label5->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label5->Visible = false;
+			// 
+			// pictureBoxLogoMaelstrom
+			// 
+			this->pictureBoxLogoMaelstrom->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoMaelstrom.Image")));
+			this->pictureBoxLogoMaelstrom->Location = System::Drawing::Point(372, 561);
+			this->pictureBoxLogoMaelstrom->Name = L"pictureBoxLogoMaelstrom";
+			this->pictureBoxLogoMaelstrom->Size = System::Drawing::Size(223, 50);
+			this->pictureBoxLogoMaelstrom->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
+			this->pictureBoxLogoMaelstrom->TabIndex = 123;
+			this->pictureBoxLogoMaelstrom->TabStop = false;
+			// 
+			// pictureBoxColorMap
+			// 
+			this->pictureBoxColorMap->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxColorMap->Location = System::Drawing::Point(357, 122);
+			this->pictureBoxColorMap->Name = L"pictureBoxColorMap";
+			this->pictureBoxColorMap->Size = System::Drawing::Size(20, 400);
+			this->pictureBoxColorMap->TabIndex = 124;
+			this->pictureBoxColorMap->TabStop = false;
+			// 
+			// labelMaxDepth
+			// 
+			this->labelMaxDepth->AutoSize = true;
+			this->labelMaxDepth->Location = System::Drawing::Point(385, 121);
+			this->labelMaxDepth->Name = L"labelMaxDepth";
+			this->labelMaxDepth->Size = System::Drawing::Size(24, 13);
+			this->labelMaxDepth->TabIndex = 125;
+			this->labelMaxDepth->Text = L"0 m";
+			this->labelMaxDepth->TextAlign = System::Drawing::ContentAlignment::MiddleCenter;
+			// 
+			// labelMinDepth
+			// 
+			this->labelMinDepth->AutoSize = true;
+			this->labelMinDepth->Location = System::Drawing::Point(385, 509);
+			this->labelMinDepth->Name = L"labelMinDepth";
+			this->labelMinDepth->Size = System::Drawing::Size(24, 13);
+			this->labelMinDepth->TabIndex = 126;
+			this->labelMinDepth->Text = L"5 m";
+			this->labelMinDepth->TextAlign = System::Drawing::ContentAlignment::MiddleCenter;
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(1479, 622);
+			this->Controls->Add(this->labelMinDepth);
+			this->Controls->Add(this->labelMaxDepth);
+			this->Controls->Add(this->pictureBoxColorMap);
 			this->Controls->Add(this->pictureBoxLogoUM);
+			this->Controls->Add(this->pictureBoxLogoMaelstrom);
+			this->Controls->Add(this->label5);
+			this->Controls->Add(this->textBoxMouseDepth);
 			this->Controls->Add(this->pictureBoxLogoLirmm);
 			this->Controls->Add(this->groupBoxStarboard);
 			this->Controls->Add(this->groupBoxPort);
@@ -2084,6 +2173,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->Controls->Add(this->ptbSource);
 			this->Controls->Add(this->button_Edition);
 			this->Controls->Add(this->groupBoxRobot);
+			this->Icon = (cli::safe_cast<System::Drawing::Icon^>(resources->GetObject(L"$this.Icon")));
 			this->Name = L"MainForm";
 			this->Text = L"Maelstrom GUI";
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MainForm::MainForm_FormClosing);
@@ -2103,6 +2193,8 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 			this->groupBoxStarboard->PerformLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoLirmm))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoUM))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoMaelstrom))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxColorMap))->EndInit();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -2140,7 +2232,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 		// Get rounded precision
 		float getPrecision(float number, int precision) {
 			std::stringstream ss;
-			ss << std::fixed << std::setprecision(2) << number;
+			ss << std::fixed << std::setprecision(precision) << number;
 			std::string number_str = ss.str();
 			float new_number = std::stof(number_str);
 			return new_number;
@@ -2510,23 +2602,25 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 	}
 		   // Display arduino state in real-time
 	private: System::Void backgroundWorkerArduino_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		
+
 		this->textBoxArduinoRoll->Text = "" + getPrecision(arduino.imu[0], 3);
 		this->textBoxArduinoPitch->Text = "" + getPrecision(arduino.imu[1], 3);
 		this->textBoxArduinoYaw->Text = "" + getPrecision(arduino.imu[2], 3);
-		
+
 		this->textBoxArduinoDepth->Text = "" + getPrecision(arduino.depth, 3);
 
-		if (arduino.depth >= 0.5) {
-			arduino.dvlOff();
-			system(DVL_READER_CLOSE);
-			MessageBox::Show("DVL turned off. Minimal depth (-0.5m) reached.");
-			this->buttonDVLon->Text = L"DVL on";
-			this->labelDVLon->Visible = true;
-			this->buttonDVLyes->Visible = true;
-			this->buttonDVLno->Visible = true;
-			log("DVL turned off automatically. Minimal depth (-0.5m) reached.");
-		}
+		/*if (arduino.depth >= -0.5) {
+			if (this->buttonDVLon->Text == "DVL off") {
+				arduino.dvlOff();
+				system(DVL_READER_CLOSE);
+				MessageBox::Show("DVL turned off. Minimal depth (-0.5m) reached.");
+				this->buttonDVLon->Text = L"DVL on";
+				this->labelDVLon->Visible = true;
+				this->buttonDVLyes->Visible = true;
+				this->buttonDVLno->Visible = true;
+				log("DVL turned off automatically. Minimal depth (-0.5m) reached.");
+			}
+		}*/
 	}
 
 		   /*--------------------------------------------------------------
@@ -2571,24 +2665,24 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 		this->textBoxRobotX->Text = "" + getPrecision(robot.pos[0], 3);
 		this->textBoxRobotY->Text = "" + getPrecision(robot.pos[1], 3);
 		this->textBoxRobotZ->Text = "" + getPrecision(robot.pos[2], 3);
-		
+
 		//this->labelRobotAngles->Text = "Robot (roll, pitch, yaw): " + getPrecision(robot.angles[0], 3) + "° " + getPrecision(robot.angles[1], 3) + "° " + getPrecision(robot.angles[2], 3) + "°";
-		this->textBoxRobotRoll->Text  = "" + getPrecision(robot.angles[0], 3);
+		this->textBoxRobotRoll->Text = "" + getPrecision(robot.angles[0], 3);
 		this->textBoxRobotPitch->Text = "" + getPrecision(robot.angles[1], 3);
-		this->textBoxRobotYaw->Text   = "" + getPrecision(robot.angles[2], 3);
-		
+		this->textBoxRobotYaw->Text = "" + getPrecision(robot.angles[2], 3);
+
 		if (robot.gripper_state)
 			this->textBoxGripper->Text = "ON";
-			//this->labelGripper->Text = "Gripper: ON";
+		//this->labelGripper->Text = "Gripper: ON";
 		else
 			this->textBoxGripper->Text = "OFF";
-			//this->labelGripper->Text = "Gripper: OFF";
+		//this->labelGripper->Text = "Gripper: OFF";
 		if (robot.pump_state)
 			this->textBoxPump->Text = "ON";
-			//this->labelPump->Text = "Pump: ON";
+		//this->labelPump->Text = "Pump: ON";
 		else
 			this->textBoxPump->Text = "OFF";
-			//this->labelPump->Text = "Pump: OFF";
+		//this->labelPump->Text = "Pump: OFF";
 	}
 		   // Check if command is done
 	private: System::Void backgroundWorkerRobotCommand_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
@@ -2661,9 +2755,9 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 		this->textBoxDVLVx->Text = "" + getPrecision(dvl.vx, 3);
 		this->textBoxDVLVy->Text = "" + getPrecision(dvl.vy, 3);
 
-		this->textBoxDVLRoll->Text  = "" + getPrecision(dvl.imu[0], 3);
+		this->textBoxDVLRoll->Text = "" + getPrecision(dvl.imu[0], 3);
 		this->textBoxDVLPitch->Text = "" + getPrecision(dvl.imu[1], 3);
-		this->textBoxDVLYaw->Text   = "" + getPrecision(dvl.imu[2], 3);
+		this->textBoxDVLYaw->Text = "" + getPrecision(dvl.imu[2], 3);
 
 		this->textBoxDVLD0->Text = "" + getPrecision(dvl.distances[0], 3);
 		this->textBoxDVLD1->Text = "" + getPrecision(dvl.distances[1], 3);
@@ -2673,27 +2767,32 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 		   // Start DVL and UDP reader
 	private: System::Void backgroundWorkerDVLOn_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		log("DVL initialization");
-		if (arduino.depth < -0.5) {
-			//arduino.dvlOn();
-			Sleep(dvl.init_time);
-			// Start DVL reader
-			system(DVL_READER_START);
-			log("DVL turned on successfully.");
-		}
-		else
-			log("DVL cannot be turned on. Minimal depth (-0.5m) not reached.");
+
+		arduino.dvlOn();
+		Sleep(dvl.init_time);
+		// Start DVL reader
+		system(DVL_READER_START);
+		Sleep(500);
+		log("DVL turned on successfully.");
+
+
+
+		//else
+		//	log("DVL cannot be turned on. Minimal depth (-0.5m) not reached." + std::to_string(arduino.depth));
 		backgroundWorkerDVLOn->CancelAsync();
 		e->Cancel = true;
 	}
+
 		   // Set the DVL button to "On" (which means dvl currently off) if minimal depth hasn't be reached
 	private: System::Void backgroundWorkerDVLOn_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
-		if (arduino.depth >= -0.5) {
+		/*if (arduino.depth < 0.5) {
 			this->buttonDVLon->Text = L"DVL on";
+
+			MessageBox::Show("The DVL cannot be turned on. Minimal depth (0.5m) not reached.");
 			this->labelDVLon->Visible = true;
 			this->buttonDVLyes->Visible = true;
 			this->buttonDVLno->Visible = true;
-			MessageBox::Show("The DVL cannot be turned on. Minimal depth (-0.5m) not reached.");
-		}
+		}*/
 
 	}
 		   // Start DVL button
@@ -2865,7 +2964,15 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 		while (true) {
 			if (robot.has_started) {
 				depth_map.init(); // Reinit displayed map
-				depth_map.update(dvl.coordinates, robot.coordinates, dvl.distances, arduino.depth); // Update mapping
+
+				depth_map.update(dvl.coordinates,
+					robot.coordinates,
+					dvl.distances,
+					arduino.depth,
+					plateform.lat_orig_carte, plateform.long_orig_carte,
+					plateform.latitude_GPS_Master_babord, plateform.longitude_GPS_Master_babord,
+					plateform.cap_GPS_babord_vers_tribord); // Update mapping
+
 				depth_map.setDepthMap(); // Update drawing
 				depth_map.setTide(dvl.coordinates); // Compute tide if depth map ha been freezed
 				depth_map.drawGrid(); // Draw a grid
@@ -2884,11 +2991,17 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 
 		   // Display tide in real time when possible
 	private: System::Void backgroundWorkerDepthMap_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		if(depth_map.is_freezed)
+		if (depth_map.is_freezed)
 			this->textBoxTide->Text = "" + getPrecision(depth_map.tide, 4);
 	}
 
+		   // Show depth values with mouse
+	private: System::Void ptbDepthMap_MouseMove(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
+		cv::Point mouse = cv::Point(e->X, e->Y);
+		float depth = depth_map.getDepth(mouse);
+		this->textBoxMouseDepth->Text = "" + getPrecision(depth, 2);
 
+	}
 		   // Change resolution of the depth map
 	private: System::Void buttonResolutionMap_Click(System::Object^ sender, System::EventArgs^ e) {
 		depth_map.which_res = !depth_map.which_res;
@@ -2916,10 +3029,6 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 		fs.release(); // releasing the file.
 		log("Depthmap saved! " + img_path);
 		log("Depthmap saved! " + data_path);
-	}
-
-		   // Show values
-	private: System::Void ptbDepthMap_MouseHover(System::Object^ sender, System::EventArgs^ e) {
 	}
 
 	private: System::Void buttonFreezeDM_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -2979,9 +3088,9 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 	}
 		   // Display data from starboard continuously
 	private: System::Void backgroundWorkerPlateformS_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		this->textBoxSRoll->Text  = "" + getPrecision(plateform.imu_S[0], 3);
+		this->textBoxSRoll->Text = "" + getPrecision(plateform.imu_S[0], 3);
 		this->textBoxSPitch->Text = "" + getPrecision(plateform.imu_S[1], 3);
-		this->textBoxSYaw->Text   = "" + getPrecision(plateform.imu_S[2], 3);
+		this->textBoxSYaw->Text = "" + getPrecision(plateform.imu_S[2], 3);
 
 		this->textBoxSGyrX->Text = "" + getPrecision(plateform.v_gyro_S[0], 3);
 		this->textBoxSGyrY->Text = "" + getPrecision(plateform.v_gyro_S[1], 3);
@@ -2993,9 +3102,9 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 	}
 		   // Display data from port continuously
 	private: System::Void backgroundWorkerPlateformP_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		this->textBoxPRoll->Text  = "" + getPrecision(plateform.imu_P[0], 3);
+		this->textBoxPRoll->Text = "" + getPrecision(plateform.imu_P[0], 3);
 		this->textBoxPPitch->Text = "" + getPrecision(plateform.imu_P[1], 3);
-		this->textBoxPYaw->Text   = "" + getPrecision(plateform.imu_P[2], 3);
+		this->textBoxPYaw->Text = "" + getPrecision(plateform.imu_P[2], 3);
 
 		this->textBoxPGyrX->Text = "" + getPrecision(plateform.v_gyro_P[0], 3);
 		this->textBoxPGyrY->Text = "" + getPrecision(plateform.v_gyro_P[1], 3);
@@ -3006,10 +3115,12 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 		   // Receive GPS from port side continuously
 	private: System::Void backgroundWorkerPlateformGPSP_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while (true) {
-			plateform.rcvDataGpsP();
-			backgroundWorkerPlateformGPSP->ReportProgress(plateform.gps_P[0]);
-			backgroundWorkerPlateformGPSP->ReportProgress(plateform.gps_P[1]);
-			backgroundWorkerPlateformGPSP->ReportProgress(plateform.gps_rtk_P);
+			plateform.rcvDataGps();
+
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.latitude_GPS_Master_babord);
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.longitude_GPS_Master_babord);
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.latitude_GPS_Slave_tribord);
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.longitude_GPS_Slave_tribord);
 		}
 	}
 		   // Receive GPS from starboard side continuously
@@ -3023,15 +3134,17 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 	}
 		   // Display GPS from port side continuously
 	private: System::Void backgroundWorkerPlateformGPSP_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		this->textBoxPGPSX->Text = "OK 1";
-		this->textBoxPGPSY->Text = "OK 2";
-		this->textBoxPRTK->Text = "OK 3";
+
+		this->textBoxPGPSX->Text = "" + getPrecision(plateform.latitude_GPS_Master_babord, 4);
+		this->textBoxPGPSY->Text = "" + getPrecision(plateform.longitude_GPS_Master_babord, 4);
+
+		this->textBoxSGPSX->Text = "" + getPrecision(plateform.latitude_GPS_Slave_tribord, 4);
+		this->textBoxSGPSY->Text = "" + getPrecision(plateform.longitude_GPS_Slave_tribord, 4);
+		this->textBoxSRTK->Text = "" + getPrecision(plateform.RTK_S, 1);
+
 	}
 		   // Display GPS from starboard side continuously
 	private: System::Void backgroundWorkerPlateformGPSS_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
-		this->textBoxSGPSX->Text = "OK 4";
-		this->textBoxSGPSY->Text = "OK 5";
-		this->textBoxSRTK->Text = "OK 6";
 	}
 
 		   /*--------------------------------------------------------------
@@ -3133,31 +3246,26 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerPlateformGPSS
 	}
 
 
+	private: System::Void textBoxRobotYaw_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void textBoxRobotZ_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void textBoxRobotY_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void textBoxRobotX_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void textBoxRobotRoll_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void textBoxRobotPitch_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void textBoxDVLVy_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void textBoxDVLVx_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	private: System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e) {
+	}
 
-
-
-
-
-private: System::Void textBoxRobotYaw_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void textBoxRobotZ_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void textBoxRobotY_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void textBoxRobotX_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void textBoxRobotRoll_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void textBoxRobotPitch_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void textBoxDVLVy_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void textBoxDVLVx_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-private: System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e) {
-}
-
-
-
-};
+	private: System::Void textBoxSRTK_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	};
 }

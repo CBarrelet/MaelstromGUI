@@ -124,8 +124,7 @@ public:
 	void rcvData() {
 		this->continuous_socket.recvFrom(this->rcv_buffer, 300, (std::string)client_ip, this->continuous_port);
 		
-
-		//log("From Robot: " + (std::string)this->rcv_buffer);
+		log("From Robot: " + (std::string)this->rcv_buffer);
 
 		int ret = sscanf(this->rcv_buffer,
 			"*%d;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s",
