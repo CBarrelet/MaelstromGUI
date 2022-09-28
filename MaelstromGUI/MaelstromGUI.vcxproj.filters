@@ -51,6 +51,15 @@
     <ClCompile Include="Plateform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UTM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Simulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Bathymetry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainForm.h">
@@ -90,6 +99,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Plateform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UTM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Simulation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Bathymetry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

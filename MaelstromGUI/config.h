@@ -54,16 +54,19 @@
 // Barometer info
 #define BAROMETER_IP "192.168.0.253"
 #define BAROMETER_CONTINUOUS_PORT 5819
-
 // IMU + Barometer + GPS plateform info
 #define PLATEFORM_IP "127.0.0.1"
 #define PLATEFORM_S_CONTINUOUS_PORT 5823 // STARBOARD (tribord, côté du y négatif du robot)
 #define PLATEFORM_P_CONTINUOUS_PORT 5825 // PORT (babord, côté du y positif du robot)
 #define PLATEFORM_GPS_S_CONTINUOUS_PORT 5827 // STARBOARD (tribord, côté du y négatif du robot)
 #define PLATEFORM_GPS_P_CONTINUOUS_PORT 5829 // PORT (babord, côté du y positif du robot)
-
 #define PLATEFORM_GPS_CONTINUOUS_PORT 5830
-
+// Simulation info
+#define SIMULATION_IP "192.168.0.30"
+#define SIMULATION_PORT 6000
+// Bathymetry info
+#define BATHYMETRY_IP "127.0.0.1"
+#define BATHYMETRY_PORT 20000
 
 // Maths
 #define PI 3.141592653589793238462
@@ -97,6 +100,7 @@
 #define IMU_P_READER_START "start D:/projects/cyril/module_PIMU_barometre_B_Maelstrom_2022/executables/PIMU_B_252.exe"
 #define IMU_P_READER_CLOSE "taskkill /f /im PIMU_B_252.exe"
 
+#define NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH        2000        // nombre de cases d'un côté de la carte globale very high
 #define NB_CASES_COTE_CARTE_GLOBALE        400        // nombre de cases d'un côté de la carte globale
 #define LONGUEUR_COTE_CARTE_GLOBALE        100        // en mètres, longueur d'un côté de la carte globale
 #define X_GPS_BABORD_DANS_REPERE_ROBOT    -5.3054    //coordonnée en mètres du GPS Bâbord dans le repère x,y du robot (x doit être négatif). L'axe x du robot est vers l'avant (face à la fenêtre de la control room).

@@ -17,23 +17,39 @@ private:
 
 public:
 
+	// Maximum and minimum altitude to scale the depth map color map
+	float altitude_min = 0;
+	float altitude_max = -5;
+
+
+	// Global 5x5 cm map
+	std::vector<std::vector<map_elmt>> global_very_high_depth_map;
+	// Global 25x25 cm map
 	std::vector<std::vector<map_elmt>> global_high_depth_map;
 
 	cv::Mat displayed_global_map;
+	cv::Mat displayed_very_high_global_map;
 
-
+	// 5x5 cm map
+	std::vector<std::vector<map_elmt>> very_high_depth_map;
+	std::vector<std::vector<map_elmt>> freezed_very_high_depth_map;
+	// 25x25 cm map
 	std::vector<std::vector<map_elmt>> high_depth_map;
 	std::vector<std::vector<map_elmt>> freezed_high_depth_map;
+
+	// 25x25 cm map
 	std::vector<std::vector<float>> low_depth_map;
 
+	
 	// Dvl beams in high map space
 	cv::Point beams[4];
 
 	bool is_freezed = false;
 
 private:
-	int high_resolution = 25; // 10 cm
-	int low_resolution = 50;  // 50 cm
+	int very_high_resolution = 5;	// 5 cm
+	int high_resolution = 25;		// 25 cm
+	int low_resolution = 50;		// 50 cm
 	float resolution_ratio = low_resolution / high_resolution;
 
 	int margin = 100;
@@ -59,17 +75,25 @@ private:
 	cv::Mat displayed_map;
 	cv::Size displayed_size = cv::Size(320, 520);
 
-	int min_altitude = 0;
-	int max_altitude = 5; // 5 meters for the color map
+	float min_altitude = 0;
+	float max_altitude = 5; // 5 meters for the color map
 
 	// Last dvl values
 	float last_distances[4][4]; // Altitude buffer with the 4 last values
 	float coeff_filter = 1.8;
 
 public:
-	bool which_res = true; // Means high resolution else low resolution
+	int which_res = 1; // 0, 1, 2 Means very high, high or low resolution
 	float tide = 0;
 	float tide_coeff = 0.001;
+
+
+	// Simulation counter 
+	int simulation_counter = 0;
+
+
+	// Target utm to x to display 
+	double x_target = 0, y_target = 0;
 
 public:
 	DepthMap() {
@@ -79,9 +103,11 @@ public:
 		std::uniform_int_distribution<> distr1(0, 13); // define the range
 		std::uniform_int_distribution<> distr2(0, 8); // define the range
 
-		std::uniform_int_distribution<> distr3(-5, -1); // define the range
+		std::uniform_int_distribution<> distr3(-3000, -2000); // define the range
 
-		this->displayed_global_map = cv::Mat(400, 400, CV_8UC1, cv::Scalar(0));
+		this->displayed_global_map = cv::Mat(NB_CASES_COTE_CARTE_GLOBALE, NB_CASES_COTE_CARTE_GLOBALE, CV_8UC1, cv::Scalar(0));
+		this->displayed_very_high_global_map = cv::Mat(NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH, NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH, CV_8UC1, cv::Scalar(0));
+		// this->displayed_global_map = cv::Mat(400, 400, CV_8UC1, cv::Scalar(0));
 
 
 		// Init last altitudes values
@@ -89,7 +115,20 @@ public:
 			for (size_t j = 0; j < 4; i = j++)
 				last_distances[i][j] = 0;
 
-		
+		// Init global very high depth map
+		for (size_t i = 0; i < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH; i++) {
+			std::vector<map_elmt> v1;
+			for (size_t j = 0; j < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH; j++) {
+				map_elmt elmt;
+				elmt.time = 0;
+				elmt.depth = 0; // distr(gen);
+				elmt.altitude = 0; // distr3(gen);;
+				elmt.pressure = 0;
+				v1.push_back(elmt);
+			}
+			this->global_very_high_depth_map.push_back(v1);
+		}
+
 		// Init global high depth map
 		for (size_t i = 0; i < NB_CASES_COTE_CARTE_GLOBALE; i++) {
 			std::vector<map_elmt> v1;
@@ -97,11 +136,26 @@ public:
 				map_elmt elmt;
 				elmt.time = 0;
 				elmt.depth = 0; // distr(gen);
-				elmt.altitude = 4;
+				elmt.altitude = 0;
 				elmt.pressure = 0;
 				v1.push_back(elmt);
 			}
 			this->global_high_depth_map.push_back(v1);
+		}
+
+		// Init very high depth map
+		for (size_t i = 0; i < this->width; i += this->very_high_resolution) {
+			std::vector<map_elmt> v1;
+			for (size_t j = 0; j < this->height; j += this->very_high_resolution) {
+				map_elmt elmt;
+				elmt.time = 0;
+				elmt.depth = 0; // distr(gen);
+				elmt.altitude = 0;
+				elmt.pressure = 0;
+				v1.push_back(elmt);
+			}
+			this->very_high_depth_map.push_back(v1);
+			this->freezed_very_high_depth_map.push_back(v1);
 		}
 
 		// Init high depth map
@@ -111,7 +165,7 @@ public:
 				map_elmt elmt;
 				elmt.time = 0;
 				elmt.depth = 0; // distr(gen);
-				elmt.altitude = 4;
+				elmt.altitude = 0;
 				elmt.pressure = 0;
 				v1.push_back(elmt);
 			}
@@ -130,19 +184,103 @@ public:
 
 		// Center of the map
 		this->center = cv::Point(this->width, this->height) / 2;
-		this->map = cv::Mat::ones(cv::Size(width, height), CV_8UC3) * 204;
+		this->map = cv::Mat::ones(cv::Size(width, height), CV_8UC3);// *204;
 		//this->map = cv::Mat(cv::Size(width, height), CV_8UC3, cv::Scalar(255, 255, 255));
 	}
 
 	~DepthMap() {
 	}
 
+	void setTarget(double x_target, double y_target) {
+		this->x_target = x_target;
+		this->y_target = y_target;
+	}
+
+	float getPrecision(float number, int precision) {
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(precision) << number;
+		std::string number_str = ss.str();
+		float new_number = std::stof(number_str);
+		return new_number;
+	}
+
+	std::string getUDPFrame() {
+		float altitude = 0;
+
+		std::string frame = "*";
+		frame += std::to_string(this->simulation_counter);
+		this->simulation_counter++;
+		frame += ";";
+
+		int random_number = 0;
+
+		// *counter;val1;val2.......valxxx#
+
+		for (size_t j = 0; j < this->low_depth_map.size(); j++) {
+			for (size_t i = 0; i < this->low_depth_map[j].size(); i++) {
+				altitude = low_depth_map[j][i];
+
+				// Just for test
+				random_number = (rand() % 10) + 5;
+				//std::cout << random_number << std::endl;
+				//altitude = double(random_number) / 10000;
+				//altitude = double(random_number) / 10000;
+				altitude = -(double)random_number;
+
+				//altitude = 0;
+
+				if(altitude != 0)
+					altitude *= -1;	 // Make it positive
+				altitude *= 100; // Make it in centimeter
+
+				std::stringstream stream;
+				stream << std::fixed << std::setprecision(0) << altitude;
+				std::string s = stream.str();
+				frame += s;
+				frame += ";";
+			}
+		}
+		frame += "#";
+
+		std::replace(frame.begin(), frame.end(), '.', ',');
+		return frame;
+
+
+		/*std::cout << "Test :" << std::endl;
+		std::cout << frame << std::endl;
+
+		std::cout << this->low_depth_map.size() << std::endl;
+		std::cout << this->low_depth_map[0].size() << std::endl;*/
+
+	}
+
 	void init() {
 		this->map *= 0;
-		this->map += 204;
+
+		//// Test only
+		//this->high_depth_map[10][10].altitude = -3;
+		//this->high_depth_map[10][20].altitude = -3.2;
+		//this->high_depth_map[10][30].altitude = -3.4;
+	}
+
+	void scale_color_map() {
+		for (size_t i = 0; i < this->high_depth_map.size(); i++)
+		{
+			for (size_t j = 0; j < this->high_depth_map[0].size(); j++)
+			{
+				if (high_depth_map[i][j].altitude != 0) {
+
+					this->altitude_min = min(high_depth_map[i][j].altitude, this->altitude_min);
+					this->altitude_max = max(high_depth_map[i][j].altitude, this->altitude_max);
+				}
+			}
+		}
+
 	}
 
 	void update(cv::Point3f dvl_coo[4], cv::Point3f robot_coo, float dvl_distances[4], float depth, double origine_global_map_latitude, double origine_global_map_longitude, double gps_P_latitude, double gps_P_longitude, double gps_S_cap) {
+
+		scale_color_map();
 
 		//std::random_device rd; // obtain a random number from hardware
 		//std::mt19937 gen(rd()); // seed the generator
@@ -153,17 +291,27 @@ public:
 
 		initFirstDvlValues(dvl_distances);
 
+
+		int i_very_high_global = 0, j_very_high_global = 0;
 		int i_global = 0, j_global = 0;
 		bool is_good_value = true;
 
 		unsigned char altitude_color = 0;
 
-		// Should be filtering 
-		// Set the coorinates in the global depth map coordinates space
 		for (size_t i = 0; i < 4; i++) {
 
 			is_good_value = true;
 
+			// Very high map i, j coordinates
+			convertit_coordonnees_x_y_locales_en_i_j_tres_grande_carte(
+				origine_global_map_latitude, origine_global_map_longitude,
+				gps_P_latitude, gps_P_longitude,
+				gps_S_cap,
+				dvl_coo[i].x + robot_coo.x,
+				dvl_coo[i].y + robot_coo.y,
+				&i_very_high_global, &j_very_high_global);
+
+			// High map i, j coordinates
 			convertit_coordonnees_x_y_locales_en_i_j_grande_carte(
 				origine_global_map_latitude, origine_global_map_longitude,
 				gps_P_latitude, gps_P_longitude,
@@ -172,37 +320,79 @@ public:
 				dvl_coo[i].y + robot_coo.y,
 				&i_global, &j_global);
 
+			//std::cout << i_very_high_global << " " << i_global << std::endl;
+
+			
+
 			if ((i_global >= 0) && (i_global < NB_CASES_COTE_CARTE_GLOBALE) && (j_global >= 0) && (j_global < NB_CASES_COTE_CARTE_GLOBALE)) {
+				if ((i_very_high_global >= 0) && (i_very_high_global < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH) && (j_very_high_global >= 0) && (j_very_high_global < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH)) {
 
-				// Need to filter this
+					// Need to filter this
 
-				for (size_t j = 0; j < 4; j++) {
-					// Filter some artefacts, if at least one value is wrong, is_good_value == false
-					if ((this->coeff_filter * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] / this->coeff_filter < dvl_distances[i]))
-						is_good_value *= true;
-					else
-						is_good_value *= false;
+					for (size_t j = 0; j < 4; j++) {
+						// Filter some artefacts, if at least one value is wrong, is_good_value == false
+						if ((this->coeff_filter * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] / this->coeff_filter < dvl_distances[i]))
+							is_good_value *= true;
+						else
+							is_good_value *= false;
+					}
+
+					is_good_value = true;
+
+					// Very high map
+					if (is_good_value) {
+						if ((this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude < 0))
+							this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude = max(this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude, dvl_coo[i].z);
+						else
+							this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude = dvl_coo[i].z;
+						//altitude_color = max(min(255, (5 + global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude) * 255 / 5), 0);
+						altitude_color = (-this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
+						// Draw
+						cv::rectangle(this->displayed_very_high_global_map, cv::Point(i_very_high_global, j_very_high_global), cv::Point(i_very_high_global, j_very_high_global), altitude_color, 1);
+					}
+
+					// High map
+					if (is_good_value) {
+						if ((this->global_high_depth_map[j_global][i_global].altitude < 0))
+							this->global_high_depth_map[j_global][i_global].altitude = max(this->global_high_depth_map[j_global][i_global].altitude, dvl_coo[i].z);
+						else
+							this->global_high_depth_map[j_global][i_global].altitude = dvl_coo[i].z;
+						//altitude_color = max(min(255, (5 + global_high_depth_map[j_global][i_global].altitude) * 255 / 5), 0);
+						altitude_color = (-this->global_high_depth_map[j_global][i_global].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
+						
+
+						// Draw
+						cv::rectangle(this->displayed_global_map, cv::Point(i_global, j_global), cv::Point(i_global, j_global), altitude_color, 1);
+
+					}
 				}
-
-				is_good_value = true;
-
-				//fake_value = distr3(gen)/1000;
-
-				if (is_good_value) {
-					if ( (this->global_high_depth_map[j_global][i_global].altitude < 0))
-						this->global_high_depth_map[j_global][i_global].altitude = max(this->global_high_depth_map[j_global][i_global].altitude, dvl_coo[i].z);
-					else
-						this->global_high_depth_map[j_global][i_global].altitude = dvl_coo[i].z;
-
-					altitude_color = max(min(255, (5 + global_high_depth_map[j_global][i_global].altitude) * 255 / 5), 0);
-
-					// Draw
-					cv::rectangle(this->displayed_global_map, cv::Point(i_global, j_global), cv::Point(i_global, j_global), altitude_color, 1);
-				
-				}	
 			}	
 		}
 
+
+		// Fill the very high resolution local space depth map
+		for (size_t i = 0; i < this->very_high_depth_map.size(); i++)
+		{
+			for (size_t j = 0; j < this->very_high_depth_map[0].size(); j++)
+			{
+				double x = i * (double)this->very_high_resolution - (double)this->very_high_depth_map.size() / 2 * (double)this->very_high_resolution;
+				double y = j * (double)this->very_high_resolution - (double)this->very_high_depth_map[0].size() / 2 * (double)this->very_high_resolution;
+				x /= 100; // Make it in meter
+				y /= 100;
+				y = -y;   // Make it in the robot coordinate system
+
+				convertit_coordonnees_x_y_locales_en_i_j_tres_grande_carte(
+					origine_global_map_latitude, origine_global_map_longitude,
+					gps_P_latitude, gps_P_longitude,
+					gps_S_cap,
+					x,
+					y,
+					&i_global, &j_global);
+
+				if(i_global != -1 && j_global != -1)
+					this->very_high_depth_map[i][j].altitude = this->global_very_high_depth_map[j_global][i_global].altitude;
+			}
+		}
 
 		// Fill the high resolution local space depth map
 		for (size_t i = 0; i < this->high_depth_map.size(); i++)
@@ -223,13 +413,14 @@ public:
 					y,
 					&i_global, &j_global);
 
-				this->high_depth_map[i][j].altitude = this->global_high_depth_map[j_global][i_global].altitude;
+				if (i_global != -1 && j_global != -1)
+					this->high_depth_map[i][j].altitude = this->global_high_depth_map[j_global][i_global].altitude;
 			}
 		}
 
 		//cv::applyColorMap(this->displayed_global_map, this->displayed_global_map, cv::COLORMAP_JET);
-		cv::imshow("Global map", this->displayed_global_map);
-		cv::waitKey(30);
+		//cv::imshow("Global map", this->displayed_global_map);
+		//cv::waitKey(30);
 
 
 		//// Set the coorinates in the depth map coordinates space
@@ -331,7 +522,7 @@ public:
 		// 52 - 32 high_depth_map[51][31]  h = 32 w = 52
 
 		float depth = 0;
-		if (this->which_res) {
+		if (this->which_res == 1) {
 
 			mouse.y = this->displayed_size.height - mouse.y;
 			int row = int(mouse.y / 10);
@@ -341,7 +532,7 @@ public:
 			//depth = this->high_depth_map[row][col].altitude;
 		}
 			
-		else {
+		else if (this->which_res == 2) {
 
 			mouse.y = this->displayed_size.height - mouse.y;
 			int row = int(mouse.y / 20);
@@ -387,31 +578,50 @@ public:
 		cv::Point p2(0, 0);
 		int low_grid_x = 0, low_grid_y = 0;
 
+		// Very high resolution
+		for (size_t j = 0; j < this->very_high_depth_map.size(); j++) {
+			for (size_t i = 0; i < this->very_high_depth_map[j].size(); i++) {
+				p1.x = this->very_high_resolution * j;
+				p1.y = this->very_high_resolution * i;
+				p2.x = this->very_high_resolution * (j + 1);
+				p2.y = this->very_high_resolution * (i + 1);
+				/*altitude_color = max(min(255, (6 + high_depth_map[j][i].altitude) * 255 / 6), 3);
+				if(altitude_color < 250)
+					log(std::to_string(altitude_color));*/
+				//altitude_color = max(min(255, (5 + very_high_depth_map[j][i].altitude) * 255 / 5), 0);
+				// altitude_color = (very_high_depth_map[j][i].altitude - altitude_min) / (altitude_max - altitude_min) * (255 - 0) + 0; but we want to reverse the color
+				altitude_color = (-very_high_depth_map[j][i].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
+				// 
+				//altitude_color = max(min(255, (- high_depth_map[j][i].altitude) * 255 / 5), 0); // To invert the color
+				if (this->which_res == 0) {
+					cv::rectangle(this->map, cv::Rect(p1, p2), cv::Scalar(altitude_color, altitude_color, altitude_color), -1, cv::LINE_8);
+				}
+					
+			}
+		}
+
 		// High resolution
 		for (size_t j = 0; j < this->high_depth_map.size(); j++) {
 			for (size_t i = 0; i < this->high_depth_map[j].size(); i++) {
-
 				p1.x = this->high_resolution * j;
 				p1.y = this->high_resolution * i;
-
 				p2.x = this->high_resolution * (j + 1);
 				p2.y = this->high_resolution * (i + 1);
-
-
 				/*altitude_color = max(min(255, (6 + high_depth_map[j][i].altitude) * 255 / 6), 3);
 				if(altitude_color < 250)
 					log(std::to_string(altitude_color));*/
 
-				altitude_color = max(min(255, (5 + high_depth_map[j][i].altitude) * 255 / 5), 0);
+				//altitude_color = max(min(255, (5 + high_depth_map[j][i].altitude) * 255 / 5), 0);
+				altitude_color = (-high_depth_map[j][i].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
 				// 
 				//altitude_color = max(min(255, (- high_depth_map[j][i].altitude) * 255 / 5), 0); // To invert the color
 
-				if(this->which_res)
+				//altitude_color = (-low_depth_map[j][i] + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
+
+				if(this->which_res == 1)
 					cv::rectangle(this->map, cv::Rect(p1, p2), cv::Scalar(altitude_color, altitude_color, altitude_color), -1, cv::LINE_8);
-				
 				low_grid_x = int(j / this->resolution_ratio);
 				low_grid_y = int(i / this->resolution_ratio);
-
 				if (low_depth_map[low_grid_x][low_grid_y] < 0) {
 					if (high_depth_map[j][i].altitude < 0)
 						low_depth_map[low_grid_x][low_grid_y] = max(low_depth_map[low_grid_x][low_grid_y], high_depth_map[j][i].altitude);
@@ -424,37 +634,92 @@ public:
 		// Low resolution
 		for (size_t j = 0; j < this->low_depth_map.size(); j++) {
 			for (size_t i = 0; i < this->low_depth_map[j].size(); i++) {
-
 				p1.x = this->low_resolution * j;
 				p1.y = this->low_resolution * i;
-
 				p2.x = this->low_resolution * (j + 1);
 				p2.y = this->low_resolution * (i + 1);
-
 				// altitude_color = -(((low_depth_map[j][i] - 0) * (255 - 0)) / (5 - 0)) + 0; // Invert color
-				
-				altitude_color = max(min(255, (5 + low_depth_map[j][i]) * 255 / 5), 0);
-
-				if (!this->which_res)
+				// altitude_color = max(min(255, (5 + low_depth_map[j][i]) * 255 / 5), 0);
+				altitude_color = (-low_depth_map[j][i] + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
+				if (this->which_res == 2)
 					cv::rectangle(this->map, cv::Rect(p1, p2), cv::Scalar(int(altitude_color), int(altitude_color), int(altitude_color)), -1, cv::LINE_8);
 			}
 		}
 		cv::applyColorMap(this->map, this->map, cv::COLORMAP_JET);
+
+
+
+		// Make black squares when altitude is unknown
+		if (this->which_res == 0)
+			for (size_t j = 0; j < this->very_high_depth_map.size(); j++) {
+				for (size_t i = 0; i < this->very_high_depth_map[j].size(); i++) {
+					if (very_high_depth_map[j][i].altitude == 0) {
+						p1.x = this->very_high_resolution * j;
+						p1.y = this->very_high_resolution * i;
+						p2.x = this->very_high_resolution * (j + 1);
+						p2.y = this->very_high_resolution * (i + 1);
+						cv::rectangle(this->map, cv::Rect(p1, p2), cv::Scalar(int(0), int(0), int(0)), -1, cv::LINE_8);
+					}
+					
+				}
+			}
+		if (this->which_res == 1)
+			for (size_t j = 0; j < this->high_depth_map.size(); j++) {
+				for (size_t i = 0; i < this->high_depth_map[j].size(); i++) {
+					if (high_depth_map[j][i].altitude == 0) {
+						p1.x = this->high_resolution * j;
+						p1.y = this->high_resolution * i;
+						p2.x = this->high_resolution * (j + 1);
+						p2.y = this->high_resolution * (i + 1);
+						cv::rectangle(this->map, cv::Rect(p1, p2), cv::Scalar(int(0), int(0), int(0)), -1, cv::LINE_8);
+					}
+				}
+			}
+		if (this->which_res == 2)
+			for (size_t j = 0; j < this->low_depth_map.size(); j++) {
+				for (size_t i = 0; i < this->low_depth_map[j].size(); i++) {
+					if (low_depth_map[j][i] == 0) {
+						p1.x = this->low_resolution * j;
+						p1.y = this->low_resolution * i;
+						p2.x = this->low_resolution * (j + 1);
+						p2.y = this->low_resolution * (i + 1);
+						cv::rectangle(this->map, cv::Rect(p1, p2), cv::Scalar(int(0), int(0), int(0)), -1, cv::LINE_8);
+					}
+				}
+			}
+
+		double target_x_temp = this->x_target;
+		double target_y_temp = this->y_target;
+		target_x_temp = target_x_temp * this->low_resolution * 2;
+		target_y_temp = - target_y_temp * this->low_resolution * 2;
+		cv::Point p_target_temp = cv::Point(target_x_temp, target_y_temp);
+		cv::Point p_target = p_target_temp - this->robot_center;
+		cv::circle(this->map, p_target, 10, cv::Scalar(255, 0, 255), 2);
+
+		//target.x = target.x * this->low_resolution * 2;
+		//target.y = -target.y * this->low_resolution * 2; // -1 * y because image y axis
+		//target = cv::Point(target) + this->center;//; + this->center - this->robot_center;// +this->robot_center;
+
 		this->displayed_map = this->map.clone();
 	}
 
 	void drawGrid() {
-		int resolution = 0;
-		if (this->which_res)
-			resolution = this->high_resolution;
-		else
-			resolution = low_resolution;
+		// Draw the grid for all resolution but le highest (5x5)
+		if (this->which_res != 0) {
+			int resolution = 0;
+			if (this->which_res == 0)
+				resolution = this->very_high_resolution;
+			else if (this->which_res == 1)
+				resolution = this->high_resolution;
+			else if (this->which_res == 2)
+				resolution = low_resolution;
 
-		for (size_t i = 0; i < this->width; i += resolution)
-			cv::line(this->map, cv::Point(i, 0), cv::Point(i, this->height), cv::Scalar(255, 255, 255), 1);
-		for (size_t i = 0; i < this->height; i += resolution)
-			cv::line(this->map, cv::Point(0, i), cv::Point(this->width, i), cv::Scalar(255, 255, 255), 1);
-
+			for (size_t i = 0; i < this->width; i += resolution)
+				cv::line(this->map, cv::Point(i, 0), cv::Point(i, this->height), cv::Scalar(255, 255, 255), 1);
+			for (size_t i = 0; i < this->height; i += resolution)
+				cv::line(this->map, cv::Point(0, i), cv::Point(this->width, i), cv::Scalar(255, 255, 255), 1);
+		}
+		
 		this->displayed_map = this->map.clone();
 
 		// Draw center pos
@@ -641,6 +906,24 @@ public:
 		coordonnees_geo_d_un_point_P_x_y_du_repere_robot(latitude_GPS_Master_babord, longitude_GPS_Master_babord, x_dans_repere_robot, y_dans_repere_robot, &lat_P_temp, &long_P_temp, cap_GPS_babord_vers_tribord);
 		calcul_coordonnees_i_j_du_point_P_dans_carte_globale(lat_orig_carte, long_orig_carte, lat_P_temp, long_P_temp, NB_CASES_COTE_CARTE_GLOBALE, LONGUEUR_COTE_CARTE_GLOBALE, i_carte_globale, j_carte_globale);
 	}
+
+	void convertit_coordonnees_x_y_locales_en_i_j_tres_grande_carte(double lat_orig_carte, double long_orig_carte, double latitude_GPS_Master_babord, double longitude_GPS_Master_babord, double cap_GPS_babord_vers_tribord, double x_dans_repere_robot, double y_dans_repere_robot, int* i_carte_globale, int* j_carte_globale)
+	{
+		//cette fonction renvoie i = -1 et j =-1 si l'une des coordonnées est hors de la carte globale, sinon ça renvoie les coordonnées i,j de la carte globale en fonction des x,y du repère robot.
+		//origine de la carte en haut à gauche (nord ouest). Axe i orienté vers la droite (est) et Axe j orienté vers le bas (sud)
+		double lat_P_temp, long_P_temp;
+		coordonnees_geo_d_un_point_P_x_y_du_repere_robot(latitude_GPS_Master_babord, longitude_GPS_Master_babord, x_dans_repere_robot, y_dans_repere_robot, &lat_P_temp, &long_P_temp, cap_GPS_babord_vers_tribord);
+		calcul_coordonnees_i_j_du_point_P_dans_carte_globale(lat_orig_carte, long_orig_carte, lat_P_temp, long_P_temp, NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH, LONGUEUR_COTE_CARTE_GLOBALE, i_carte_globale, j_carte_globale);
+	}
+
+	//void get_i_j_from_gps_pos() {
+
+	//	calcul_coordonnees_i_j_du_point_P_dans_carte_globale(double lat_orig_carte, double long_orig_carte, 
+	//		double lat_P, double long_P, 
+	//		int nb_cases_cote_carte, int longueur_cote_carte, 
+	//		int* i, int* j)
+
+	//}
 
 };
 

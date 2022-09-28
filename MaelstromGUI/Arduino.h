@@ -26,6 +26,7 @@ private:
 	public:
 	char jetson_buffer[100];
 	bool is_jetson_on = false;
+	bool is_dvl_on = false;
 	
 	float imu[3] = {0, 0, 0}; // roll, pitch, yaw (degree)
 	float v_gyro[3] = { 0,0,0 }; // Gyro x, y, z in °.s^-1
@@ -79,7 +80,7 @@ public:
 
 	void rcvData(float barometer_pressure) {
 		this->continuous_socket.recvFrom(this->rcv_buffer, 120, (std::string)continuous_client_ip, this->continuous_port);
-		log("From Arduino: " + (std::string)this->rcv_buffer);
+		//log("From Arduino: " + (std::string)this->rcv_buffer);
 
 		float roll = 0, pitch = 0, yaw = 0, depth = 0, gyrx = 0, gyry = 0, gyrz = 0;
 		int pressure_sm = 0;
@@ -113,6 +114,7 @@ public:
 		std::string off = "DVLOFF\n";
 		request_socket.sendTo(off.c_str(), 120, ARDUINO_IP, ARDUINO_REQUEST_PORT);
 		log("To Arduino: " + off);
+		this->is_dvl_on = false;
 	}
 
 	/*------------------------------

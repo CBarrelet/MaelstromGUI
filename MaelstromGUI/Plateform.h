@@ -39,6 +39,11 @@ private:
 	unsigned short continuous_GPS_port;
 
 public:
+
+	double utm_target_north = 0;
+	double utm_target_east = 0;
+	double target_cap = 0;
+
 	float atm_pressure = 0;
 
 	float imu_S[3] = { 0, 0, 0 };		// roll, pitch, yaw (degree)
@@ -106,6 +111,18 @@ public:
 		this->continuous_P_socket.disconnect();*/
 	}
 
+	void set_utm_target(double northing, double easting, double cap) {
+		this->utm_target_north = northing;
+		this->utm_target_east = easting;
+		this->target_cap = cap;
+	}
+
+	double distanceGPS_P_S() {
+		double distance = 0;
+		distance = distance_entre_deux_points_geographiques(this->latitude_GPS_Master_babord, this->longitude_GPS_Master_babord, this->latitude_GPS_Slave_tribord, this->longitude_GPS_Slave_tribord);
+		return distance;
+	}
+
 	/*------------------------------
 		Receive data continuously
 	-------------------------------*/
@@ -114,7 +131,7 @@ public:
 	void rcvDataGps() {
 		ZeroMemory(this->rcv_buffer_GPS, 300);
 		this->continuous_GPS_socket.recvFrom(this->rcv_buffer_GPS, 300, (std::string)client_ip, this->continuous_GPS_port);
-		log("From GPS: " + (std::string)this->rcv_buffer_GPS);
+		//log("From GPS: " + (std::string)this->rcv_buffer_GPS);
 		decode_received_data(this->rcv_buffer_GPS);
 	}
 
@@ -143,7 +160,7 @@ public:
 	void rcvDataS() {
 		ZeroMemory(this->rcv_buffer_S, 300);
 		this->continuous_S_socket.recvFrom(this->rcv_buffer_S, 300, (std::string)client_ip, this->continuous_S_port);
-		log("From Plateform S IMU: " + (std::string)this->rcv_buffer_S);
+		//log("From Plateform S IMU: " + (std::string)this->rcv_buffer_S);
 
 		float roll = 0, pitch = 0, yaw = 0, depth = 0, gyrx = 0, gyry = 0, gyrz = 0;
 		int atm_pressure = 0;
@@ -164,7 +181,7 @@ public:
 	void rcvDataP() {
 		ZeroMemory(this->rcv_buffer_P, 300);
 		this->continuous_P_socket.recvFrom(this->rcv_buffer_P, 300, (std::string)client_ip, this->continuous_P_port);
-		log("From Plateform P IMU: " + (std::string)this->rcv_buffer_P);
+		//log("From Plateform P IMU: " + (std::string)this->rcv_buffer_P);
 
 		float roll = 0, pitch = 0, yaw = 0, depth = 0, gyrx = 0, gyry = 0, gyrz = 0;
 		int atm_pressure = 0;
@@ -218,6 +235,26 @@ public:
 		return oss.str();
 	}
 
+	void getGeoFromXYPos(double x, double y, double* lat_P, double* long_P) {
+
+		double lat_GPS_babord = this->latitude_GPS_Master_babord;
+		double long_GPS_babord = this->longitude_GPS_Master_babord;
+		double cap_GPS_Babord_vers_Tribord = this->cap_GPS_babord_vers_tribord;
+		//Le GPS bâbord est le Master et est le centre du repère GPS
+		double x_dans_repere_gps_babord = x - X_GPS_BABORD_DANS_REPERE_ROBOT;                //Les axes de ce reprèe sont orientés comme ceux du robot. Le centre est sur le poteau du GPS arrière bâbord.
+		double y_dans_repere_gps_babord = y - Y_GPS_BABORD_DANS_REPERE_ROBOT;
+		double azimut_de_P_dans_repere_GPS_babord = -atan2(x_dans_repere_gps_babord, -y_dans_repere_gps_babord); //Angle compté négatif dans le sens horaire à partir de l'axe -y (i.e. l'axe calculé par la fonction GPS RTK qui mesure l'axe Master -> Slave)
+		//printf("azimut local = %lf\n", RAD2DEG*azimut_de_P_dans_repere_GPS_babord);
+		double azimut_de_P_dans_repere_geographique = cap_GPS_Babord_vers_Tribord + azimut_de_P_dans_repere_GPS_babord;
+		//printf("azimut geographique = %lf\n", RAD2DEG*azimut_de_P_dans_repere_geographique);
+		double distance_de_P_par_rapport_au_GPS_babord = sqrt(x_dans_repere_gps_babord * x_dans_repere_gps_babord + y_dans_repere_gps_babord * y_dans_repere_gps_babord);
+		//printf("distance du point P par rapport au GPS babord = %lf\n", distance_de_P_par_rapport_au_GPS_babord);
+		double latP, longP;
+		calcul_coordonnees_geo_point(lat_GPS_babord, long_GPS_babord, distance_de_P_par_rapport_au_GPS_babord, azimut_de_P_dans_repere_geographique, &latP, &longP);
+		//printf("Coordonnees geographiques de P = %lf %lf\n", latP, longP);
+		*lat_P = latP;
+		*long_P = longP;
+	}
 
 	// GPS RELATED
 	double convertir_coord_gps_Tecnalia_en_centiemes_de_degres(double valeur_a_convertir)

@@ -17,10 +17,16 @@
 #include "Jetson.h"
 #include "DepthMap.h"
 #include "Plateform.h"
+#include "Simulation.h"
+#include "Bathymetry.h"
+
+#include "UTM.h"
 
 #include "config.h"
 
 #include "PracticalSocket.h"
+
+#include <fstream>
 
 
 std::string time_in_HH_MM_SS_MMM() {
@@ -84,6 +90,10 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param) {
 		mouse_right_click = true;
 	}
 }
+
+
+// UTM values ? 
+float utm_x = 0, utm_y = 0;
 
 namespace MaelstromGUI {
 
@@ -161,6 +171,15 @@ namespace MaelstromGUI {
 
 	Plateform plateform;
 
+	Simulation simulation;
+
+	Bathymetry bathymetry;
+
+	// Bathy
+	float min_alt_bathy = -0.88;
+	float max_alt_bathy = -7.22;
+
+
 	// Bboxes initialization
 	Mat null_img = Mat::zeros(cv::Size(1, 1), CV_8UC1);
 	vector<Bbx> null_bbx_vector;
@@ -184,7 +203,7 @@ namespace MaelstromGUI {
 		MainForm(void)
 		{
 			// Keep track of logs
-			if (true) {
+			if (false) {
 				string log_path = log_dir_path + getTime() + ".txt";
 				freopen(log_path.c_str(), "w", stdout);
 			}
@@ -264,6 +283,12 @@ namespace MaelstromGUI {
 
 			// Plateform GPS port
 			backgroundWorkerPlateformGPSP->RunWorkerAsync(1); // To receive continuous data from the plateform port
+
+			// Bathy
+			backgroundWorkerBathy->RunWorkerAsync(1);
+
+			// Cables tension display
+			backgroundWorkerCableTension->RunWorkerAsync(1);
 
 		}
 
@@ -425,7 +450,105 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::PictureBox^ pictureBoxLogoMaelstrom;
 	private: System::Windows::Forms::PictureBox^ pictureBoxColorMap;
 private: System::Windows::Forms::Label^ labelMaxDepth;
+
+
 private: System::Windows::Forms::Label^ labelMinDepth;
+private: System::Windows::Forms::ContextMenuStrip^ contextMenuStrip1;
+private: System::Windows::Forms::TextBox^ textBoxTargetLatitude;
+private: System::Windows::Forms::TextBox^ textBoxTargetLongitude;
+private: System::Windows::Forms::Label^ label37;
+private: System::Windows::Forms::Label^ label38;
+private: System::Windows::Forms::Button^ buttonGoTargetGPS;
+private: System::Windows::Forms::TextBox^ textBoxLatRobot;
+private: System::Windows::Forms::TextBox^ textBoxLongRobot;
+private: System::Windows::Forms::Label^ label39;
+private: System::Windows::Forms::Label^ label40;
+private: System::Windows::Forms::TextBox^ textBoxUTMXRobot;
+private: System::Windows::Forms::TextBox^ textBoxUTMYRobot;
+private: System::Windows::Forms::Label^ label41;
+private: System::Windows::Forms::Label^ label42;
+private: System::Windows::Forms::TextBox^ textBoxCap;
+private: System::Windows::Forms::Label^ label43;
+private: System::Windows::Forms::Label^ label44;
+private: System::Windows::Forms::TextBox^ textBoxCapDeg;
+private: System::Windows::Forms::Label^ label45;
+private: System::Windows::Forms::TextBox^ textBoxDistanceGPS;
+private: System::Windows::Forms::Label^ label46;
+private: System::Windows::Forms::Label^ label47;
+private: System::Windows::Forms::TextBox^ textBoxTargetUTMNorth;
+private: System::Windows::Forms::TextBox^ textBoxTargetUTMEast;
+private: System::Windows::Forms::Label^ label48;
+private: System::Windows::Forms::Label^ label49;
+private: System::Windows::Forms::TextBox^ textBoxUTMDeltaNorthing;
+private: System::Windows::Forms::TextBox^ textBoxDeltaUTMEasting;
+private: System::Windows::Forms::Label^ label50;
+private: System::Windows::Forms::Label^ label51;
+private: System::Windows::Forms::Label^ label52;
+private: System::Windows::Forms::TextBox^ textBoxTargetCap;
+private: System::Windows::Forms::TextBox^ textBoxCurrentCap;
+private: System::Windows::Forms::TextBox^ textBoxDeltaCap;
+private: System::Windows::Forms::Button^ buttonSetTargetUTM;
+private: System::Windows::Forms::Label^ label53;
+private: System::Windows::Forms::Label^ label54;
+private: System::Windows::Forms::TextBox^ textBoxDeltaXRobot;
+private: System::Windows::Forms::TextBox^ textBoxDeltaYRobot;
+private: System::Windows::Forms::PictureBox^ pictureBoxBathy;
+private: System::ComponentModel::BackgroundWorker^ backgroundWorkerBathy;
+
+
+
+
+
+private: System::Windows::Forms::Button^ buttonBathyOnline;
+private: System::Windows::Forms::Label^ label55;
+private: System::Windows::Forms::Label^ label56;
+private: System::Windows::Forms::Label^ label57;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxZoomedBathy;
+private: System::Windows::Forms::GroupBox^ groupBox2;
+private: System::Windows::Forms::GroupBox^ groupBox3;
+private: System::Windows::Forms::PictureBox^ pictureBoxM1;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxM2;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxM3;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxM4;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxM5;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxM6;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxM7;
+
+private: System::Windows::Forms::PictureBox^ pictureBoxM8;
+
+private: System::Windows::Forms::GroupBox^ groupBox4;
+private: System::Windows::Forms::Label^ label65;
+private: System::Windows::Forms::Label^ label64;
+private: System::Windows::Forms::Label^ label63;
+private: System::Windows::Forms::Label^ label62;
+private: System::Windows::Forms::Label^ label61;
+private: System::Windows::Forms::Label^ label60;
+private: System::Windows::Forms::Label^ label59;
+private: System::Windows::Forms::Label^ label58;
+private: System::Windows::Forms::ContextMenuStrip^ contextMenuStrip2;
+private: System::ComponentModel::BackgroundWorker^ backgroundWorkerCableTension;
+private: System::Windows::Forms::TextBox^ textBoxM8;
+private: System::Windows::Forms::TextBox^ textBoxM7;
+private: System::Windows::Forms::TextBox^ textBoxM6;
+private: System::Windows::Forms::TextBox^ textBoxM5;
+private: System::Windows::Forms::TextBox^ textBoxM4;
+private: System::Windows::Forms::TextBox^ textBoxM3;
+private: System::Windows::Forms::TextBox^ textBoxM2;
+private: System::Windows::Forms::TextBox^ textBoxM1;
+private: System::Windows::Forms::Button^ button1;
+
+
+
+
+
+
 
 
 	private: System::ComponentModel::IContainer^ components;
@@ -566,6 +689,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->label17 = (gcnew System::Windows::Forms::Label());
 			this->label18 = (gcnew System::Windows::Forms::Label());
 			this->groupBoxPort = (gcnew System::Windows::Forms::GroupBox());
+			this->label55 = (gcnew System::Windows::Forms::Label());
 			this->label28 = (gcnew System::Windows::Forms::Label());
 			this->label29 = (gcnew System::Windows::Forms::Label());
 			this->label30 = (gcnew System::Windows::Forms::Label());
@@ -573,6 +697,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->label26 = (gcnew System::Windows::Forms::Label());
 			this->label27 = (gcnew System::Windows::Forms::Label());
 			this->groupBoxStarboard = (gcnew System::Windows::Forms::GroupBox());
+			this->label56 = (gcnew System::Windows::Forms::Label());
 			this->label34 = (gcnew System::Windows::Forms::Label());
 			this->label35 = (gcnew System::Windows::Forms::Label());
 			this->label31 = (gcnew System::Windows::Forms::Label());
@@ -589,6 +714,80 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->pictureBoxColorMap = (gcnew System::Windows::Forms::PictureBox());
 			this->labelMaxDepth = (gcnew System::Windows::Forms::Label());
 			this->labelMinDepth = (gcnew System::Windows::Forms::Label());
+			this->contextMenuStrip1 = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
+			this->textBoxTargetLatitude = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxTargetLongitude = (gcnew System::Windows::Forms::TextBox());
+			this->label37 = (gcnew System::Windows::Forms::Label());
+			this->label38 = (gcnew System::Windows::Forms::Label());
+			this->buttonGoTargetGPS = (gcnew System::Windows::Forms::Button());
+			this->textBoxLatRobot = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxLongRobot = (gcnew System::Windows::Forms::TextBox());
+			this->label39 = (gcnew System::Windows::Forms::Label());
+			this->label40 = (gcnew System::Windows::Forms::Label());
+			this->textBoxUTMXRobot = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxUTMYRobot = (gcnew System::Windows::Forms::TextBox());
+			this->label41 = (gcnew System::Windows::Forms::Label());
+			this->label42 = (gcnew System::Windows::Forms::Label());
+			this->textBoxCap = (gcnew System::Windows::Forms::TextBox());
+			this->label43 = (gcnew System::Windows::Forms::Label());
+			this->label44 = (gcnew System::Windows::Forms::Label());
+			this->textBoxCapDeg = (gcnew System::Windows::Forms::TextBox());
+			this->label45 = (gcnew System::Windows::Forms::Label());
+			this->textBoxDistanceGPS = (gcnew System::Windows::Forms::TextBox());
+			this->label46 = (gcnew System::Windows::Forms::Label());
+			this->label47 = (gcnew System::Windows::Forms::Label());
+			this->textBoxTargetUTMNorth = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxTargetUTMEast = (gcnew System::Windows::Forms::TextBox());
+			this->label48 = (gcnew System::Windows::Forms::Label());
+			this->label49 = (gcnew System::Windows::Forms::Label());
+			this->textBoxUTMDeltaNorthing = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxDeltaUTMEasting = (gcnew System::Windows::Forms::TextBox());
+			this->label50 = (gcnew System::Windows::Forms::Label());
+			this->label51 = (gcnew System::Windows::Forms::Label());
+			this->label52 = (gcnew System::Windows::Forms::Label());
+			this->textBoxTargetCap = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxCurrentCap = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxDeltaCap = (gcnew System::Windows::Forms::TextBox());
+			this->buttonSetTargetUTM = (gcnew System::Windows::Forms::Button());
+			this->label53 = (gcnew System::Windows::Forms::Label());
+			this->label54 = (gcnew System::Windows::Forms::Label());
+			this->textBoxDeltaXRobot = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxDeltaYRobot = (gcnew System::Windows::Forms::TextBox());
+			this->pictureBoxBathy = (gcnew System::Windows::Forms::PictureBox());
+			this->backgroundWorkerBathy = (gcnew System::ComponentModel::BackgroundWorker());
+			this->buttonBathyOnline = (gcnew System::Windows::Forms::Button());
+			this->label57 = (gcnew System::Windows::Forms::Label());
+			this->pictureBoxZoomedBathy = (gcnew System::Windows::Forms::PictureBox());
+			this->groupBox2 = (gcnew System::Windows::Forms::GroupBox());
+			this->groupBox3 = (gcnew System::Windows::Forms::GroupBox());
+			this->pictureBoxM1 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxM2 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxM3 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxM4 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxM5 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxM6 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxM7 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBoxM8 = (gcnew System::Windows::Forms::PictureBox());
+			this->groupBox4 = (gcnew System::Windows::Forms::GroupBox());
+			this->textBoxM8 = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxM7 = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxM6 = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxM5 = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxM4 = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxM3 = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxM2 = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxM1 = (gcnew System::Windows::Forms::TextBox());
+			this->label65 = (gcnew System::Windows::Forms::Label());
+			this->label64 = (gcnew System::Windows::Forms::Label());
+			this->label63 = (gcnew System::Windows::Forms::Label());
+			this->label62 = (gcnew System::Windows::Forms::Label());
+			this->label61 = (gcnew System::Windows::Forms::Label());
+			this->label60 = (gcnew System::Windows::Forms::Label());
+			this->label59 = (gcnew System::Windows::Forms::Label());
+			this->label58 = (gcnew System::Windows::Forms::Label());
+			this->contextMenuStrip2 = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
+			this->backgroundWorkerCableTension = (gcnew System::ComponentModel::BackgroundWorker());
+			this->button1 = (gcnew System::Windows::Forms::Button());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->BeginInit();
@@ -601,12 +800,25 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoUM))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoMaelstrom))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxColorMap))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxBathy))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxZoomedBathy))->BeginInit();
+			this->groupBox2->SuspendLayout();
+			this->groupBox3->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM1))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM2))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM3))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM4))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM5))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM6))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM7))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM8))->BeginInit();
+			this->groupBox4->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// button_Edition
 			// 
 			this->button_Edition->Enabled = false;
-			this->button_Edition->Location = System::Drawing::Point(1393, 29);
+			this->button_Edition->Location = System::Drawing::Point(981, 588);
 			this->button_Edition->Name = L"button_Edition";
 			this->button_Edition->Size = System::Drawing::Size(75, 23);
 			this->button_Edition->TabIndex = 35;
@@ -615,7 +827,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// ptbSource
 			// 
 			this->ptbSource->BackColor = System::Drawing::SystemColors::ControlDark;
-			this->ptbSource->Location = System::Drawing::Point(827, 58);
+			this->ptbSource->Location = System::Drawing::Point(414, 58);
 			this->ptbSource->Name = L"ptbSource";
 			this->ptbSource->Size = System::Drawing::Size(640, 480);
 			this->ptbSource->TabIndex = 1;
@@ -628,7 +840,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// button_Browse
 			// 
 			this->button_Browse->Enabled = false;
-			this->button_Browse->Location = System::Drawing::Point(1319, 28);
+			this->button_Browse->Location = System::Drawing::Point(907, 587);
 			this->button_Browse->Name = L"button_Browse";
 			this->button_Browse->Size = System::Drawing::Size(67, 23);
 			this->button_Browse->TabIndex = 2;
@@ -674,7 +886,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// play_button
 			// 
 			this->play_button->Enabled = false;
-			this->play_button->Location = System::Drawing::Point(913, 588);
+			this->play_button->Location = System::Drawing::Point(498, 587);
 			this->play_button->Name = L"play_button";
 			this->play_button->Size = System::Drawing::Size(80, 23);
 			this->play_button->TabIndex = 5;
@@ -685,7 +897,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// speed_button
 			// 
 			this->speed_button->Enabled = false;
-			this->speed_button->Location = System::Drawing::Point(999, 588);
+			this->speed_button->Location = System::Drawing::Point(583, 587);
 			this->speed_button->Name = L"speed_button";
 			this->speed_button->Size = System::Drawing::Size(80, 23);
 			this->speed_button->TabIndex = 6;
@@ -696,7 +908,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// load_button
 			// 
 			this->load_button->Enabled = false;
-			this->load_button->Location = System::Drawing::Point(827, 588);
+			this->load_button->Location = System::Drawing::Point(414, 587);
 			this->load_button->Name = L"load_button";
 			this->load_button->Size = System::Drawing::Size(80, 23);
 			this->load_button->TabIndex = 7;
@@ -707,7 +919,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// video_trackBar
 			// 
 			this->video_trackBar->Enabled = false;
-			this->video_trackBar->Location = System::Drawing::Point(917, 544);
+			this->video_trackBar->Location = System::Drawing::Point(504, 541);
 			this->video_trackBar->Maximum = 150;
 			this->video_trackBar->Name = L"video_trackBar";
 			this->video_trackBar->Size = System::Drawing::Size(521, 45);
@@ -717,7 +929,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// video_label
 			// 
 			this->video_label->AutoSize = true;
-			this->video_label->Location = System::Drawing::Point(1444, 549);
+			this->video_label->Location = System::Drawing::Point(1020, 546);
 			this->video_label->Name = L"video_label";
 			this->video_label->Size = System::Drawing::Size(24, 13);
 			this->video_label->TabIndex = 9;
@@ -728,7 +940,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->record_button->BackColor = System::Drawing::SystemColors::ControlLight;
 			this->record_button->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->record_button->Location = System::Drawing::Point(827, 548);
+			this->record_button->Location = System::Drawing::Point(414, 549);
 			this->record_button->Name = L"record_button";
 			this->record_button->Size = System::Drawing::Size(80, 34);
 			this->record_button->TabIndex = 10;
@@ -1310,7 +1522,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPYaw
 			// 
-			this->textBoxPYaw->Location = System::Drawing::Point(112, 39);
+			this->textBoxPYaw->Location = System::Drawing::Point(112, 34);
 			this->textBoxPYaw->Name = L"textBoxPYaw";
 			this->textBoxPYaw->ReadOnly = true;
 			this->textBoxPYaw->Size = System::Drawing::Size(47, 20);
@@ -1320,7 +1532,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPPitch
 			// 
-			this->textBoxPPitch->Location = System::Drawing::Point(59, 39);
+			this->textBoxPPitch->Location = System::Drawing::Point(59, 34);
 			this->textBoxPPitch->Name = L"textBoxPPitch";
 			this->textBoxPPitch->ReadOnly = true;
 			this->textBoxPPitch->Size = System::Drawing::Size(47, 20);
@@ -1330,7 +1542,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPRoll
 			// 
-			this->textBoxPRoll->Location = System::Drawing::Point(6, 39);
+			this->textBoxPRoll->Location = System::Drawing::Point(6, 34);
 			this->textBoxPRoll->Name = L"textBoxPRoll";
 			this->textBoxPRoll->ReadOnly = true;
 			this->textBoxPRoll->Size = System::Drawing::Size(47, 20);
@@ -1340,7 +1552,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPGyrZ
 			// 
-			this->textBoxPGyrZ->Location = System::Drawing::Point(112, 87);
+			this->textBoxPGyrZ->Location = System::Drawing::Point(112, 77);
 			this->textBoxPGyrZ->Name = L"textBoxPGyrZ";
 			this->textBoxPGyrZ->ReadOnly = true;
 			this->textBoxPGyrZ->Size = System::Drawing::Size(47, 20);
@@ -1350,7 +1562,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPGyrY
 			// 
-			this->textBoxPGyrY->Location = System::Drawing::Point(59, 87);
+			this->textBoxPGyrY->Location = System::Drawing::Point(59, 77);
 			this->textBoxPGyrY->Name = L"textBoxPGyrY";
 			this->textBoxPGyrY->ReadOnly = true;
 			this->textBoxPGyrY->Size = System::Drawing::Size(47, 20);
@@ -1360,7 +1572,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPGyrX
 			// 
-			this->textBoxPGyrX->Location = System::Drawing::Point(6, 87);
+			this->textBoxPGyrX->Location = System::Drawing::Point(6, 77);
 			this->textBoxPGyrX->Name = L"textBoxPGyrX";
 			this->textBoxPGyrX->ReadOnly = true;
 			this->textBoxPGyrX->Size = System::Drawing::Size(47, 20);
@@ -1370,7 +1582,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSYaw
 			// 
-			this->textBoxSYaw->Location = System::Drawing::Point(112, 39);
+			this->textBoxSYaw->Location = System::Drawing::Point(112, 34);
 			this->textBoxSYaw->Name = L"textBoxSYaw";
 			this->textBoxSYaw->ReadOnly = true;
 			this->textBoxSYaw->Size = System::Drawing::Size(47, 20);
@@ -1380,7 +1592,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSPitch
 			// 
-			this->textBoxSPitch->Location = System::Drawing::Point(59, 39);
+			this->textBoxSPitch->Location = System::Drawing::Point(59, 34);
 			this->textBoxSPitch->Name = L"textBoxSPitch";
 			this->textBoxSPitch->ReadOnly = true;
 			this->textBoxSPitch->Size = System::Drawing::Size(47, 20);
@@ -1390,7 +1602,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSRoll
 			// 
-			this->textBoxSRoll->Location = System::Drawing::Point(6, 39);
+			this->textBoxSRoll->Location = System::Drawing::Point(6, 34);
 			this->textBoxSRoll->Name = L"textBoxSRoll";
 			this->textBoxSRoll->ReadOnly = true;
 			this->textBoxSRoll->Size = System::Drawing::Size(47, 20);
@@ -1400,7 +1612,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSGyrZ
 			// 
-			this->textBoxSGyrZ->Location = System::Drawing::Point(112, 87);
+			this->textBoxSGyrZ->Location = System::Drawing::Point(112, 77);
 			this->textBoxSGyrZ->Name = L"textBoxSGyrZ";
 			this->textBoxSGyrZ->ReadOnly = true;
 			this->textBoxSGyrZ->Size = System::Drawing::Size(47, 20);
@@ -1410,7 +1622,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSGyrY
 			// 
-			this->textBoxSGyrY->Location = System::Drawing::Point(59, 87);
+			this->textBoxSGyrY->Location = System::Drawing::Point(59, 77);
 			this->textBoxSGyrY->Name = L"textBoxSGyrY";
 			this->textBoxSGyrY->ReadOnly = true;
 			this->textBoxSGyrY->Size = System::Drawing::Size(47, 20);
@@ -1420,7 +1632,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSGyrX
 			// 
-			this->textBoxSGyrX->Location = System::Drawing::Point(6, 87);
+			this->textBoxSGyrX->Location = System::Drawing::Point(6, 77);
 			this->textBoxSGyrX->Name = L"textBoxSGyrX";
 			this->textBoxSGyrX->ReadOnly = true;
 			this->textBoxSGyrX->Size = System::Drawing::Size(47, 20);
@@ -1430,7 +1642,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSGPSY
 			// 
-			this->textBoxSGPSY->Location = System::Drawing::Point(77, 134);
+			this->textBoxSGPSY->Location = System::Drawing::Point(77, 121);
 			this->textBoxSGPSY->Name = L"textBoxSGPSY";
 			this->textBoxSGPSY->ReadOnly = true;
 			this->textBoxSGPSY->Size = System::Drawing::Size(68, 20);
@@ -1440,7 +1652,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSGPSX
 			// 
-			this->textBoxSGPSX->Location = System::Drawing::Point(6, 134);
+			this->textBoxSGPSX->Location = System::Drawing::Point(6, 121);
 			this->textBoxSGPSX->Name = L"textBoxSGPSX";
 			this->textBoxSGPSX->ReadOnly = true;
 			this->textBoxSGPSX->Size = System::Drawing::Size(68, 20);
@@ -1450,7 +1662,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPGPSY
 			// 
-			this->textBoxPGPSY->Location = System::Drawing::Point(76, 134);
+			this->textBoxPGPSY->Location = System::Drawing::Point(76, 121);
 			this->textBoxPGPSY->Name = L"textBoxPGPSY";
 			this->textBoxPGPSY->ReadOnly = true;
 			this->textBoxPGPSY->Size = System::Drawing::Size(68, 20);
@@ -1460,7 +1672,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxPGPSX
 			// 
-			this->textBoxPGPSX->Location = System::Drawing::Point(5, 134);
+			this->textBoxPGPSX->Location = System::Drawing::Point(5, 121);
 			this->textBoxPGPSX->Name = L"textBoxPGPSX";
 			this->textBoxPGPSX->ReadOnly = true;
 			this->textBoxPGPSX->Size = System::Drawing::Size(68, 20);
@@ -1472,22 +1684,22 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->labelGPSP->AutoSize = true;
 			this->labelGPSP->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->labelGPSP->Location = System::Drawing::Point(3, 118);
+			this->labelGPSP->Location = System::Drawing::Point(3, 105);
 			this->labelGPSP->Name = L"labelGPSP";
-			this->labelGPSP->Size = System::Drawing::Size(29, 13);
+			this->labelGPSP->Size = System::Drawing::Size(72, 13);
 			this->labelGPSP->TabIndex = 111;
-			this->labelGPSP->Text = L"GPS";
+			this->labelGPSP->Text = L"UTM northing";
 			this->labelGPSP->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// labelGPSS
 			// 
 			this->labelGPSS->AutoSize = true;
 			this->labelGPSS->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->labelGPSS->Location = System::Drawing::Point(3, 118);
+			this->labelGPSS->Location = System::Drawing::Point(3, 105);
 			this->labelGPSS->Name = L"labelGPSS";
-			this->labelGPSS->Size = System::Drawing::Size(29, 13);
+			this->labelGPSS->Size = System::Drawing::Size(72, 13);
 			this->labelGPSS->TabIndex = 112;
-			this->labelGPSS->Text = L"GPS";
+			this->labelGPSS->Text = L"UTM northing";
 			this->labelGPSS->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// groupBoxRobot
@@ -1517,7 +1729,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->groupBoxRobot->Controls->Add(this->textBox1);
 			this->groupBoxRobot->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->groupBoxRobot->Location = System::Drawing::Point(432, 58);
+			this->groupBoxRobot->Location = System::Drawing::Point(13, 625);
 			this->groupBoxRobot->Name = L"groupBoxRobot";
 			this->groupBoxRobot->Size = System::Drawing::Size(370, 128);
 			this->groupBoxRobot->TabIndex = 113;
@@ -1625,7 +1837,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			// textBoxSRTK
 			// 
-			this->textBoxSRTK->Location = System::Drawing::Point(148, 134);
+			this->textBoxSRTK->Location = System::Drawing::Point(148, 121);
 			this->textBoxSRTK->Name = L"textBoxSRTK";
 			this->textBoxSRTK->ReadOnly = true;
 			this->textBoxSRTK->Size = System::Drawing::Size(28, 20);
@@ -1658,7 +1870,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->groupBox1->Controls->Add(this->textBoxArduinoYaw);
 			this->groupBox1->Controls->Add(this->textBoxArduinoDepth);
 			this->groupBox1->Controls->Add(this->textBoxAtmPressure);
-			this->groupBox1->Location = System::Drawing::Point(432, 192);
+			this->groupBox1->Location = System::Drawing::Point(13, 760);
 			this->groupBox1->Name = L"groupBox1";
 			this->groupBox1->Size = System::Drawing::Size(370, 67);
 			this->groupBox1->TabIndex = 117;
@@ -1741,7 +1953,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLD3);
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLVx);
 			this->groupBoxDVL->Controls->Add(this->textBoxDVLVy);
-			this->groupBoxDVL->Location = System::Drawing::Point(432, 265);
+			this->groupBoxDVL->Location = System::Drawing::Point(12, 833);
 			this->groupBoxDVL->Name = L"groupBoxDVL";
 			this->groupBoxDVL->Size = System::Drawing::Size(370, 113);
 			this->groupBoxDVL->TabIndex = 118;
@@ -1850,6 +2062,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// groupBoxPort
 			// 
 			this->groupBoxPort->BackColor = System::Drawing::Color::LightGray;
+			this->groupBoxPort->Controls->Add(this->label55);
 			this->groupBoxPort->Controls->Add(this->label28);
 			this->groupBoxPort->Controls->Add(this->label29);
 			this->groupBoxPort->Controls->Add(this->label30);
@@ -1865,18 +2078,29 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->groupBoxPort->Controls->Add(this->textBoxPGPSX);
 			this->groupBoxPort->Controls->Add(this->textBoxPGyrY);
 			this->groupBoxPort->Controls->Add(this->textBoxPGyrZ);
-			this->groupBoxPort->Location = System::Drawing::Point(432, 384);
+			this->groupBoxPort->Location = System::Drawing::Point(389, 625);
 			this->groupBoxPort->Name = L"groupBoxPort";
-			this->groupBoxPort->Size = System::Drawing::Size(182, 170);
+			this->groupBoxPort->Size = System::Drawing::Size(182, 157);
 			this->groupBoxPort->TabIndex = 119;
 			this->groupBoxPort->TabStop = false;
 			this->groupBoxPort->Text = L"Plateform Port";
+			// 
+			// label55
+			// 
+			this->label55->AutoSize = true;
+			this->label55->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label55->Location = System::Drawing::Point(74, 105);
+			this->label55->Name = L"label55";
+			this->label55->Size = System::Drawing::Size(68, 13);
+			this->label55->TabIndex = 131;
+			this->label55->Text = L"UTM easting";
+			this->label55->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label28
 			// 
 			this->label28->AutoSize = true;
 			this->label28->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label28->Location = System::Drawing::Point(111, 71);
+			this->label28->Location = System::Drawing::Point(111, 61);
 			this->label28->Name = L"label28";
 			this->label28->Size = System::Drawing::Size(49, 13);
 			this->label28->TabIndex = 130;
@@ -1887,7 +2111,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label29->AutoSize = true;
 			this->label29->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label29->Location = System::Drawing::Point(58, 71);
+			this->label29->Location = System::Drawing::Point(58, 61);
 			this->label29->Name = L"label29";
 			this->label29->Size = System::Drawing::Size(49, 13);
 			this->label29->TabIndex = 129;
@@ -1898,7 +2122,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label30->AutoSize = true;
 			this->label30->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label30->Location = System::Drawing::Point(5, 71);
+			this->label30->Location = System::Drawing::Point(5, 61);
 			this->label30->Name = L"label30";
 			this->label30->Size = System::Drawing::Size(49, 13);
 			this->label30->TabIndex = 128;
@@ -1909,7 +2133,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label25->AutoSize = true;
 			this->label25->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label25->Location = System::Drawing::Point(109, 23);
+			this->label25->Location = System::Drawing::Point(109, 18);
 			this->label25->Name = L"label25";
 			this->label25->Size = System::Drawing::Size(41, 13);
 			this->label25->TabIndex = 127;
@@ -1920,7 +2144,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label26->AutoSize = true;
 			this->label26->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label26->Location = System::Drawing::Point(56, 23);
+			this->label26->Location = System::Drawing::Point(56, 18);
 			this->label26->Name = L"label26";
 			this->label26->Size = System::Drawing::Size(44, 13);
 			this->label26->TabIndex = 126;
@@ -1931,7 +2155,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label27->AutoSize = true;
 			this->label27->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label27->Location = System::Drawing::Point(3, 23);
+			this->label27->Location = System::Drawing::Point(3, 18);
 			this->label27->Name = L"label27";
 			this->label27->Size = System::Drawing::Size(38, 13);
 			this->label27->TabIndex = 125;
@@ -1941,6 +2165,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// groupBoxStarboard
 			// 
 			this->groupBoxStarboard->BackColor = System::Drawing::Color::LightGray;
+			this->groupBoxStarboard->Controls->Add(this->label56);
 			this->groupBoxStarboard->Controls->Add(this->label34);
 			this->groupBoxStarboard->Controls->Add(this->label35);
 			this->groupBoxStarboard->Controls->Add(this->label31);
@@ -1957,18 +2182,29 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrZ);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrX);
 			this->groupBoxStarboard->Controls->Add(this->textBoxSGyrY);
-			this->groupBoxStarboard->Location = System::Drawing::Point(620, 384);
+			this->groupBoxStarboard->Location = System::Drawing::Point(389, 789);
 			this->groupBoxStarboard->Name = L"groupBoxStarboard";
-			this->groupBoxStarboard->Size = System::Drawing::Size(182, 170);
+			this->groupBoxStarboard->Size = System::Drawing::Size(182, 157);
 			this->groupBoxStarboard->TabIndex = 120;
 			this->groupBoxStarboard->TabStop = false;
 			this->groupBoxStarboard->Text = L"Plateform Starboard";
+			// 
+			// label56
+			// 
+			this->label56->AutoSize = true;
+			this->label56->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label56->Location = System::Drawing::Point(74, 105);
+			this->label56->Name = L"label56";
+			this->label56->Size = System::Drawing::Size(68, 13);
+			this->label56->TabIndex = 132;
+			this->label56->Text = L"UTM easting";
+			this->label56->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
 			// 
 			// label34
 			// 
 			this->label34->AutoSize = true;
 			this->label34->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label34->Location = System::Drawing::Point(110, 71);
+			this->label34->Location = System::Drawing::Point(110, 61);
 			this->label34->Name = L"label34";
 			this->label34->Size = System::Drawing::Size(49, 13);
 			this->label34->TabIndex = 133;
@@ -1979,7 +2215,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label35->AutoSize = true;
 			this->label35->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label35->Location = System::Drawing::Point(57, 71);
+			this->label35->Location = System::Drawing::Point(57, 61);
 			this->label35->Name = L"label35";
 			this->label35->Size = System::Drawing::Size(49, 13);
 			this->label35->TabIndex = 132;
@@ -1990,7 +2226,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label31->AutoSize = true;
 			this->label31->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label31->Location = System::Drawing::Point(110, 23);
+			this->label31->Location = System::Drawing::Point(110, 18);
 			this->label31->Name = L"label31";
 			this->label31->Size = System::Drawing::Size(41, 13);
 			this->label31->TabIndex = 133;
@@ -2001,7 +2237,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label36->AutoSize = true;
 			this->label36->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label36->Location = System::Drawing::Point(4, 71);
+			this->label36->Location = System::Drawing::Point(4, 61);
 			this->label36->Name = L"label36";
 			this->label36->Size = System::Drawing::Size(49, 13);
 			this->label36->TabIndex = 131;
@@ -2012,7 +2248,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label32->AutoSize = true;
 			this->label32->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label32->Location = System::Drawing::Point(57, 23);
+			this->label32->Location = System::Drawing::Point(57, 18);
 			this->label32->Name = L"label32";
 			this->label32->Size = System::Drawing::Size(44, 13);
 			this->label32->TabIndex = 132;
@@ -2023,7 +2259,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// 
 			this->label33->AutoSize = true;
 			this->label33->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
-			this->label33->Location = System::Drawing::Point(4, 23);
+			this->label33->Location = System::Drawing::Point(4, 18);
 			this->label33->Name = L"label33";
 			this->label33->Size = System::Drawing::Size(38, 13);
 			this->label33->TabIndex = 131;
@@ -2033,7 +2269,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// pictureBoxLogoLirmm
 			// 
 			this->pictureBoxLogoLirmm->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoLirmm.Image")));
-			this->pictureBoxLogoLirmm->Location = System::Drawing::Point(651, 563);
+			this->pictureBoxLogoLirmm->Location = System::Drawing::Point(876, 901);
 			this->pictureBoxLogoLirmm->Name = L"pictureBoxLogoLirmm";
 			this->pictureBoxLogoLirmm->Size = System::Drawing::Size(151, 47);
 			this->pictureBoxLogoLirmm->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
@@ -2043,7 +2279,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// pictureBoxLogoUM
 			// 
 			this->pictureBoxLogoUM->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoUM.Image")));
-			this->pictureBoxLogoUM->Location = System::Drawing::Point(590, 561);
+			this->pictureBoxLogoUM->Location = System::Drawing::Point(815, 899);
 			this->pictureBoxLogoUM->Name = L"pictureBoxLogoUM";
 			this->pictureBoxLogoUM->Size = System::Drawing::Size(52, 50);
 			this->pictureBoxLogoUM->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
@@ -2090,7 +2326,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			// pictureBoxLogoMaelstrom
 			// 
 			this->pictureBoxLogoMaelstrom->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBoxLogoMaelstrom.Image")));
-			this->pictureBoxLogoMaelstrom->Location = System::Drawing::Point(372, 561);
+			this->pictureBoxLogoMaelstrom->Location = System::Drawing::Point(597, 899);
 			this->pictureBoxLogoMaelstrom->Name = L"pictureBoxLogoMaelstrom";
 			this->pictureBoxLogoMaelstrom->Size = System::Drawing::Size(223, 50);
 			this->pictureBoxLogoMaelstrom->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
@@ -2126,11 +2362,831 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			this->labelMinDepth->Text = L"5 m";
 			this->labelMinDepth->TextAlign = System::Drawing::ContentAlignment::MiddleCenter;
 			// 
+			// contextMenuStrip1
+			// 
+			this->contextMenuStrip1->Name = L"contextMenuStrip1";
+			this->contextMenuStrip1->Size = System::Drawing::Size(61, 4);
+			// 
+			// textBoxTargetLatitude
+			// 
+			this->textBoxTargetLatitude->Location = System::Drawing::Point(1579, 1075);
+			this->textBoxTargetLatitude->Name = L"textBoxTargetLatitude";
+			this->textBoxTargetLatitude->Size = System::Drawing::Size(167, 20);
+			this->textBoxTargetLatitude->TabIndex = 128;
+			this->textBoxTargetLatitude->Text = L"None";
+			this->textBoxTargetLatitude->Visible = false;
+			// 
+			// textBoxTargetLongitude
+			// 
+			this->textBoxTargetLongitude->Location = System::Drawing::Point(1579, 1101);
+			this->textBoxTargetLongitude->Name = L"textBoxTargetLongitude";
+			this->textBoxTargetLongitude->Size = System::Drawing::Size(167, 20);
+			this->textBoxTargetLongitude->TabIndex = 129;
+			this->textBoxTargetLongitude->Text = L"None";
+			this->textBoxTargetLongitude->Visible = false;
+			// 
+			// label37
+			// 
+			this->label37->AutoSize = true;
+			this->label37->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label37->Location = System::Drawing::Point(1467, 1084);
+			this->label37->Name = L"label37";
+			this->label37->Size = System::Drawing::Size(70, 13);
+			this->label37->TabIndex = 131;
+			this->label37->Text = L"Latitude (DD)";
+			this->label37->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label37->Visible = false;
+			// 
+			// label38
+			// 
+			this->label38->AutoSize = true;
+			this->label38->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label38->Location = System::Drawing::Point(1467, 1110);
+			this->label38->Name = L"label38";
+			this->label38->Size = System::Drawing::Size(79, 13);
+			this->label38->TabIndex = 132;
+			this->label38->Text = L"Longitude (DD)";
+			this->label38->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label38->Visible = false;
+			// 
+			// buttonGoTargetGPS
+			// 
+			this->buttonGoTargetGPS->Location = System::Drawing::Point(1381, 1120);
+			this->buttonGoTargetGPS->Name = L"buttonGoTargetGPS";
+			this->buttonGoTargetGPS->Size = System::Drawing::Size(71, 46);
+			this->buttonGoTargetGPS->TabIndex = 133;
+			this->buttonGoTargetGPS->Text = L"Go to target";
+			this->buttonGoTargetGPS->UseVisualStyleBackColor = true;
+			this->buttonGoTargetGPS->Visible = false;
+			this->buttonGoTargetGPS->Click += gcnew System::EventHandler(this, &MainForm::buttonGoTargetGPS_Click);
+			// 
+			// textBoxLatRobot
+			// 
+			this->textBoxLatRobot->Location = System::Drawing::Point(1579, 1127);
+			this->textBoxLatRobot->Name = L"textBoxLatRobot";
+			this->textBoxLatRobot->ReadOnly = true;
+			this->textBoxLatRobot->Size = System::Drawing::Size(167, 20);
+			this->textBoxLatRobot->TabIndex = 134;
+			this->textBoxLatRobot->Text = L"None";
+			this->textBoxLatRobot->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBoxLatRobot->Visible = false;
+			// 
+			// textBoxLongRobot
+			// 
+			this->textBoxLongRobot->Location = System::Drawing::Point(1579, 1153);
+			this->textBoxLongRobot->Name = L"textBoxLongRobot";
+			this->textBoxLongRobot->ReadOnly = true;
+			this->textBoxLongRobot->Size = System::Drawing::Size(167, 20);
+			this->textBoxLongRobot->TabIndex = 134;
+			this->textBoxLongRobot->Text = L"None";
+			this->textBoxLongRobot->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBoxLongRobot->Visible = false;
+			// 
+			// label39
+			// 
+			this->label39->AutoSize = true;
+			this->label39->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label39->Location = System::Drawing::Point(1467, 1136);
+			this->label39->Name = L"label39";
+			this->label39->Size = System::Drawing::Size(97, 13);
+			this->label39->TabIndex = 135;
+			this->label39->Text = L"Latitude robot (DD)";
+			this->label39->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label39->Visible = false;
+			// 
+			// label40
+			// 
+			this->label40->AutoSize = true;
+			this->label40->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label40->Location = System::Drawing::Point(1467, 1162);
+			this->label40->Name = L"label40";
+			this->label40->Size = System::Drawing::Size(106, 13);
+			this->label40->TabIndex = 136;
+			this->label40->Text = L"Longitude robot (DD)";
+			this->label40->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label40->Visible = false;
+			// 
+			// textBoxUTMXRobot
+			// 
+			this->textBoxUTMXRobot->Location = System::Drawing::Point(55, 45);
+			this->textBoxUTMXRobot->Name = L"textBoxUTMXRobot";
+			this->textBoxUTMXRobot->ReadOnly = true;
+			this->textBoxUTMXRobot->Size = System::Drawing::Size(120, 20);
+			this->textBoxUTMXRobot->TabIndex = 137;
+			this->textBoxUTMXRobot->Text = L"None";
+			this->textBoxUTMXRobot->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxUTMYRobot
+			// 
+			this->textBoxUTMYRobot->Location = System::Drawing::Point(55, 19);
+			this->textBoxUTMYRobot->Name = L"textBoxUTMYRobot";
+			this->textBoxUTMYRobot->ReadOnly = true;
+			this->textBoxUTMYRobot->Size = System::Drawing::Size(120, 20);
+			this->textBoxUTMYRobot->TabIndex = 138;
+			this->textBoxUTMYRobot->Text = L"None";
+			this->textBoxUTMYRobot->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// label41
+			// 
+			this->label41->AutoSize = true;
+			this->label41->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label41->Location = System::Drawing::Point(7, 48);
+			this->label41->Name = L"label41";
+			this->label41->Size = System::Drawing::Size(47, 13);
+			this->label41->TabIndex = 139;
+			this->label41->Text = L"Northing";
+			this->label41->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// label42
+			// 
+			this->label42->AutoSize = true;
+			this->label42->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label42->Location = System::Drawing::Point(7, 22);
+			this->label42->Name = L"label42";
+			this->label42->Size = System::Drawing::Size(42, 13);
+			this->label42->TabIndex = 140;
+			this->label42->Text = L"Easting";
+			this->label42->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// textBoxCap
+			// 
+			this->textBoxCap->Location = System::Drawing::Point(1386, 1183);
+			this->textBoxCap->Name = L"textBoxCap";
+			this->textBoxCap->ReadOnly = true;
+			this->textBoxCap->Size = System::Drawing::Size(101, 20);
+			this->textBoxCap->TabIndex = 141;
+			this->textBoxCap->Text = L"None";
+			this->textBoxCap->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBoxCap->Visible = false;
+			// 
+			// label43
+			// 
+			this->label43->AutoSize = true;
+			this->label43->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label43->Location = System::Drawing::Point(1389, 1097);
+			this->label43->Name = L"label43";
+			this->label43->Size = System::Drawing::Size(50, 13);
+			this->label43->TabIndex = 142;
+			this->label43->Text = L"Cap (rad)";
+			this->label43->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label43->Visible = false;
+			// 
+			// label44
+			// 
+			this->label44->AutoSize = true;
+			this->label44->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label44->Location = System::Drawing::Point(7, 74);
+			this->label44->Name = L"label44";
+			this->label44->Size = System::Drawing::Size(53, 13);
+			this->label44->TabIndex = 143;
+			this->label44->Text = L"Course (°)";
+			this->label44->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// textBoxCapDeg
+			// 
+			this->textBoxCapDeg->Location = System::Drawing::Point(102, 71);
+			this->textBoxCapDeg->Name = L"textBoxCapDeg";
+			this->textBoxCapDeg->ReadOnly = true;
+			this->textBoxCapDeg->Size = System::Drawing::Size(55, 20);
+			this->textBoxCapDeg->TabIndex = 144;
+			this->textBoxCapDeg->Text = L"None";
+			this->textBoxCapDeg->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// label45
+			// 
+			this->label45->AutoSize = true;
+			this->label45->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label45->Location = System::Drawing::Point(6, 100);
+			this->label45->Name = L"label45";
+			this->label45->Size = System::Drawing::Size(89, 13);
+			this->label45->TabIndex = 145;
+			this->label45->Text = L"GPS distance (m)";
+			this->label45->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// textBoxDistanceGPS
+			// 
+			this->textBoxDistanceGPS->Location = System::Drawing::Point(102, 97);
+			this->textBoxDistanceGPS->Name = L"textBoxDistanceGPS";
+			this->textBoxDistanceGPS->ReadOnly = true;
+			this->textBoxDistanceGPS->Size = System::Drawing::Size(55, 20);
+			this->textBoxDistanceGPS->TabIndex = 146;
+			this->textBoxDistanceGPS->Text = L"None";
+			this->textBoxDistanceGPS->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// label46
+			// 
+			this->label46->AutoSize = true;
+			this->label46->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label46->Location = System::Drawing::Point(7, 50);
+			this->label46->Name = L"label46";
+			this->label46->Size = System::Drawing::Size(47, 13);
+			this->label46->TabIndex = 147;
+			this->label46->Text = L"Northing";
+			this->label46->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// label47
+			// 
+			this->label47->AutoSize = true;
+			this->label47->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label47->Location = System::Drawing::Point(7, 24);
+			this->label47->Name = L"label47";
+			this->label47->Size = System::Drawing::Size(42, 13);
+			this->label47->TabIndex = 148;
+			this->label47->Text = L"Easting";
+			this->label47->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// textBoxTargetUTMNorth
+			// 
+			this->textBoxTargetUTMNorth->Location = System::Drawing::Point(55, 47);
+			this->textBoxTargetUTMNorth->Name = L"textBoxTargetUTMNorth";
+			this->textBoxTargetUTMNorth->Size = System::Drawing::Size(120, 20);
+			this->textBoxTargetUTMNorth->TabIndex = 149;
+			this->textBoxTargetUTMNorth->Text = L"0";
+			// 
+			// textBoxTargetUTMEast
+			// 
+			this->textBoxTargetUTMEast->Location = System::Drawing::Point(55, 21);
+			this->textBoxTargetUTMEast->Name = L"textBoxTargetUTMEast";
+			this->textBoxTargetUTMEast->Size = System::Drawing::Size(120, 20);
+			this->textBoxTargetUTMEast->TabIndex = 150;
+			this->textBoxTargetUTMEast->Text = L"0";
+			// 
+			// label48
+			// 
+			this->label48->AutoSize = true;
+			this->label48->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label48->Location = System::Drawing::Point(7, 130);
+			this->label48->Name = L"label48";
+			this->label48->Size = System::Drawing::Size(43, 13);
+			this->label48->TabIndex = 151;
+			this->label48->Text = L"Delta N";
+			this->label48->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// label49
+			// 
+			this->label49->AutoSize = true;
+			this->label49->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label49->Location = System::Drawing::Point(7, 105);
+			this->label49->Name = L"label49";
+			this->label49->Size = System::Drawing::Size(42, 13);
+			this->label49->TabIndex = 152;
+			this->label49->Text = L"Delta E";
+			this->label49->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// textBoxUTMDeltaNorthing
+			// 
+			this->textBoxUTMDeltaNorthing->Location = System::Drawing::Point(55, 127);
+			this->textBoxUTMDeltaNorthing->Name = L"textBoxUTMDeltaNorthing";
+			this->textBoxUTMDeltaNorthing->ReadOnly = true;
+			this->textBoxUTMDeltaNorthing->Size = System::Drawing::Size(120, 20);
+			this->textBoxUTMDeltaNorthing->TabIndex = 153;
+			this->textBoxUTMDeltaNorthing->Text = L"None";
+			this->textBoxUTMDeltaNorthing->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxDeltaUTMEasting
+			// 
+			this->textBoxDeltaUTMEasting->Location = System::Drawing::Point(55, 102);
+			this->textBoxDeltaUTMEasting->Name = L"textBoxDeltaUTMEasting";
+			this->textBoxDeltaUTMEasting->ReadOnly = true;
+			this->textBoxDeltaUTMEasting->Size = System::Drawing::Size(120, 20);
+			this->textBoxDeltaUTMEasting->TabIndex = 154;
+			this->textBoxDeltaUTMEasting->Text = L"None";
+			this->textBoxDeltaUTMEasting->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// label50
+			// 
+			this->label50->AutoSize = true;
+			this->label50->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label50->Location = System::Drawing::Point(1392, 971);
+			this->label50->Name = L"label50";
+			this->label50->Size = System::Drawing::Size(60, 13);
+			this->label50->TabIndex = 155;
+			this->label50->Text = L"Target Cap";
+			this->label50->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label50->Visible = false;
+			// 
+			// label51
+			// 
+			this->label51->AutoSize = true;
+			this->label51->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label51->Location = System::Drawing::Point(1392, 1010);
+			this->label51->Name = L"label51";
+			this->label51->Size = System::Drawing::Size(63, 13);
+			this->label51->TabIndex = 156;
+			this->label51->Text = L"Current Cap";
+			this->label51->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label51->Visible = false;
+			// 
+			// label52
+			// 
+			this->label52->AutoSize = true;
+			this->label52->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label52->Location = System::Drawing::Point(1392, 1049);
+			this->label52->Name = L"label52";
+			this->label52->Size = System::Drawing::Size(54, 13);
+			this->label52->TabIndex = 157;
+			this->label52->Text = L"Delta Cap";
+			this->label52->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label52->Visible = false;
+			// 
+			// textBoxTargetCap
+			// 
+			this->textBoxTargetCap->Location = System::Drawing::Point(1395, 987);
+			this->textBoxTargetCap->Name = L"textBoxTargetCap";
+			this->textBoxTargetCap->Size = System::Drawing::Size(60, 20);
+			this->textBoxTargetCap->TabIndex = 158;
+			this->textBoxTargetCap->Text = L"0";
+			this->textBoxTargetCap->Visible = false;
+			// 
+			// textBoxCurrentCap
+			// 
+			this->textBoxCurrentCap->Location = System::Drawing::Point(1395, 1026);
+			this->textBoxCurrentCap->Name = L"textBoxCurrentCap";
+			this->textBoxCurrentCap->ReadOnly = true;
+			this->textBoxCurrentCap->Size = System::Drawing::Size(60, 20);
+			this->textBoxCurrentCap->TabIndex = 159;
+			this->textBoxCurrentCap->Text = L"None";
+			this->textBoxCurrentCap->Visible = false;
+			// 
+			// textBoxDeltaCap
+			// 
+			this->textBoxDeltaCap->Location = System::Drawing::Point(1395, 1065);
+			this->textBoxDeltaCap->Name = L"textBoxDeltaCap";
+			this->textBoxDeltaCap->ReadOnly = true;
+			this->textBoxDeltaCap->Size = System::Drawing::Size(60, 20);
+			this->textBoxDeltaCap->TabIndex = 160;
+			this->textBoxDeltaCap->Text = L"None";
+			this->textBoxDeltaCap->Visible = false;
+			// 
+			// buttonSetTargetUTM
+			// 
+			this->buttonSetTargetUTM->Location = System::Drawing::Point(100, 73);
+			this->buttonSetTargetUTM->Name = L"buttonSetTargetUTM";
+			this->buttonSetTargetUTM->Size = System::Drawing::Size(75, 23);
+			this->buttonSetTargetUTM->TabIndex = 161;
+			this->buttonSetTargetUTM->Text = L"Set target";
+			this->buttonSetTargetUTM->UseVisualStyleBackColor = true;
+			this->buttonSetTargetUTM->Click += gcnew System::EventHandler(this, &MainForm::buttonSetTargetUTM_Click);
+			// 
+			// label53
+			// 
+			this->label53->AutoSize = true;
+			this->label53->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label53->Location = System::Drawing::Point(1461, 1027);
+			this->label53->Name = L"label53";
+			this->label53->Size = System::Drawing::Size(104, 13);
+			this->label53->TabIndex = 162;
+			this->label53->Text = L"Delta x (East = Xrob)";
+			this->label53->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label53->Visible = false;
+			// 
+			// label54
+			// 
+			this->label54->AutoSize = true;
+			this->label54->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label54->Location = System::Drawing::Point(1586, 1018);
+			this->label54->Name = L"label54";
+			this->label54->Size = System::Drawing::Size(112, 13);
+			this->label54->TabIndex = 163;
+			this->label54->Text = L"Delta y (North = -Yrob)";
+			this->label54->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label54->Visible = false;
+			// 
+			// textBoxDeltaXRobot
+			// 
+			this->textBoxDeltaXRobot->Location = System::Drawing::Point(1462, 1043);
+			this->textBoxDeltaXRobot->Name = L"textBoxDeltaXRobot";
+			this->textBoxDeltaXRobot->ReadOnly = true;
+			this->textBoxDeltaXRobot->Size = System::Drawing::Size(120, 20);
+			this->textBoxDeltaXRobot->TabIndex = 164;
+			this->textBoxDeltaXRobot->Text = L"None";
+			this->textBoxDeltaXRobot->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBoxDeltaXRobot->Visible = false;
+			// 
+			// textBoxDeltaYRobot
+			// 
+			this->textBoxDeltaYRobot->Location = System::Drawing::Point(1583, 1034);
+			this->textBoxDeltaYRobot->Name = L"textBoxDeltaYRobot";
+			this->textBoxDeltaYRobot->ReadOnly = true;
+			this->textBoxDeltaYRobot->Size = System::Drawing::Size(120, 20);
+			this->textBoxDeltaYRobot->TabIndex = 165;
+			this->textBoxDeltaYRobot->Text = L"None";
+			this->textBoxDeltaYRobot->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBoxDeltaYRobot->Visible = false;
+			// 
+			// pictureBoxBathy
+			// 
+			this->pictureBoxBathy->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxBathy->Location = System::Drawing::Point(1091, 58);
+			this->pictureBoxBathy->Name = L"pictureBoxBathy";
+			this->pictureBoxBathy->Size = System::Drawing::Size(560, 560);
+			this->pictureBoxBathy->TabIndex = 166;
+			this->pictureBoxBathy->TabStop = false;
+			// 
+			// backgroundWorkerBathy
+			// 
+			this->backgroundWorkerBathy->WorkerReportsProgress = true;
+			this->backgroundWorkerBathy->WorkerSupportsCancellation = true;
+			this->backgroundWorkerBathy->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerBathy_DoWork);
+			// 
+			// buttonBathyOnline
+			// 
+			this->buttonBathyOnline->BackColor = System::Drawing::Color::Silver;
+			this->buttonBathyOnline->Enabled = false;
+			this->buttonBathyOnline->Location = System::Drawing::Point(1626, 25);
+			this->buttonBathyOnline->Name = L"buttonBathyOnline";
+			this->buttonBathyOnline->Size = System::Drawing::Size(25, 25);
+			this->buttonBathyOnline->TabIndex = 172;
+			this->buttonBathyOnline->UseVisualStyleBackColor = false;
+			// 
+			// label57
+			// 
+			this->label57->AutoSize = true;
+			this->label57->BackColor = System::Drawing::Color::LightGray;
+			this->label57->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label57->Location = System::Drawing::Point(534, 887);
+			this->label57->Name = L"label57";
+			this->label57->Size = System::Drawing::Size(29, 13);
+			this->label57->TabIndex = 134;
+			this->label57->Text = L"RTK";
+			this->label57->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// pictureBoxZoomedBathy
+			// 
+			this->pictureBoxZoomedBathy->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxZoomedBathy->Location = System::Drawing::Point(1351, 625);
+			this->pictureBoxZoomedBathy->Name = L"pictureBoxZoomedBathy";
+			this->pictureBoxZoomedBathy->Size = System::Drawing::Size(300, 300);
+			this->pictureBoxZoomedBathy->TabIndex = 174;
+			this->pictureBoxZoomedBathy->TabStop = false;
+			// 
+			// groupBox2
+			// 
+			this->groupBox2->BackColor = System::Drawing::Color::LightGray;
+			this->groupBox2->Controls->Add(this->textBoxUTMYRobot);
+			this->groupBox2->Controls->Add(this->label42);
+			this->groupBox2->Controls->Add(this->textBoxUTMXRobot);
+			this->groupBox2->Controls->Add(this->label41);
+			this->groupBox2->Controls->Add(this->textBoxCapDeg);
+			this->groupBox2->Controls->Add(this->label44);
+			this->groupBox2->Controls->Add(this->label45);
+			this->groupBox2->Controls->Add(this->textBoxDistanceGPS);
+			this->groupBox2->Location = System::Drawing::Point(1091, 625);
+			this->groupBox2->Name = L"groupBox2";
+			this->groupBox2->Size = System::Drawing::Size(200, 133);
+			this->groupBox2->TabIndex = 175;
+			this->groupBox2->TabStop = false;
+			this->groupBox2->Text = L"Robot UTM coordinates";
+			// 
+			// groupBox3
+			// 
+			this->groupBox3->BackColor = System::Drawing::Color::LightGray;
+			this->groupBox3->Controls->Add(this->label47);
+			this->groupBox3->Controls->Add(this->textBoxTargetUTMEast);
+			this->groupBox3->Controls->Add(this->label46);
+			this->groupBox3->Controls->Add(this->textBoxTargetUTMNorth);
+			this->groupBox3->Controls->Add(this->buttonSetTargetUTM);
+			this->groupBox3->Controls->Add(this->label49);
+			this->groupBox3->Controls->Add(this->textBoxDeltaUTMEasting);
+			this->groupBox3->Controls->Add(this->label48);
+			this->groupBox3->Controls->Add(this->textBoxUTMDeltaNorthing);
+			this->groupBox3->Location = System::Drawing::Point(1091, 769);
+			this->groupBox3->Name = L"groupBox3";
+			this->groupBox3->Size = System::Drawing::Size(200, 156);
+			this->groupBox3->TabIndex = 176;
+			this->groupBox3->TabStop = false;
+			this->groupBox3->Text = L"Target UTM coordinates";
+			// 
+			// pictureBoxM1
+			// 
+			this->pictureBoxM1->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM1->Location = System::Drawing::Point(8, 34);
+			this->pictureBoxM1->Name = L"pictureBoxM1";
+			this->pictureBoxM1->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM1->TabIndex = 177;
+			this->pictureBoxM1->TabStop = false;
+			// 
+			// pictureBoxM2
+			// 
+			this->pictureBoxM2->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM2->Location = System::Drawing::Point(69, 34);
+			this->pictureBoxM2->Name = L"pictureBoxM2";
+			this->pictureBoxM2->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM2->TabIndex = 178;
+			this->pictureBoxM2->TabStop = false;
+			// 
+			// pictureBoxM3
+			// 
+			this->pictureBoxM3->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM3->Location = System::Drawing::Point(130, 34);
+			this->pictureBoxM3->Name = L"pictureBoxM3";
+			this->pictureBoxM3->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM3->TabIndex = 179;
+			this->pictureBoxM3->TabStop = false;
+			// 
+			// pictureBoxM4
+			// 
+			this->pictureBoxM4->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM4->Location = System::Drawing::Point(191, 34);
+			this->pictureBoxM4->Name = L"pictureBoxM4";
+			this->pictureBoxM4->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM4->TabIndex = 180;
+			this->pictureBoxM4->TabStop = false;
+			// 
+			// pictureBoxM5
+			// 
+			this->pictureBoxM5->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM5->Location = System::Drawing::Point(252, 34);
+			this->pictureBoxM5->Name = L"pictureBoxM5";
+			this->pictureBoxM5->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM5->TabIndex = 181;
+			this->pictureBoxM5->TabStop = false;
+			// 
+			// pictureBoxM6
+			// 
+			this->pictureBoxM6->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM6->Location = System::Drawing::Point(314, 34);
+			this->pictureBoxM6->Name = L"pictureBoxM6";
+			this->pictureBoxM6->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM6->TabIndex = 182;
+			this->pictureBoxM6->TabStop = false;
+			// 
+			// pictureBoxM7
+			// 
+			this->pictureBoxM7->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM7->Location = System::Drawing::Point(375, 34);
+			this->pictureBoxM7->Name = L"pictureBoxM7";
+			this->pictureBoxM7->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM7->TabIndex = 183;
+			this->pictureBoxM7->TabStop = false;
+			// 
+			// pictureBoxM8
+			// 
+			this->pictureBoxM8->BackColor = System::Drawing::SystemColors::ControlDark;
+			this->pictureBoxM8->Location = System::Drawing::Point(436, 34);
+			this->pictureBoxM8->Name = L"pictureBoxM8";
+			this->pictureBoxM8->Size = System::Drawing::Size(40, 200);
+			this->pictureBoxM8->TabIndex = 184;
+			this->pictureBoxM8->TabStop = false;
+			// 
+			// groupBox4
+			// 
+			this->groupBox4->BackColor = System::Drawing::Color::LightGray;
+			this->groupBox4->Controls->Add(this->textBoxM8);
+			this->groupBox4->Controls->Add(this->textBoxM7);
+			this->groupBox4->Controls->Add(this->textBoxM6);
+			this->groupBox4->Controls->Add(this->textBoxM5);
+			this->groupBox4->Controls->Add(this->textBoxM4);
+			this->groupBox4->Controls->Add(this->textBoxM3);
+			this->groupBox4->Controls->Add(this->textBoxM2);
+			this->groupBox4->Controls->Add(this->textBoxM1);
+			this->groupBox4->Controls->Add(this->label65);
+			this->groupBox4->Controls->Add(this->label64);
+			this->groupBox4->Controls->Add(this->label63);
+			this->groupBox4->Controls->Add(this->label62);
+			this->groupBox4->Controls->Add(this->label61);
+			this->groupBox4->Controls->Add(this->label60);
+			this->groupBox4->Controls->Add(this->label59);
+			this->groupBox4->Controls->Add(this->label58);
+			this->groupBox4->Controls->Add(this->pictureBoxM8);
+			this->groupBox4->Controls->Add(this->pictureBoxM7);
+			this->groupBox4->Controls->Add(this->pictureBoxM6);
+			this->groupBox4->Controls->Add(this->pictureBoxM5);
+			this->groupBox4->Controls->Add(this->pictureBoxM4);
+			this->groupBox4->Controls->Add(this->pictureBoxM3);
+			this->groupBox4->Controls->Add(this->pictureBoxM2);
+			this->groupBox4->Controls->Add(this->pictureBoxM1);
+			this->groupBox4->Location = System::Drawing::Point(588, 625);
+			this->groupBox4->Name = L"groupBox4";
+			this->groupBox4->Size = System::Drawing::Size(486, 267);
+			this->groupBox4->TabIndex = 185;
+			this->groupBox4->TabStop = false;
+			this->groupBox4->Text = L"Cables tension (kg)";
+			// 
+			// textBoxM8
+			// 
+			this->textBoxM8->Location = System::Drawing::Point(436, 240);
+			this->textBoxM8->Name = L"textBoxM8";
+			this->textBoxM8->ReadOnly = true;
+			this->textBoxM8->Size = System::Drawing::Size(40, 20);
+			this->textBoxM8->TabIndex = 198;
+			this->textBoxM8->Text = L"None";
+			this->textBoxM8->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxM7
+			// 
+			this->textBoxM7->Location = System::Drawing::Point(375, 240);
+			this->textBoxM7->Name = L"textBoxM7";
+			this->textBoxM7->ReadOnly = true;
+			this->textBoxM7->Size = System::Drawing::Size(40, 20);
+			this->textBoxM7->TabIndex = 197;
+			this->textBoxM7->Text = L"None";
+			this->textBoxM7->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxM6
+			// 
+			this->textBoxM6->Location = System::Drawing::Point(314, 240);
+			this->textBoxM6->Name = L"textBoxM6";
+			this->textBoxM6->ReadOnly = true;
+			this->textBoxM6->Size = System::Drawing::Size(40, 20);
+			this->textBoxM6->TabIndex = 196;
+			this->textBoxM6->Text = L"None";
+			this->textBoxM6->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxM5
+			// 
+			this->textBoxM5->Location = System::Drawing::Point(252, 240);
+			this->textBoxM5->Name = L"textBoxM5";
+			this->textBoxM5->ReadOnly = true;
+			this->textBoxM5->Size = System::Drawing::Size(40, 20);
+			this->textBoxM5->TabIndex = 195;
+			this->textBoxM5->Text = L"None";
+			this->textBoxM5->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxM4
+			// 
+			this->textBoxM4->Location = System::Drawing::Point(191, 240);
+			this->textBoxM4->Name = L"textBoxM4";
+			this->textBoxM4->ReadOnly = true;
+			this->textBoxM4->Size = System::Drawing::Size(40, 20);
+			this->textBoxM4->TabIndex = 194;
+			this->textBoxM4->Text = L"None";
+			this->textBoxM4->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxM3
+			// 
+			this->textBoxM3->Location = System::Drawing::Point(130, 240);
+			this->textBoxM3->Name = L"textBoxM3";
+			this->textBoxM3->ReadOnly = true;
+			this->textBoxM3->Size = System::Drawing::Size(40, 20);
+			this->textBoxM3->TabIndex = 193;
+			this->textBoxM3->Text = L"None";
+			this->textBoxM3->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxM2
+			// 
+			this->textBoxM2->Location = System::Drawing::Point(69, 240);
+			this->textBoxM2->Name = L"textBoxM2";
+			this->textBoxM2->ReadOnly = true;
+			this->textBoxM2->Size = System::Drawing::Size(40, 20);
+			this->textBoxM2->TabIndex = 192;
+			this->textBoxM2->Text = L"None";
+			this->textBoxM2->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// textBoxM1
+			// 
+			this->textBoxM1->Location = System::Drawing::Point(8, 240);
+			this->textBoxM1->Name = L"textBoxM1";
+			this->textBoxM1->ReadOnly = true;
+			this->textBoxM1->Size = System::Drawing::Size(40, 20);
+			this->textBoxM1->TabIndex = 134;
+			this->textBoxM1->Text = L"None";
+			this->textBoxM1->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			// 
+			// label65
+			// 
+			this->label65->AutoSize = true;
+			this->label65->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label65->Location = System::Drawing::Point(445, 18);
+			this->label65->Name = L"label65";
+			this->label65->Size = System::Drawing::Size(22, 13);
+			this->label65->TabIndex = 191;
+			this->label65->Text = L"M8";
+			this->label65->TextAlign = System::Drawing::ContentAlignment::TopCenter;
+			// 
+			// label64
+			// 
+			this->label64->AutoSize = true;
+			this->label64->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label64->Location = System::Drawing::Point(383, 18);
+			this->label64->Name = L"label64";
+			this->label64->Size = System::Drawing::Size(22, 13);
+			this->label64->TabIndex = 190;
+			this->label64->Text = L"M7";
+			this->label64->TextAlign = System::Drawing::ContentAlignment::TopCenter;
+			// 
+			// label63
+			// 
+			this->label63->AutoSize = true;
+			this->label63->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label63->Location = System::Drawing::Point(322, 18);
+			this->label63->Name = L"label63";
+			this->label63->Size = System::Drawing::Size(22, 13);
+			this->label63->TabIndex = 189;
+			this->label63->Text = L"M6";
+			this->label63->TextAlign = System::Drawing::ContentAlignment::TopCenter;
+			// 
+			// label62
+			// 
+			this->label62->AutoSize = true;
+			this->label62->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label62->Location = System::Drawing::Point(260, 18);
+			this->label62->Name = L"label62";
+			this->label62->Size = System::Drawing::Size(22, 13);
+			this->label62->TabIndex = 188;
+			this->label62->Text = L"M5";
+			this->label62->TextAlign = System::Drawing::ContentAlignment::TopCenter;
+			// 
+			// label61
+			// 
+			this->label61->AutoSize = true;
+			this->label61->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label61->Location = System::Drawing::Point(200, 18);
+			this->label61->Name = L"label61";
+			this->label61->Size = System::Drawing::Size(22, 13);
+			this->label61->TabIndex = 187;
+			this->label61->Text = L"M4";
+			this->label61->TextAlign = System::Drawing::ContentAlignment::TopCenter;
+			// 
+			// label60
+			// 
+			this->label60->AutoSize = true;
+			this->label60->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label60->Location = System::Drawing::Point(139, 18);
+			this->label60->Name = L"label60";
+			this->label60->Size = System::Drawing::Size(22, 13);
+			this->label60->TabIndex = 186;
+			this->label60->Text = L"M3";
+			this->label60->TextAlign = System::Drawing::ContentAlignment::TopCenter;
+			// 
+			// label59
+			// 
+			this->label59->AutoSize = true;
+			this->label59->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label59->Location = System::Drawing::Point(76, 18);
+			this->label59->Name = L"label59";
+			this->label59->Size = System::Drawing::Size(22, 13);
+			this->label59->TabIndex = 185;
+			this->label59->Text = L"M2";
+			this->label59->TextAlign = System::Drawing::ContentAlignment::TopCenter;
+			// 
+			// label58
+			// 
+			this->label58->AutoSize = true;
+			this->label58->ImageAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			this->label58->Location = System::Drawing::Point(16, 18);
+			this->label58->Name = L"label58";
+			this->label58->Size = System::Drawing::Size(22, 13);
+			this->label58->TabIndex = 132;
+			this->label58->Text = L"M1";
+			this->label58->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
+			// 
+			// contextMenuStrip2
+			// 
+			this->contextMenuStrip2->Name = L"contextMenuStrip2";
+			this->contextMenuStrip2->Size = System::Drawing::Size(61, 4);
+			// 
+			// backgroundWorkerCableTension
+			// 
+			this->backgroundWorkerCableTension->WorkerReportsProgress = true;
+			this->backgroundWorkerCableTension->WorkerSupportsCancellation = true;
+			this->backgroundWorkerCableTension->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerCableTension_DoWork);
+			// 
+			// button1
+			// 
+			this->button1->Location = System::Drawing::Point(1091, 960);
+			this->button1->Name = L"button1";
+			this->button1->Size = System::Drawing::Size(75, 23);
+			this->button1->TabIndex = 186;
+			this->button1->Text = L"button1";
+			this->button1->UseVisualStyleBackColor = true;
+			this->button1->Visible = false;
+			this->button1->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(1479, 622);
+			this->ClientSize = System::Drawing::Size(1781, 1061);
+			this->Controls->Add(this->button1);
+			this->Controls->Add(this->groupBox4);
+			this->Controls->Add(this->groupBox3);
+			this->Controls->Add(this->groupBox2);
+			this->Controls->Add(this->pictureBoxZoomedBathy);
+			this->Controls->Add(this->label57);
+			this->Controls->Add(this->buttonBathyOnline);
+			this->Controls->Add(this->pictureBoxBathy);
+			this->Controls->Add(this->textBoxDeltaYRobot);
+			this->Controls->Add(this->textBoxDeltaXRobot);
+			this->Controls->Add(this->label54);
+			this->Controls->Add(this->label53);
+			this->Controls->Add(this->textBoxDeltaCap);
+			this->Controls->Add(this->textBoxCurrentCap);
+			this->Controls->Add(this->textBoxTargetCap);
+			this->Controls->Add(this->label52);
+			this->Controls->Add(this->label51);
+			this->Controls->Add(this->label50);
+			this->Controls->Add(this->label43);
+			this->Controls->Add(this->textBoxCap);
+			this->Controls->Add(this->label40);
+			this->Controls->Add(this->label39);
+			this->Controls->Add(this->textBoxLongRobot);
+			this->Controls->Add(this->textBoxLatRobot);
+			this->Controls->Add(this->buttonGoTargetGPS);
+			this->Controls->Add(this->label38);
+			this->Controls->Add(this->label37);
+			this->Controls->Add(this->textBoxTargetLongitude);
+			this->Controls->Add(this->textBoxTargetLatitude);
 			this->Controls->Add(this->labelMinDepth);
 			this->Controls->Add(this->labelMaxDepth);
 			this->Controls->Add(this->pictureBoxColorMap);
@@ -2195,6 +3251,22 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoUM))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxLogoMaelstrom))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxColorMap))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxBathy))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxZoomedBathy))->EndInit();
+			this->groupBox2->ResumeLayout(false);
+			this->groupBox2->PerformLayout();
+			this->groupBox3->ResumeLayout(false);
+			this->groupBox3->PerformLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM1))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM2))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM3))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM4))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM5))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM6))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM7))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM8))->EndInit();
+			this->groupBox4->ResumeLayout(false);
+			this->groupBox4->PerformLayout();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -2683,6 +3755,27 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 		else
 			this->textBoxPump->Text = "OFF";
 		//this->labelPump->Text = "Pump: OFF";
+
+
+		// Display geo coordinates of the robot in DD
+		double lat_P = 0, long_P = 0;
+		plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
+		this->textBoxLatRobot->Text = gcnew System::String(std::to_string(lat_P).c_str());
+		this->textBoxLongRobot->Text = gcnew System::String(std::to_string(long_P).c_str());
+
+		// LatLonToUTMXY(FLOAT lat, FLOAT lon, int zone, FLOAT& x, FLOAT& y)
+
+		float* utm_x = 0;
+		float* utm_y = 0;
+		int zone = 33;
+		//LatLonToUTMXY(float(lat_P), float(long_P), zone, *utm_x, *utm_y);
+
+		//cout << "Test :" << utm_x << endl;
+
+		//this->textBoxUTMXRobot->Text = "";
+		//this->textBoxUTMYRobot->Text = "";
+
+		
 	}
 		   // Check if command is done
 	private: System::Void backgroundWorkerRobotCommand_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
@@ -2774,6 +3867,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 		system(DVL_READER_START);
 		Sleep(500);
 		log("DVL turned on successfully.");
+		arduino.is_dvl_on = true;
 
 
 
@@ -2962,16 +4056,21 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 	private: System::Void backgroundWorkerDepthMap_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 
 		while (true) {
-			if (robot.has_started) {
+			if (robot.has_started || true) {
+
 				depth_map.init(); // Reinit displayed map
 
-				depth_map.update(dvl.coordinates,
-					robot.coordinates,
-					dvl.distances,
-					arduino.depth,
-					plateform.lat_orig_carte, plateform.long_orig_carte,
-					plateform.latitude_GPS_Master_babord, plateform.longitude_GPS_Master_babord,
-					plateform.cap_GPS_babord_vers_tribord); // Update mapping
+				
+
+				// Should update only if DVL is on ? TODO
+				if(arduino.is_dvl_on)
+					depth_map.update(dvl.coordinates,
+						robot.coordinates,
+						dvl.distances,
+						arduino.depth,
+						plateform.lat_orig_carte, plateform.long_orig_carte,
+						plateform.latitude_GPS_Master_babord, plateform.longitude_GPS_Master_babord,
+						plateform.cap_GPS_babord_vers_tribord); // Update mapping
 
 				depth_map.setDepthMap(); // Update drawing
 				depth_map.setTide(dvl.coordinates); // Compute tide if depth map ha been freezed
@@ -2983,7 +4082,13 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 					// TODO, click on the map
 				}
 				display(depth_map.getMap(), 1);
+
+				// Send map to the simulation PC
+				simulation.sendMap(depth_map.getUDPFrame());
+
 				backgroundWorkerDepthMap->ReportProgress(depth_map.tide);
+				backgroundWorkerDepthMap->ReportProgress(depth_map.altitude_max);
+				backgroundWorkerDepthMap->ReportProgress(depth_map.altitude_min);
 			}
 			Sleep(50);
 		}
@@ -2993,6 +4098,9 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 	private: System::Void backgroundWorkerDepthMap_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
 		if (depth_map.is_freezed)
 			this->textBoxTide->Text = "" + getPrecision(depth_map.tide, 4);
+		// Set min and max text for the color map // TODO erreur 
+		this->labelMinDepth->Text = "" + getPrecision(depth_map.altitude_min, 3) + " m";
+		this->labelMaxDepth->Text = "" + getPrecision(depth_map.altitude_max, 3) + " m";
 	}
 
 		   // Show depth values with mouse
@@ -3004,10 +4112,16 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 	}
 		   // Change resolution of the depth map
 	private: System::Void buttonResolutionMap_Click(System::Object^ sender, System::EventArgs^ e) {
-		depth_map.which_res = !depth_map.which_res;
-		if (depth_map.which_res)
+
+		depth_map.which_res += 1;
+		if (depth_map.which_res > 2)
+			depth_map.which_res = 0;
+
+		if (depth_map.which_res == 0)
+			buttonResolutionMap->Text = "Resolution 05x05 cm";
+		else if (depth_map.which_res == 1)
 			buttonResolutionMap->Text = "Resolution 25x25 cm";
-		else
+		else if (depth_map.which_res == 2)
 			buttonResolutionMap->Text = "Resolution 50x50 cm";
 
 	}
@@ -3121,6 +4235,7 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 			backgroundWorkerPlateformGPSP->ReportProgress(plateform.longitude_GPS_Master_babord);
 			backgroundWorkerPlateformGPSP->ReportProgress(plateform.latitude_GPS_Slave_tribord);
 			backgroundWorkerPlateformGPSP->ReportProgress(plateform.longitude_GPS_Slave_tribord);
+			backgroundWorkerPlateformGPSP->ReportProgress(plateform.cap_GPS_babord_vers_tribord);
 		}
 	}
 		   // Receive GPS from starboard side continuously
@@ -3135,12 +4250,89 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 		   // Display GPS from port side continuously
 	private: System::Void backgroundWorkerPlateformGPSP_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
 
-		this->textBoxPGPSX->Text = "" + getPrecision(plateform.latitude_GPS_Master_babord, 4);
-		this->textBoxPGPSY->Text = "" + getPrecision(plateform.longitude_GPS_Master_babord, 4);
+		//this->textBoxPGPSX->Text = "" + getPrecision(plateform.latitude_GPS_Master_babord, 4);
+		//this->textBoxPGPSY->Text = "" + getPrecision(plateform.longitude_GPS_Master_babord, 4);
 
-		this->textBoxSGPSX->Text = "" + getPrecision(plateform.latitude_GPS_Slave_tribord, 4);
-		this->textBoxSGPSY->Text = "" + getPrecision(plateform.longitude_GPS_Slave_tribord, 4);
+		this->textBoxPGPSX->Text = gcnew System::String(std::to_string(plateform.latitude_GPS_Master_babord).c_str());
+		this->textBoxPGPSY->Text = gcnew System::String(std::to_string(plateform.longitude_GPS_Master_babord).c_str());
+
+		double utm_northing = 0, utm_easting = 0;
+		char* utm_zone = "33";
+
+		LLtoUTM((const double)plateform.latitude_GPS_Master_babord, (const double)plateform.longitude_GPS_Master_babord,
+			utm_northing, utm_easting,
+			utm_zone);
+
+		this->textBoxPGPSX->Text = gcnew System::String(std::to_string(utm_northing).c_str());
+		this->textBoxPGPSY->Text = gcnew System::String(std::to_string(utm_easting).c_str());
+
+
+		this->textBoxSGPSX->Text = gcnew System::String(std::to_string(plateform.latitude_GPS_Slave_tribord).c_str());
+		this->textBoxSGPSY->Text = gcnew System::String(std::to_string(plateform.longitude_GPS_Slave_tribord).c_str());
+
+		LLtoUTM((const double)plateform.latitude_GPS_Slave_tribord, (const double)plateform.longitude_GPS_Slave_tribord,
+			utm_northing, utm_easting,
+			utm_zone);
+
+		this->textBoxSGPSX->Text = gcnew System::String(std::to_string(utm_northing).c_str());
+		this->textBoxSGPSY->Text = gcnew System::String(std::to_string(utm_easting).c_str());
+
+		/*this->textBoxSGPSX->Text = "" + getPrecision(plateform.latitude_GPS_Slave_tribord, 4);
+		this->textBoxSGPSY->Text = "" + getPrecision(plateform.longitude_GPS_Slave_tribord, 4);*/
 		this->textBoxSRTK->Text = "" + getPrecision(plateform.RTK_S, 1);
+
+		this->textBoxCap->Text = gcnew System::String(std::to_string(plateform.cap_GPS_babord_vers_tribord).c_str());
+		this->textBoxCapDeg->Text = gcnew System::String(std::to_string(plateform.cap_GPS_babord_vers_tribord * 180 / PI).c_str());
+
+
+		// Display geo coordinates of the robot in DD
+		double lat_P = 0, long_P = 0;
+		plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
+		
+		this->textBoxLatRobot->Text = gcnew System::String(std::to_string(lat_P).c_str());
+		this->textBoxLongRobot->Text = gcnew System::String(std::to_string(long_P).c_str());
+		LLtoUTM((const double)lat_P, (const double)long_P,
+			utm_northing, utm_easting,
+			utm_zone);
+		this->textBoxUTMXRobot->Text = gcnew System::String(std::to_string(utm_northing).c_str());
+		this->textBoxUTMYRobot->Text = gcnew System::String(std::to_string(utm_easting).c_str());
+
+		// Distance between 2 gps
+		this->textBoxDistanceGPS->Text = gcnew System::String(std::to_string(plateform.distanceGPS_P_S()).c_str());
+		// Current cap in deg
+		this->textBoxCurrentCap->Text = gcnew System::String(std::to_string(plateform.cap_GPS_babord_vers_tribord * 180 / 3.1415).c_str());
+
+		// Compute delta to target UTM
+		double delta_north = plateform.utm_target_north - utm_northing;
+		double delta_east = plateform.utm_target_east - utm_easting;
+		
+		double robot_cap = plateform.cap_GPS_babord_vers_tribord;
+		double delta_cap = plateform.target_cap - robot_cap * 180 / PI;
+
+		this->textBoxUTMDeltaNorthing->Text = gcnew System::String(std::to_string(delta_north).c_str());
+		this->textBoxDeltaUTMEasting->Text = gcnew System::String(std::to_string(delta_east).c_str());
+		this->textBoxDeltaCap->Text = gcnew System::String(std::to_string(delta_cap).c_str());
+
+		double targetx = delta_north * cos(PI - robot_cap) - delta_east * sin(PI - robot_cap);
+		double targety = delta_north * sin(PI - robot_cap) + delta_east * cos(PI - robot_cap);
+
+		this->textBoxDeltaXRobot->Text = gcnew System::String(std::to_string(targetx).c_str());
+		this->textBoxDeltaYRobot->Text = gcnew System::String(std::to_string(targety).c_str());
+
+		depth_map.setTarget(targetx, targety);
+
+		// To display target in the map
+		/*double zero_robot_lat = 0, zero_robot_long = 0;
+		plateform.getGeoFromXYPos(0, 0, &zero_robot_lat, &zero_robot_long);
+		double zero_robot_utm_n = 0, zero_robot_utm_e = 0;
+		LLtoUTM((const double)zero_robot_lat, (const double)zero_robot_long,
+			zero_robot_utm_n, zero_robot_utm_e,
+			utm_zone);
+		delta_north = plateform.utm_target_north - zero_robot_utm_n;
+		delta_east = plateform.utm_target_east - zero_robot_utm_e;
+		double target_zero_x = delta_north * cos(robot_cap - PI) - delta_east * sin(robot_cap - PI);
+		double target_zero_y = delta_north * sin(robot_cap - PI) + delta_east * cos(robot_cap - PI);
+		depth_map.setTarget(target_zero_x, target_zero_y);*/
 
 	}
 		   // Display GPS from starboard side continuously
@@ -3267,5 +4459,256 @@ private: System::Windows::Forms::Label^ labelMinDepth;
 
 	private: System::Void textBoxSRTK_TextChanged(System::Object^ sender, System::EventArgs^ e) {
 	}
-	};
+
+	// Send command to the robot. The robot will go at the GPS point written in the text box.
+	private: System::Void buttonGoTargetGPS_Click(System::Object^ sender, System::EventArgs^ e) {
+		std::string latitude_str = ConvertString2Char(textBoxTargetLatitude->Text);
+		double latitude = std::stof(latitude_str);
+		std::string longitude_str = ConvertString2Char(textBoxTargetLongitude->Text);
+		double longitude = std::stof(longitude_str);
+
+
+	}
+
+	private: System::Void buttonSetTargetUTM_Click(System::Object^ sender, System::EventArgs^ e) {
+		std::string northing_str = ConvertString2Char(this->textBoxTargetUTMNorth->Text);
+		double northing = std::stof(northing_str);
+		std::string easting_str = ConvertString2Char(this->textBoxTargetUTMEast->Text);
+		double easting = std::stof(easting_str);
+		std::string cap_str = ConvertString2Char(this->textBoxTargetCap->Text);
+		double cap = std::stof(cap_str);
+		plateform.set_utm_target(northing, easting, cap);
+	}
+	
+	// Read "SHM", update the robot postition, and display the bathymetry
+	private: System::Void backgroundWorkerBathy_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+
+		cv::Mat bathy = cv::Mat::ones(cv::Size(560, 560), CV_8UC3);
+		cv::Mat resized_bathy = cv::Mat::ones(cv::Size(400, 400), CV_8UC3);
+		unsigned char altitude_color = 0;
+
+		vector<double> bathy_map;
+
+		string map_str = "";
+		size_t pos = 0;
+		string delimiter = ",";
+		string token = "";
+
+		int total = 0;
+
+		double temp = 0;
+		int count = 0;
+
+		string pos_str = "";
+		double lat_P = 0, long_P = 0;
+		double utm_northing = 0, utm_easting = 0;
+		char* utm_zone = "33";
+
+		bool update_check = true;
+
+		double cap_angle = 0;
+		Mat for_Rotation;
+
+		Mat zoomed_bathy;
+		Mat resized_zoomed_bathy;
+
+
+		while (true) {
+
+			try
+			{
+				pos_str = "";
+
+				fstream my_file;
+				my_file.open("D:/projects/cyril/geotiff/coo.txt", ios::out);
+				if (!my_file) {
+					cout << "File not created!";
+				}
+				else {
+					plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
+					LLtoUTM((const double)lat_P, (const double)long_P,
+						utm_northing, utm_easting,
+						utm_zone);
+
+					pos_str = "F,";
+					pos_str += to_string(utm_easting);
+					pos_str += ",";
+					pos_str += to_string(utm_northing);
+
+					my_file << pos_str;
+					my_file.close();
+				}
+
+				pos_str = "";
+				my_file.open("D:/projects/cyril/geotiff/gps_utm.txt", ios::out);
+				if (!my_file) {
+					cout << "File not created!";
+				}
+				else {
+	
+					LLtoUTM((const double)plateform.latitude_GPS_Master_babord, (const double)plateform.longitude_GPS_Master_babord,
+						utm_northing, utm_easting,
+						utm_zone);
+
+					pos_str += to_string(utm_easting);
+					pos_str += ",";
+					pos_str += to_string(utm_northing);
+					pos_str += ",";
+
+					LLtoUTM((const double)plateform.latitude_GPS_Slave_tribord, (const double)plateform.longitude_GPS_Slave_tribord,
+						utm_northing, utm_easting,
+						utm_zone);
+
+					pos_str += to_string(utm_easting);
+					pos_str += ",";
+					pos_str += to_string(utm_northing);
+					pos_str += ",";
+
+					my_file << pos_str;
+					my_file.close();
+				}
+
+				Sleep(250);
+
+				bathy = cv::imread("D:/projects/cyril/geotiff/image.png");
+
+				cv::resize(bathy, resized_bathy, cv::Size(560, 560));
+
+				cap_angle = plateform.cap_GPS_babord_vers_tribord * 180 / PI;
+				cap_angle = cap_angle - 180;
+
+				for_Rotation = getRotationMatrix2D(cv::Point(280, 280), (cap_angle), 1);//affine transformation matrix for 2D rotation//
+				//Mat for_Rotated;//declaring a matrix for rotated image
+				warpAffine(resized_bathy, resized_bathy, for_Rotation, resized_bathy.size());//applying affine transformation//
+
+				zoomed_bathy = resized_bathy(cv::Rect(220, 220, 120, 120));
+				cv::resize(zoomed_bathy, resized_zoomed_bathy, cv::Size(300, 300));
+				cv::line(resized_zoomed_bathy, cv::Point(0, 150), cv::Point(300, 150), cv::Scalar(0, 0, 255), 1);
+				cv::line(resized_zoomed_bathy, cv::Point(150, 0), cv::Point(150, 300), cv::Scalar(0, 0, 255), 1);
+
+				for (size_t i = 0; i < 300; i += 50)
+				{
+					cv::line(resized_zoomed_bathy, cv::Point(i, 150 - 5), cv::Point(i, 150 + 5), cv::Scalar(0, 0, 255), 1);
+					cv::line(resized_zoomed_bathy, cv::Point(150 - 5, i), cv::Point(150 + 5, i), cv::Scalar(0, 0, 255), 1);
+				}
+
+				cv::line(resized_bathy, cv::Point(0, 280), cv::Point(560, 280), cv::Scalar(0, 0, 255), 1);
+				cv::line(resized_bathy, cv::Point(280, 0), cv::Point(280, 560), cv::Scalar(0, 0, 255), 1);
+
+				cv::line(resized_bathy, cv::Point(0, 280), cv::Point(560, 280), cv::Scalar(0, 0, 255), 1);
+				cv::line(resized_bathy, cv::Point(280, 0), cv::Point(280, 560), cv::Scalar(0, 0, 255), 1);
+
+				for (size_t i = 0; i < 560; i += 20)
+				{
+					cv::line(resized_bathy, cv::Point(i, 280 - 2), cv::Point(i, 280 + 2), cv::Scalar(0, 0, 255), 1);
+					cv::line(resized_bathy, cv::Point(280 - 2, i), cv::Point(280 + 2, i), cv::Scalar(0, 0, 255), 1);
+				}
+
+				for (size_t i = 280; i < 560; i += 100)
+				{
+					cv::line(resized_bathy, cv::Point(i, 280 - 5), cv::Point(i, 280 + 5), cv::Scalar(0, 0, 255), 1);
+					cv::line(resized_bathy, cv::Point(280 - 5, i), cv::Point(280 + 5, i), cv::Scalar(0, 0, 255), 1);
+				}
+
+				for (size_t i = 280; i > 80; i -= 100)
+				{
+					cv::line(resized_bathy, cv::Point(i, 280 - 5), cv::Point(i, 280 + 5), cv::Scalar(0, 0, 255), 1);
+					cv::line(resized_bathy, cv::Point(280 - 5, i), cv::Point(280 + 5, i), cv::Scalar(0, 0, 255), 1);
+				}
+
+
+				pictureBoxBathy->Image = ConvertMat2Bitmap(resized_bathy);
+
+				pictureBoxZoomedBathy->Image = ConvertMat2Bitmap(resized_zoomed_bathy);
+
+				if (update_check) {
+					this->buttonBathyOnline->BackColor = System::Drawing::Color::FromArgb(static_cast<System::Int32>(static_cast<System::Byte>(0)), static_cast<System::Int32>(static_cast<System::Byte>(192)),
+						static_cast<System::Int32>(static_cast<System::Byte>(0)));
+					update_check = !update_check;
+				}
+				else {
+					this->buttonBathyOnline->BackColor = System::Drawing::Color::FromArgb(static_cast<System::Int32>(static_cast<System::Byte>(192)), static_cast<System::Int32>(static_cast<System::Byte>(192)),
+						static_cast<System::Int32>(static_cast<System::Byte>(192)));
+					update_check = !update_check;
+				}
+
+
+				Sleep(250);
+			}
+			catch (const std::exception&)
+			{
+				cout << "Error bathy" << endl;
+				Sleep(150);
+			}
+		}
+	}
+
+	float scaleTension(float tension) {
+		tension = 1000 - tension;
+		return (tension - 0) / (1000 - 0) * (200 - 0) + 0;
+	}
+
+
+	private: System::Void backgroundWorkerCableTension_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+
+		Mat bar_m1 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+		Mat bar_m2 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+		Mat bar_m3 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+		Mat bar_m4 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+		Mat bar_m5 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+		Mat bar_m6 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+		Mat bar_m7 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+		Mat bar_m8 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
+
+		float m1 = 231, m2 = 754, m3 = 790, m4 = 120, m5 = 322, m6 = 72, m7 = 167, m8 = 356;
+
+		while (true) {
+
+			bar_m1.setTo(cv::Scalar(180, 180, 180));
+			bar_m2.setTo(cv::Scalar(180, 180, 180));
+			bar_m3.setTo(cv::Scalar(180, 180, 180));
+			bar_m4.setTo(cv::Scalar(180, 180, 180));
+			bar_m5.setTo(cv::Scalar(180, 180, 180));
+			bar_m6.setTo(cv::Scalar(180, 180, 180));
+			bar_m7.setTo(cv::Scalar(180, 180, 180));
+			bar_m8.setTo(cv::Scalar(180, 180, 180));
+
+			textBoxM1->Text = "" + m1;
+			textBoxM2->Text = "" + m2;
+			textBoxM3->Text = "" + m3;
+			textBoxM4->Text = "" + m4;
+			textBoxM5->Text = "" + m5;
+			textBoxM6->Text = "" + m6;
+			textBoxM7->Text = "" + m7;
+			textBoxM8->Text = "" + m8;
+
+			cv::rectangle(bar_m1, cv::Point(0, scaleTension(m1)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+			cv::rectangle(bar_m2, cv::Point(0, scaleTension(m2)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+			cv::rectangle(bar_m3, cv::Point(0, scaleTension(m3)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+			cv::rectangle(bar_m4, cv::Point(0, scaleTension(m4)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+			cv::rectangle(bar_m5, cv::Point(0, scaleTension(m5)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+			cv::rectangle(bar_m6, cv::Point(0, scaleTension(m6)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+			cv::rectangle(bar_m7, cv::Point(0, scaleTension(m7)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+			cv::rectangle(bar_m8, cv::Point(0, scaleTension(m8)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+
+			pictureBoxM1->Image = ConvertMat2Bitmap(bar_m1);
+			pictureBoxM2->Image = ConvertMat2Bitmap(bar_m2);
+			pictureBoxM3->Image = ConvertMat2Bitmap(bar_m3);
+			pictureBoxM4->Image = ConvertMat2Bitmap(bar_m4);
+			pictureBoxM5->Image = ConvertMat2Bitmap(bar_m5);
+			pictureBoxM6->Image = ConvertMat2Bitmap(bar_m6);
+			pictureBoxM7->Image = ConvertMat2Bitmap(bar_m7);
+			pictureBoxM8->Image = ConvertMat2Bitmap(bar_m8);
+
+			Sleep(250);
+		}
+	}
+
+	private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
+
+		bathymetry.set_size(50);
+
+	}
+
+};
 }

@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Arduino.cpp" />
+    <ClCompile Include="Bathymetry.cpp" />
     <ClCompile Include="Bboxes.cpp" />
     <ClCompile Include="Bbx.cpp" />
     <ClCompile Include="DepthMap.cpp" />
@@ -142,10 +143,13 @@
     <ClCompile Include="PracticalSocket.cpp" />
     <ClCompile Include="Robot.cpp" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="Simulation.cpp" />
+    <ClCompile Include="UTM.cpp" />
     <ClCompile Include="Video.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Arduino.h" />
+    <ClInclude Include="Bathymetry.h" />
     <ClInclude Include="Bboxes.h" />
     <ClInclude Include="Bbx.h" />
     <ClInclude Include="config.h" />
@@ -159,6 +163,8 @@
     <ClInclude Include="PracticalSocket.h" />
     <ClInclude Include="Robot.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="Simulation.h" />
+    <ClInclude Include="UTM.h" />
     <ClInclude Include="Video.h" />
   </ItemGroup>
   <ItemGroup>

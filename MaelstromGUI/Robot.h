@@ -19,6 +19,7 @@ private:
 public:
 	float pos[3] = {0,0,0}; // x, y, z
 	float angles[3] = { 0,0,0 };
+	float speed[3] = { 0,0,0 };
 	cv::Point3f coordinates = cv::Point3f(0,0,0);
 	// Motor positions
 	int motors[8] = { 0,0,0,0,0,0,0,0 };
@@ -124,13 +125,14 @@ public:
 	void rcvData() {
 		this->continuous_socket.recvFrom(this->rcv_buffer, 300, (std::string)client_ip, this->continuous_port);
 		
-		log("From Robot: " + (std::string)this->rcv_buffer);
+		//log("From Robot: " + (std::string)this->rcv_buffer);
 
 		int ret = sscanf(this->rcv_buffer,
-			"*%d;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s",
+			"*%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s",
 			&this->rcv_request_id,
 			&this->pos[0], &this->pos[1], &this->pos[2],
 			&this->angles[0], &this->angles[1], &this->angles[2],
+			&this->speed[0], &this->speed[1], &this->speed[2],
 			&this->motors[0], &this->motors[1], &this->motors[2], &this->motors[3], &this->motors[4], &this->motors[5], &this->motors[6], &this->motors[7],
 			&this->state, &this->gripper_state_str, &this->pump_state_str);
 
@@ -259,7 +261,6 @@ public:
 		log("To Robot (third command): " + third_command);
 		this->request_id++;
 		Sleep(250);
-
 	}
 
 	void sendCommand(cv::Point3d pos) {
@@ -333,6 +334,19 @@ public:
 
 	}
 
+	void goToGPSPos(double lat_orig_carte, double long_orig_carte, double lat_P, double long_P, int nb_cases_cote_carte, int longueur_cote_carte, int which_res) {
+
+		int global_i = 0, global_j = 0;
+		calcul_coordonnees_i_j_du_point_P_dans_carte_globale(lat_orig_carte, long_orig_carte,
+			lat_P, long_P,
+			nb_cases_cote_carte, longueur_cote_carte,
+			&global_i, &global_j);
+
+
+
+		//goTo()
+	}
+
 	/*------------------------------
 		GETTER
 	-------------------------------*/
@@ -348,6 +362,111 @@ public:
 		this->pos[0] = x;
 		this->pos[1] = y;
 		this->pos[2] = z;
+	}
+
+	/*------------------------------
+	GPS RELATED
+	-------------------------------*/
+
+	double distance_entre_deux_points_geographiques(double lat1, double long1, double lat2, double long2)
+	{
+		//calcule la distance en mètres entre deux points géographiques exprimés en DD.dddddd.
+		double delta = DEG2RAD * (long2 - long1);
+		double cdlong = cos(delta);
+		lat1 = DEG2RAD * lat1;
+		lat2 = DEG2RAD * lat2;
+		double slat1 = sin(lat1);
+		double clat1 = cos(lat1);
+		double slat2 = sin(lat2);
+		double clat2 = cos(lat2);
+		delta = acos(slat1 * slat2 + clat1 * clat2 * cdlong);
+		return delta * RAYON_TERRE;
+	}
+
+	double cap_pour_aller_du_point_1_au_point_2(double lat1, double long1, double lat2, double long2)
+	{
+		// calcule l'angle d'orientation en radians (entre 0 pour le Nord et 2PI) du vecteur allant de la position 1 à la position 2,
+		// exprimés en DD.dddddd (signés)
+		double dlon = DEG2RAD * (long2 - long1);
+		lat1 = DEG2RAD * lat1;
+		lat2 = DEG2RAD * lat2;
+		double a1 = sin(dlon) * cos(lat2);
+		double a2 = sin(lat1) * cos(lat2) * cos(dlon);
+		a2 = cos(lat1) * sin(lat2) - a2;
+		a2 = atan2(a1, a2);
+		if (a2 < 0.0)
+		{
+			a2 += 2 * PI;
+		}
+		return a2;  //radians
+	}
+
+	void calcul_coordonnees_geo_point(double lat_GPS_babord, double long_GPS_babord, double distance, double azimut, double* lat_P, double* long_P)
+	{
+		//calcule les coordonnées géographiques d'un point défini par sa distance en mètres et son azimut en radians par rapport à un point geographique (dans notre cas, le GPS bâbord)
+		lat_GPS_babord = DEG2RAD * lat_GPS_babord;
+		long_GPS_babord = DEG2RAD * long_GPS_babord;
+		*lat_P = asin(sin(lat_GPS_babord) * cos(distance / RAYON_TERRE) + cos(lat_GPS_babord) * sin(distance / RAYON_TERRE) * cos(azimut));
+		*long_P = long_GPS_babord + atan2(sin(azimut) * sin(distance / RAYON_TERRE) * cos(lat_GPS_babord), cos(distance / RAYON_TERRE) - sin(lat_GPS_babord) * sin(*lat_P));
+		*lat_P *= RAD2DEG;
+		*long_P *= RAD2DEG;
+		return;
+	}
+
+	void calcul_coordonnees_i_j_du_point_P_dans_carte_globale(double lat_orig_carte, double long_orig_carte, double lat_P, double long_P, int nb_cases_cote_carte, int longueur_cote_carte, int* i, int* j)
+	{
+		//origine de la carte en haut à gauche (nord ouest). Axe i orienté vers la droite (est) et Axe j orienté vers le bas (sud)
+		//La fonction renvoie les coordonnées i,j dans la matrice (nb_cases_cote_carte x nb_cases_cote_carte), ou bien renvoie -1 si le point est hors de la carte
+		double distance_par_rapport_origine_carte = distance_entre_deux_points_geographiques(lat_orig_carte, long_orig_carte, lat_P, long_P);
+		double azimut_point_P_par_rapport_origine_carte = cap_pour_aller_du_point_1_au_point_2(lat_orig_carte, long_orig_carte, lat_P, long_P);
+		//printf("distance,azimut du point P par rapport a origine carte globale = %lf m , %lf deg", distance_par_rapport_origine_carte, RAD2DEG*azimut_point_P_par_rapport_origine_carte);
+		double x_carte_globale = distance_par_rapport_origine_carte * sin(azimut_point_P_par_rapport_origine_carte);
+		double y_carte_globale = -distance_par_rapport_origine_carte * cos(azimut_point_P_par_rapport_origine_carte);
+		*i = (int)(x_carte_globale * nb_cases_cote_carte / longueur_cote_carte);
+		*j = (int)(y_carte_globale * nb_cases_cote_carte / longueur_cote_carte);
+		if ((*i < 0) || (*j < 0) || (*i >= nb_cases_cote_carte) || (*j >= nb_cases_cote_carte)) //si le point est hors de la carte
+		{
+			*i = -1;
+			*j = -1;
+		}
+		return;
+	}
+
+	void coordonnees_geo_d_un_point_P_x_y_du_repere_robot(double lat_GPS_babord, double long_GPS_babord, double x, double y, double* lat_P, double* long_P, double cap_GPS_Babord_vers_Tribord)
+	{
+		//Le GPS bâbord est le Master et est le centre du repère GPS
+		double x_dans_repere_gps_babord = x - X_GPS_BABORD_DANS_REPERE_ROBOT;                //Les axes de ce reprèe sont orientés comme ceux du robot. Le centre est sur le poteau du GPS arrière bâbord.
+		double y_dans_repere_gps_babord = y - Y_GPS_BABORD_DANS_REPERE_ROBOT;
+		double azimut_de_P_dans_repere_GPS_babord = -atan2(x_dans_repere_gps_babord, -y_dans_repere_gps_babord); //Angle compté négatif dans le sens horaire à partir de l'axe -y (i.e. l'axe calculé par la fonction GPS RTK qui mesure l'axe Master -> Slave)
+		//printf("azimut local = %lf\n", RAD2DEG*azimut_de_P_dans_repere_GPS_babord);
+		double azimut_de_P_dans_repere_geographique = cap_GPS_Babord_vers_Tribord + azimut_de_P_dans_repere_GPS_babord;
+		//printf("azimut geographique = %lf\n", RAD2DEG*azimut_de_P_dans_repere_geographique);
+		double distance_de_P_par_rapport_au_GPS_babord = sqrt(x_dans_repere_gps_babord * x_dans_repere_gps_babord + y_dans_repere_gps_babord * y_dans_repere_gps_babord);
+		//printf("distance du point P par rapport au GPS babord = %lf\n", distance_de_P_par_rapport_au_GPS_babord);
+		double latP, longP;
+		calcul_coordonnees_geo_point(lat_GPS_babord, long_GPS_babord, distance_de_P_par_rapport_au_GPS_babord, azimut_de_P_dans_repere_geographique, &latP, &longP);
+		//printf("Coordonnees geographiques de P = %lf %lf\n", latP, longP);
+		*lat_P = latP;
+		*long_P = longP;
+		return;
+	}
+
+	void convertit_coordonnees_x_y_locales_en_i_j_grande_carte(double lat_orig_carte, double long_orig_carte, double latitude_GPS_Master_babord, double longitude_GPS_Master_babord, double cap_GPS_babord_vers_tribord, double x_dans_repere_robot, double y_dans_repere_robot, int* i_carte_globale, int* j_carte_globale)
+	{
+		//cette fonction renvoie i = -1 et j =-1 si l'une des coordonnées est hors de la carte globale, sinon ça renvoie les coordonnées i,j de la carte globale en fonction des x,y du repère robot.
+		//origine de la carte en haut à gauche (nord ouest). Axe i orienté vers la droite (est) et Axe j orienté vers le bas (sud)
+		double lat_P_temp, long_P_temp;
+		coordonnees_geo_d_un_point_P_x_y_du_repere_robot(latitude_GPS_Master_babord, longitude_GPS_Master_babord, x_dans_repere_robot, y_dans_repere_robot, &lat_P_temp, &long_P_temp, cap_GPS_babord_vers_tribord);
+		calcul_coordonnees_i_j_du_point_P_dans_carte_globale(lat_orig_carte, long_orig_carte, lat_P_temp, long_P_temp, NB_CASES_COTE_CARTE_GLOBALE, LONGUEUR_COTE_CARTE_GLOBALE, i_carte_globale, j_carte_globale);
+	}
+
+	void convertit_coordonnees_x_y_locales_en_i_j_tres_grande_carte(double lat_orig_carte, double long_orig_carte, double latitude_GPS_Master_babord, double longitude_GPS_Master_babord, double cap_GPS_babord_vers_tribord, double x_dans_repere_robot, double y_dans_repere_robot, int* i_carte_globale, int* j_carte_globale)
+	{
+		//cette fonction renvoie i = -1 et j =-1 si l'une des coordonnées est hors de la carte globale, sinon ça renvoie les coordonnées i,j de la carte globale en fonction des x,y du repère robot.
+		//origine de la carte en haut à gauche (nord ouest). Axe i orienté vers la droite (est) et Axe j orienté vers le bas (sud)
+		double lat_P_temp, long_P_temp;
+		coordonnees_geo_d_un_point_P_x_y_du_repere_robot(latitude_GPS_Master_babord, longitude_GPS_Master_babord, x_dans_repere_robot, y_dans_repere_robot, &lat_P_temp, &long_P_temp, cap_GPS_babord_vers_tribord);
+		calcul_coordonnees_i_j_du_point_P_dans_carte_globale(lat_orig_carte, long_orig_carte, lat_P_temp, long_P_temp, NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH, LONGUEUR_COTE_CARTE_GLOBALE, i_carte_globale, j_carte_globale);
 	}
 
 	/*------------------------------
