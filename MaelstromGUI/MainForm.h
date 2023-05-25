@@ -19,6 +19,7 @@
 #include "Plateform.h"
 #include "Simulation.h"
 #include "Bathymetry.h"
+#include "Tiff.h"
 
 #include "UTM.h"
 
@@ -175,6 +176,8 @@ namespace MaelstromGUI {
 
 	Bathymetry bathymetry;
 
+
+
 	// Bathy
 	float min_alt_bathy = -0.88;
 	float max_alt_bathy = -7.22;
@@ -202,6 +205,10 @@ namespace MaelstromGUI {
 	public:
 		MainForm(void)
 		{
+			// create object of Geotiff class
+			//Geotiff tiff((const char*)"C:/Users/admin/Desktop/arsenale_2022_06_5cm_data_only.tiff");
+
+			//cout << "ok test ici " << endl;
 			// Keep track of logs
 			if (false) {
 				string log_path = log_dir_path + getTime() + ".txt";
@@ -397,10 +404,6 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ labelGPSS;
 	private: System::Windows::Forms::GroupBox^ groupBoxRobot;
 	private: System::Windows::Forms::TextBox^ textBoxSRTK;
-
-
-
-
 	private: System::Windows::Forms::Label^ labelTide;
 	private: System::Windows::Forms::Label^ label10;
 	private: System::Windows::Forms::Label^ label9;
@@ -1549,6 +1552,7 @@ private: System::Windows::Forms::Button^ button1;
 			this->textBoxPRoll->TabIndex = 94;
 			this->textBoxPRoll->Text = L"None";
 			this->textBoxPRoll->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+			this->textBoxPRoll->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxPRoll_TextChanged);
 			// 
 			// textBoxPGyrZ
 			// 
@@ -3823,6 +3827,9 @@ private: System::Windows::Forms::Button^ button1;
 		   *
 		   *
 		   *		DVL
+		   * 
+		   *		TODO: Verify if DVL is unerwater function System::Void backgroundWorkerDVLOn_RunWorkerCompleted
+		   *		TODO: STOP DVL if DVL is near to sea level function to be done
 		   *
 		   *
 		   * --------------------------------------------------------------*/
@@ -3876,6 +3883,8 @@ private: System::Windows::Forms::Button^ button1;
 		backgroundWorkerDVLOn->CancelAsync();
 		e->Cancel = true;
 	}
+
+
 
 		   // Set the DVL button to "On" (which means dvl currently off) if minimal depth hasn't be reached
 	private: System::Void backgroundWorkerDVLOn_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
@@ -4061,7 +4070,6 @@ private: System::Windows::Forms::Button^ button1;
 				depth_map.init(); // Reinit displayed map
 
 				
-
 				// Should update only if DVL is on ? TODO
 				if(arduino.is_dvl_on)
 					depth_map.update(dvl.coordinates,
@@ -4375,7 +4383,7 @@ private: System::Windows::Forms::Button^ button1;
 		this->label3dYFake->Text = "y: " + getPrecision(pos_3d_y, 3) + " m";
 		this->label3dZFake->Text = "z: " + getPrecision(pos_3d_z, 3) + " m";
 	}
-		   // Only to measurment purpose
+		   // Only for measurment purpose
 	private: System::Void ptbSource_MouseClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
 
 		int x = e->X;
@@ -4456,18 +4464,23 @@ private: System::Windows::Forms::Button^ button1;
 	}
 	private: System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e) {
 	}
-
 	private: System::Void textBoxSRTK_TextChanged(System::Object^ sender, System::EventArgs^ e) {
 	}
 
+
+		   /*--------------------------------------------------------------
+		   *
+		   *
+		   *		UTM target 
+		   *
+		   *
+		   * --------------------------------------------------------------*/
 	// Send command to the robot. The robot will go at the GPS point written in the text box.
 	private: System::Void buttonGoTargetGPS_Click(System::Object^ sender, System::EventArgs^ e) {
 		std::string latitude_str = ConvertString2Char(textBoxTargetLatitude->Text);
 		double latitude = std::stof(latitude_str);
 		std::string longitude_str = ConvertString2Char(textBoxTargetLongitude->Text);
 		double longitude = std::stof(longitude_str);
-
-
 	}
 
 	private: System::Void buttonSetTargetUTM_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -4480,6 +4493,15 @@ private: System::Windows::Forms::Button^ button1;
 		plateform.set_utm_target(northing, easting, cap);
 	}
 	
+		   /*--------------------------------------------------------------
+		   *
+		   *
+		   *		Bathymetry display
+		   *
+		   *
+		   * --------------------------------------------------------------*/
+
+
 	// Read "SHM", update the robot postition, and display the bathymetry
 	private: System::Void backgroundWorkerBathy_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 
@@ -4648,6 +4670,13 @@ private: System::Windows::Forms::Button^ button1;
 		return (tension - 0) / (1000 - 0) * (200 - 0) + 0;
 	}
 
+	/*--------------------------------------------------------------
+	*
+	*
+	*		TODO: Cabble tension display (need to receive appropiate frame from P-E)
+	*
+	*
+	* --------------------------------------------------------------*/
 
 	private: System::Void backgroundWorkerCableTension_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 
@@ -4710,5 +4739,7 @@ private: System::Windows::Forms::Button^ button1;
 
 	}
 
+private: System::Void textBoxPRoll_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+}
 };
 }

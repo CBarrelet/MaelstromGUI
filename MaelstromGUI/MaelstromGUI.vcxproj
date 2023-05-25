@@ -79,9 +79,9 @@
     <LibraryPath>C:\Users\admin\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ExecutablePath>C:\Users\admin\Documents\libraries\opencv\build\include;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>C:\Users\admin\Documents\libraries\opencv\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\admin\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>C:\Users\admin\Documents\libraries\opencv\build\include;C:\Users\admin\Documents\libraries\gdal-3.2.1\gcore;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>C:\Users\admin\Documents\libraries\gdal-3.2.1\alg;C:\Users\admin\Documents\libraries\gdal-3.2.1\port;C:\Users\admin\Documents\libraries\gdal-3.2.1\gcore;C:\Users\admin\Documents\libraries\gdal-3.2.1\ogr;C:\Users\admin\Documents\libraries\opencv\build\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\admin\Documents\libraries\gdal-3.2.1;C:\Users\admin\Documents\libraries\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -118,7 +118,7 @@
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opencv_world455.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world455.lib;gdal_i_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
@@ -144,6 +144,7 @@
     <ClCompile Include="Robot.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Simulation.cpp" />
+    <ClCompile Include="Tiff.cpp" />
     <ClCompile Include="UTM.cpp" />
     <ClCompile Include="Video.cpp" />
   </ItemGroup>
@@ -161,9 +162,11 @@
     </ClInclude>
     <ClInclude Include="Plateform.h" />
     <ClInclude Include="PracticalSocket.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Robot.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="Simulation.h" />
+    <ClInclude Include="Tiff.h" />
     <ClInclude Include="UTM.h" />
     <ClInclude Include="Video.h" />
   </ItemGroup>
@@ -171,6 +174,9 @@
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.h</DependentUpon>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MaelstromGUI.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
