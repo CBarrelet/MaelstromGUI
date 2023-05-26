@@ -37,17 +37,21 @@
 
 // GUI info
 #define GUI_IP "192.168.0.11"
+//#define GUI_IP "127.0.0.1"
 #define LOCAL_IP "127.0.0.1"
 // Jetson info
 #define JETSON_IP "192.168.0.20"
+//#define JETSON_IP "127.0.0.1"
 #define JETSON_CONTINUOUS_PORT 8000
 #define JETSON_REQUEST_PORT 8001
 // Robot info
 #define ROBOT_IP "192.168.0.10"
+//#define ROBOT_IP "127.0.0.1"
 #define ROBOT_REQUEST_PORT 10000 // Port to send data like position
 #define ROBOT_CONTINUOUS_PORT 10001 // Port to receive data like position
 // Arduino info
 #define ARDUINO_IP "192.168.0.254"
+//#define ARDUINO_IP "127.0.0.1"
 #define ARDUINO_CONTINUOUS_PORT 5817
 #define ARDUINO_REQUEST_PORT 1470 // *dvlon$ *dvloff$ *jeton$ *jetoff$
 // DVL info
@@ -55,6 +59,7 @@
 #define DVL_CONTINUOUS_PORT 8888
 // Barometer info
 #define BAROMETER_IP "192.168.0.253"
+//#define BAROMETER_IP "127.0.0.1"
 #define BAROMETER_CONTINUOUS_PORT 5819
 // IMU + Barometer + GPS plateform info
 #define PLATEFORM_IP "127.0.0.1"
@@ -65,6 +70,7 @@
 #define PLATEFORM_GPS_CONTINUOUS_PORT 5830
 // Simulation info
 #define SIMULATION_IP "192.168.0.30"
+//#define SIMULATION_IP "127.0.0.1"
 #define SIMULATION_PORT 6000
 // Bathymetry info
 #define BATHYMETRY_IP "127.0.0.1"

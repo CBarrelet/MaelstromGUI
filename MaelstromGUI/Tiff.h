@@ -37,9 +37,15 @@ public:
         NROWS = GDALGetRasterYSize(geotiffDataset);
         NCOLS = GDALGetRasterXSize(geotiffDataset);
         NLEVELS = GDALGetRasterCount(geotiffDataset);
+
+        std::cout << NROWS << std::endl;
+        std::cout << NCOLS << std::endl;
+        std::cout << NLEVELS << std::endl;
        
 
     }
+
+
 
     // define destructor function to close dataset, 
     // for when object goes out of scope or is removed
@@ -80,6 +86,53 @@ public:
         geotiffDataset->GetGeoTransform(geotransform);
         return geotransform;
     }
+    
+    std::vector<std::vector<float>> readWindowRaster() {
+        
+        double* geotransform = GetGeoTransform();
+        double originX = geotransform[0];
+        double originY = geotransform[3];
+        double pixelWidth = geotransform[1];
+        double pixelHeight = geotransform[5];
+        double window_Xorigin = 293083; //289628  ; //in meters
+        double window_Yorigin = 5034918; //5033699  ;
+        double xOffset = int((window_Xorigin - originX) / pixelWidth);
+        double yOffset = int((window_Yorigin - originY) / pixelHeight); //center coordinates
+        //size in meters
+        double win_xsize = 10;
+        double win_ysize = 10;
+        int winx = int(win_xsize / pixelWidth);
+        int winy = -int(win_ysize / pixelHeight);
+        //get the projection
+        //const char* projection = GetProjection();
+        
+        
+        float** band = GetRasterBand(1); //TODO suivant la vitesse d'execution, ne faire qu'une fois au début du programme et stocker la band dans un argument de la classe
+        std::cout << "bandok" << std::endl;
+
+       
+        //band->RasterIO(GF_Read, xOffset - winx / 2, yOffset - winy / 2, winx, winy,
+        //    blockData, pixelWidth, pixelHeight, GDT_Float32, 0, 0);
+       
+        std::vector<std::vector<float>> vect;
+       
+        int beginy = yOffset - (winy / 2);
+        int endy = yOffset + (winy / 2);
+        int beginx = xOffset - (winx / 2);
+        int endx = xOffset + (winx / 2);
+        std::cout << "beginy " << beginy << " endy " << endy << " beginx " << beginx << "  endx " << endx << std::endl;
+        for (int i = beginy; i < endy; i++) {
+            std::vector<float> lign;
+            std::cout << i << std::endl;
+            for (int j = beginx; j <endx ; j++) {
+                lign.push_back(band[i][j]);
+            }
+            vect.push_back(lign);
+        }
+        
+        return vect;
+          
+    }
 
     double GetNoDataValue() {
         /*
@@ -106,6 +159,24 @@ public:
         dimensions[2] = NLEVELS;
         return dimensions;
     }
+
+
+    std::vector<std::vector<float>> GetVectorBand() {
+        int* dim = GetDimensions();
+        float** pointerBand = GetRasterBand(1);
+        std::vector<std::vector<float>> vectorBand;
+        for (int i = 0; i < dim[0]; i++) {
+            std::vector<float> lign;
+            for (int j = 0; j < dim[1]; j++) {
+                lign.push_back(pointerBand[i][j]);
+
+            }
+            vectorBand.push_back(lign);
+        }
+        return vectorBand;
+
+    }
+
 
     float** GetRasterBand(int z) {
 

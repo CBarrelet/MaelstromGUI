@@ -47,15 +47,12 @@ public:
 		this->request_socket.init();
 		this->request_socket.setLocalAddressAndPort(this->request_server_ip, this->request_port);
 		this->request_socket.setBroadcast();
-
 		this->continuous_server_ip = LOCAL_IP;
 		this->continuous_client_ip = LOCAL_IP;
 		this->continuous_port = ARDUINO_CONTINUOUS_PORT;
 		this->continuous_socket.init();
 		this->continuous_socket.setLocalAddressAndPort(this->continuous_server_ip, this->continuous_port);
 		this->continuous_socket.setBroadcast();
-
-
 		this->jetson_socket.init();
 		this->jetson_socket.setLocalAddressAndPort(this->request_server_ip, this->jetson_request_port);
 		this->jetson_socket.setBroadcast();

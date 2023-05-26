@@ -32,7 +32,6 @@ public:
 		this->client_ip = LOCAL_IP;
 		this->continuous_port = DVL_CONTINUOUS_PORT;
 		this->request_port = ARDUINO_REQUEST_PORT;
-
 		this->socket.init();
 		this->socket.setLocalAddressAndPort(this->server_ip, this->continuous_port);
 		this->socket.setBroadcast();

@@ -79,36 +79,29 @@ public:
 		this->client_ip = LOCAL_IP;
 		this->continuous_S_port = PLATEFORM_S_CONTINUOUS_PORT;
 		this->continuous_P_port = PLATEFORM_P_CONTINUOUS_PORT;
-
 		this->continuous_GPS_S_port = PLATEFORM_GPS_S_CONTINUOUS_PORT;
 		this->continuous_GPS_P_port = PLATEFORM_GPS_P_CONTINUOUS_PORT;
-
 		this->continuous_GPS_port = PLATEFORM_GPS_CONTINUOUS_PORT;
-
 		this->continuous_S_socket.init();
 		this->continuous_S_socket.setLocalAddressAndPort(this->server_ip, this->continuous_S_port);
 		this->continuous_S_socket.setBroadcast();
-
 		this->continuous_P_socket.init();
 		this->continuous_P_socket.setLocalAddressAndPort(this->server_ip, this->continuous_P_port);
 		this->continuous_P_socket.setBroadcast();
-
 		this->continuous_GPS_S_socket.init();
 		this->continuous_GPS_S_socket.setLocalAddressAndPort(this->server_ip, this->continuous_GPS_S_port);
 		this->continuous_GPS_S_socket.setBroadcast();
-
 		this->continuous_GPS_P_socket.init();
 		this->continuous_GPS_P_socket.setLocalAddressAndPort(this->server_ip, this->continuous_GPS_P_port);
 		this->continuous_GPS_P_socket.setBroadcast();
-
 		this->continuous_GPS_socket.init();
 		this->continuous_GPS_socket.setLocalAddressAndPort(this->server_ip, this->continuous_GPS_port);
 		this->continuous_GPS_socket.setBroadcast();
 	}
 
 	~Plateform() {
-		/*this->continuous_S_socket.disconnect();
-		this->continuous_P_socket.disconnect();*/
+		this->continuous_S_socket.disconnect();
+		this->continuous_P_socket.disconnect();
 	}
 
 	void set_utm_target(double northing, double easting, double cap) {

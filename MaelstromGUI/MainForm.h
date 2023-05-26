@@ -206,7 +206,78 @@ namespace MaelstromGUI {
 		MainForm(void)
 		{
 			// create object of Geotiff class
-			//Geotiff tiff((const char*)"C:/Users/admin/Desktop/arsenale_2022_06_5cm_data_only.tiff");
+			Geotiff tiff((const char*)"C:/Users/admin/Desktop/arsenale_2022_06_5cm.tiff"); //saccaFisola_5cm.tif               //arsenale_2022_06_5cm.tiff");
+			cout << "fichier ouvert" << endl;
+			int* dim = tiff.GetDimensions();
+			// output a value from 2D array  
+			
+			std::vector<std::vector<float>> rasterBandData = tiff.readWindowRaster();
+			std::cout << "readwindowraster terminé" << std::endl;
+			int winx = rasterBandData.size()  ;
+			int winy = rasterBandData[0].size();
+	
+			cout << "winx" << winx << endl;
+			cout << "winy" << winy << endl;
+			double nodata = tiff.GetNoDataValue();
+		
+			cout << "nodata " << nodata<< endl;
+			//find min and max
+			float min = 0; // TODO enlever le cas ou c'est pas zero
+			float max = -20;
+			for (int i = 0; i < winx; i++) {
+			
+				for (int j = 0; j < winy; j++) {
+				
+					float data = rasterBandData[i][j];
+					if (data == nodata) {
+						rasterBandData[i][j] = 0.;
+						cout << "nodata" << endl;
+						
+					}
+					else {
+						
+
+						if (data < min) {
+							min = data;
+							cout << "min" << endl;
+							
+						}
+						if (data > max) {
+							max = data;
+							cout << "max" << endl;
+						}
+					};
+				};
+			};
+			cout << min << endl;
+			cout << max << endl;
+			Mat img(winx, winy, CV_8UC1);
+			
+			unsigned char pixel_value = 0;
+
+			
+			
+			for (int i = 0; i < winx; i++) {
+				for (int j = 0; j < winy; j++) {
+				
+
+					pixel_value = (uchar)((rasterBandData[i][j] - min) / (max - min) * 255);
+					//std::cout << (int)pixel_value << std::endl;
+
+					
+					img.at<uchar>(i, j) = pixel_value;
+						
+					};
+				};
+			
+
+			
+			cv::resize(img, img, cv::Size(1000, 1000));
+			Mat img_color;
+			applyColorMap(img, img_color, COLORMAP_TURBO);
+			cv::imshow("test", img_color);
+			cv::waitKey(0);
+
 
 			//cout << "ok test ici " << endl;
 			// Keep track of logs
@@ -546,6 +617,7 @@ private: System::Windows::Forms::TextBox^ textBoxM3;
 private: System::Windows::Forms::TextBox^ textBoxM2;
 private: System::Windows::Forms::TextBox^ textBoxM1;
 private: System::Windows::Forms::Button^ button1;
+private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 
 
 
@@ -791,6 +863,7 @@ private: System::Windows::Forms::Button^ button1;
 			this->contextMenuStrip2 = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
 			this->backgroundWorkerCableTension = (gcnew System::ComponentModel::BackgroundWorker());
 			this->button1 = (gcnew System::Windows::Forms::Button());
+			this->errorProvider1 = (gcnew System::Windows::Forms::ErrorProvider(this->components));
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->BeginInit();
@@ -816,6 +889,7 @@ private: System::Windows::Forms::Button^ button1;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM7))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM8))->BeginInit();
 			this->groupBox4->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->errorProvider1))->BeginInit();
 			this->SuspendLayout();
 			// 
 			// button_Edition
@@ -3157,6 +3231,10 @@ private: System::Windows::Forms::Button^ button1;
 			this->button1->Visible = false;
 			this->button1->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
 			// 
+			// errorProvider1
+			// 
+			this->errorProvider1->ContainerControl = this;
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -3271,6 +3349,7 @@ private: System::Windows::Forms::Button^ button1;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBoxM8))->EndInit();
 			this->groupBox4->ResumeLayout(false);
 			this->groupBox4->PerformLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->errorProvider1))->EndInit();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -4511,17 +4590,12 @@ private: System::Windows::Forms::Button^ button1;
 
 		vector<double> bathy_map;
 
-		string map_str = "";
-		size_t pos = 0;
-		string delimiter = ",";
-		string token = "";
 
 		int total = 0;
 
 		double temp = 0;
 		int count = 0;
 
-		string pos_str = "";
 		double lat_P = 0, long_P = 0;
 		double utm_northing = 0, utm_easting = 0;
 		char* utm_zone = "33";
@@ -4539,56 +4613,23 @@ private: System::Windows::Forms::Button^ button1;
 
 			try
 			{
-				pos_str = "";
 
-				fstream my_file;
-				my_file.open("D:/projects/cyril/geotiff/coo.txt", ios::out);
-				if (!my_file) {
-					cout << "File not created!";
-				}
-				else {
-					plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
-					LLtoUTM((const double)lat_P, (const double)long_P,
-						utm_northing, utm_easting,
-						utm_zone);
+				plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
+				LLtoUTM((const double)lat_P, (const double)long_P,
+					utm_northing, utm_easting,
+					utm_zone);
 
-					pos_str = "F,";
-					pos_str += to_string(utm_easting);
-					pos_str += ",";
-					pos_str += to_string(utm_northing);
 
-					my_file << pos_str;
-					my_file.close();
-				}
+				LLtoUTM((const double)plateform.latitude_GPS_Master_babord, (const double)plateform.longitude_GPS_Master_babord,
+					utm_northing, utm_easting,
+					utm_zone);
 
-				pos_str = "";
-				my_file.open("D:/projects/cyril/geotiff/gps_utm.txt", ios::out);
-				if (!my_file) {
-					cout << "File not created!";
-				}
-				else {
-	
-					LLtoUTM((const double)plateform.latitude_GPS_Master_babord, (const double)plateform.longitude_GPS_Master_babord,
-						utm_northing, utm_easting,
-						utm_zone);
 
-					pos_str += to_string(utm_easting);
-					pos_str += ",";
-					pos_str += to_string(utm_northing);
-					pos_str += ",";
+				LLtoUTM((const double)plateform.latitude_GPS_Slave_tribord, (const double)plateform.longitude_GPS_Slave_tribord,
+					utm_northing, utm_easting,
+					utm_zone);
 
-					LLtoUTM((const double)plateform.latitude_GPS_Slave_tribord, (const double)plateform.longitude_GPS_Slave_tribord,
-						utm_northing, utm_easting,
-						utm_zone);
 
-					pos_str += to_string(utm_easting);
-					pos_str += ",";
-					pos_str += to_string(utm_northing);
-					pos_str += ",";
-
-					my_file << pos_str;
-					my_file.close();
-				}
 
 				Sleep(250);
 
@@ -4604,7 +4645,9 @@ private: System::Windows::Forms::Button^ button1;
 				warpAffine(resized_bathy, resized_bathy, for_Rotation, resized_bathy.size());//applying affine transformation//
 
 				zoomed_bathy = resized_bathy(cv::Rect(220, 220, 120, 120));
+
 				cv::resize(zoomed_bathy, resized_zoomed_bathy, cv::Size(300, 300));
+
 				cv::line(resized_zoomed_bathy, cv::Point(0, 150), cv::Point(300, 150), cv::Scalar(0, 0, 255), 1);
 				cv::line(resized_zoomed_bathy, cv::Point(150, 0), cv::Point(150, 300), cv::Scalar(0, 0, 255), 1);
 

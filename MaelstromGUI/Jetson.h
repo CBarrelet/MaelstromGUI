@@ -29,7 +29,6 @@ public:
 		this->socket.init();
 		this->socket.setLocalAddressAndPort(this->server_ip, this->continuous_port);
 		this->socket.setBroadcast();
-
 		this->stream_frame = cv::Mat((FRAME_HEIGHT, FRAME_WIDTH, CV_8UC3, cv::Scalar(0, 0, 0)));
 
 	}

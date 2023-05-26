@@ -81,11 +81,9 @@ public:
 		this->client_ip = ROBOT_IP;
 		this->continuous_port = ROBOT_CONTINUOUS_PORT;
 		this->request_port = ROBOT_REQUEST_PORT;
-
 		this->continuous_socket.init();
 		this->continuous_socket.setLocalAddressAndPort(this->server_ip, this->continuous_port);
 		this->continuous_socket.setBroadcast();
-
 		this->request_socket.init();
 		this->request_socket.setLocalAddressAndPort(this->server_ip, this->request_port);
 		this->request_socket.setBroadcast();
