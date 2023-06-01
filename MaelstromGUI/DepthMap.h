@@ -272,6 +272,8 @@ public:
 
 					this->altitude_min = min(high_depth_map[i][j].altitude, this->altitude_min);
 					this->altitude_max = max(high_depth_map[i][j].altitude, this->altitude_max);
+					this->altitude_min = -6;
+					this->altitude_max = -2;
 				}
 			}
 		}
@@ -328,10 +330,11 @@ public:
 				if ((i_very_high_global >= 0) && (i_very_high_global < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH) && (j_very_high_global >= 0) && (j_very_high_global < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH)) {
 
 					// Need to filter this
+					is_good_value = true;
 
 					for (size_t j = 0; j < 4; j++) {
 						// Filter some artefacts, if at least one value is wrong, is_good_value == false
-						if ((this->coeff_filter * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] / this->coeff_filter < dvl_distances[i]))
+						if ((1.5 * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] * 0.7 < dvl_distances[i]))
 							is_good_value *= true;
 						else
 							is_good_value *= false;
@@ -347,6 +350,7 @@ public:
 							this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude = dvl_coo[i].z;
 						//altitude_color = max(min(255, (5 + global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude) * 255 / 5), 0);
 						altitude_color = (-this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
+						altitude_color = 127; //debug
 						// Draw
 						cv::rectangle(this->displayed_very_high_global_map, cv::Point(i_very_high_global, j_very_high_global), cv::Point(i_very_high_global, j_very_high_global), altitude_color, 1);
 					}
@@ -359,7 +363,7 @@ public:
 							this->global_high_depth_map[j_global][i_global].altitude = dvl_coo[i].z;
 						//altitude_color = max(min(255, (5 + global_high_depth_map[j_global][i_global].altitude) * 255 / 5), 0);
 						altitude_color = (-this->global_high_depth_map[j_global][i_global].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
-						
+						altitude_color = 127; //debug
 
 						// Draw
 						cv::rectangle(this->displayed_global_map, cv::Point(i_global, j_global), cv::Point(i_global, j_global), altitude_color, 1);

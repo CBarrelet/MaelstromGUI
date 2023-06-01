@@ -94,7 +94,7 @@ public:
     std::vector<std::vector<float>> readWindowRaster(float** band, double window_Xcenter, double window_Ycenter, double& pixelWidth, double& pixelHeight, double& origin_global_geotiff_x, double& origin_global_geotiff_y, double& UTM_window_origin_x, double& UTM_window_origin_y) {
         
         
-        
+        int* dim = GetDimensions();
         //double window_Xcenter = 293083; //289628  ; //in meters
         //double window_Ycenter = 5034918; //5033699  ;
         double xOffset = int((window_Xcenter - origin_global_geotiff_x) / pixelWidth);
@@ -119,7 +119,12 @@ public:
             std::vector<float> lign;
             
             for (int j = beginx; j <endx ; j++) {
-                lign.push_back(band[i][j]);
+                if ((i < dim[0])&& (j < dim[1])){
+                    lign.push_back(band[i][j]);
+                }
+                else {
+                    lign.push_back(0);
+                }
             }
             vect.push_back(lign);
         }

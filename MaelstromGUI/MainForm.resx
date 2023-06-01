@@ -12516,4 +12516,10 @@
         ///////g
 </value>
   </data>
+  <metadata name="backgroundWorkerReachBathyPoint.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>550, 110</value>
+  </metadata>
+  <metadata name="backgroundWorkerDVL_Security.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>799, 110</value>
+  </metadata>
 </root>

@@ -296,6 +296,9 @@ namespace MaelstromGUI {
 			// Cables tension display
 			backgroundWorkerCableTension->RunWorkerAsync(1);
 
+			//DVL security
+			backgroundWorkerDVL_Security->RunWorkerAsync(1);
+
 		}
 
 	protected:
@@ -546,6 +549,8 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::TextBox^ textBoxM1;
 	private: System::Windows::Forms::Button^ button1;
 	private: System::Windows::Forms::ErrorProvider^ errorProvider1;
+private: System::ComponentModel::BackgroundWorker^ backgroundWorkerReachBathyPoint;
+private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 
 
 
@@ -792,6 +797,8 @@ namespace MaelstromGUI {
 			this->backgroundWorkerCableTension = (gcnew System::ComponentModel::BackgroundWorker());
 			this->button1 = (gcnew System::Windows::Forms::Button());
 			this->errorProvider1 = (gcnew System::Windows::Forms::ErrorProvider(this->components));
+			this->backgroundWorkerReachBathyPoint = (gcnew System::ComponentModel::BackgroundWorker());
+			this->backgroundWorkerDVL_Security = (gcnew System::ComponentModel::BackgroundWorker());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbSource))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->video_trackBar))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ptbDepthMap))->BeginInit();
@@ -2872,6 +2879,7 @@ namespace MaelstromGUI {
 			this->pictureBoxM1->Size = System::Drawing::Size(40, 200);
 			this->pictureBoxM1->TabIndex = 177;
 			this->pictureBoxM1->TabStop = false;
+			this->pictureBoxM1->Click += gcnew System::EventHandler(this, &MainForm::pictureBoxM1_Click);
 			// 
 			// pictureBoxM2
 			// 
@@ -3148,6 +3156,7 @@ namespace MaelstromGUI {
 			this->backgroundWorkerCableTension->WorkerReportsProgress = true;
 			this->backgroundWorkerCableTension->WorkerSupportsCancellation = true;
 			this->backgroundWorkerCableTension->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerCableTension_DoWork);
+			this->backgroundWorkerCableTension->ProgressChanged += gcnew System::ComponentModel::ProgressChangedEventHandler(this, &MainForm::backgroundWorkerCableTension_ProgressChanged);
 			// 
 			// button1
 			// 
@@ -3163,6 +3172,14 @@ namespace MaelstromGUI {
 			// errorProvider1
 			// 
 			this->errorProvider1->ContainerControl = this;
+			// 
+			// backgroundWorkerReachBathyPoint
+			// 
+			this->backgroundWorkerReachBathyPoint->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerReachBathyPoint_DoWork);
+			// 
+			// backgroundWorkerDVL_Security
+			// 
+			this->backgroundWorkerDVL_Security->DoWork += gcnew System::ComponentModel::DoWorkEventHandler(this, &MainForm::backgroundWorkerDVL_Security_DoWork);
 			// 
 			// MainForm
 			// 
@@ -3397,12 +3414,15 @@ namespace MaelstromGUI {
 				//ptbSource->Refresh(); // If streaming, freeze
 			}
 		// Display the depth map
-		if (ptb == 1)
+		if (ptb == 1) {
+			std::cout << "ptb 1" << std::endl;
 			if (!img.empty()) {
+				std::cout << "image non nulle" << std::endl;
 				ptbDepthMap->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 				//ptbSource->Refresh(); // If streaming, freeze
 				//ptbDepthMap->Refresh();
 			}
+		}
 	}
 		   // Double click event on the Image
 	private: System::Void ptbSource_MouseDoubleClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
@@ -3487,20 +3507,20 @@ namespace MaelstromGUI {
 			break;
 		}*/
 	}
-
-	private: System::Void pictureBoxBathy_MouseDoubleClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
-		std::cout << "ici meme" << std::endl;
+	private: System::Void backgroundWorkerReachBathyPoint_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		//std::cout << "ici meme" << std::endl;
 		int mod = 0;
-		float scale_factor_resized_map = 28./560. ;
+		float scale_factor_resized_map = 28. / 560.;
+		cv::Point target = bathymetry.get_target();
 		if (mod == 0) {
-			target_point2D = cv::Point(e->X, e->Y); // endroit du click
-			std::cout << "scale factor : "<< scale_factor_resized_map << std::endl;
-			double target_point_metres_x_robot = (double)(e->X - 280) * scale_factor_resized_map; // 280 la moitie de la taille de l'image
-			double target_point_metres_y_robot = (double)(-e->Y + 280) * scale_factor_resized_map;// dans le repere du robot inversee par rapport a la carte resized
-			
+			target_point2D = target; // endroit du click
+			//std::cout << "scale factor : " << scale_factor_resized_map << std::endl;
+			double target_point_metres_x_robot = (double)(target_point2D.x - 280) * scale_factor_resized_map; // 280 la moitie de la taille de l'image
+			double target_point_metres_y_robot = (double)(-target_point2D.y + 280) * scale_factor_resized_map;// dans le repere du robot inversee par rapport a la carte resized
+
 			target_point3D = cv::Point3d(target_point_metres_x_robot, target_point_metres_y_robot, 0);
-																				  // Need to take into account the Depth map... 
-			std::cout << "valeur x : " << target_point3D.x << "valeur y : " << target_point3D.y << "valeur z : " << target_point3D.z << std::endl;
+			// Need to take into account the Depth map... 
+			//std::cout << "valeur x : " << target_point3D.x << "valeur y : " << target_point3D.y << "valeur z : " << target_point3D.z << std::endl;
 			//float* distances = dvl.getDistances();
 			//float d = distances[0];
 
@@ -3514,13 +3534,22 @@ namespace MaelstromGUI {
 
 			robot.setTarget(target_point3D);
 			robot.goToTarget();
+			bathymetry.flag_bathy_is_clicked = false;
 
 			/*this->labelTarget->Text = "Target (x, y, z): " + getPrecision(target_point3D.x, 3) + " m " +
 				getPrecision(target_point3D.y, 3) + " m " +
 				getPrecision(target_point3D.z, 3) + " m";*/
 
-			//draw_target = true;
+				//draw_target = true;
+		}
+	}
+	private: System::Void pictureBoxBathy_MouseDoubleClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
+		if (!bathymetry.flag_bathy_is_clicked) {
+			bathymetry.set_target(e->X, e->Y);
+			bathymetry.flag_bathy_is_clicked = true;
 
+
+			backgroundWorkerReachBathyPoint->RunWorkerAsync(1);
 		}
 	}
 
@@ -3979,7 +4008,19 @@ namespace MaelstromGUI {
 		this->buttonDVLyes->Visible = false;
 		this->buttonDVLno->Visible = false;
 	}
+	private: System::Void backgroundWorkerDVL_Security_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		while(true){
+			double dvl_sea_lvl_from_robot = -0.8;
+			if (robot.pos[2] > -1.2 || arduino.depth < 0.5) {
+				//std::cout << "Coucou" << std::endl;
+				arduino.dvlOff();
+				system(DVL_READER_CLOSE);
+				this->buttonDVLon->Text = L"DVL on";
 
+			}
+			Sleep(250);
+		}
+	}
 
 		   /*--------------------------------------------------------------
 		   *
@@ -4138,14 +4179,15 @@ namespace MaelstromGUI {
 				depth_map.drawGrid(); // Draw a grid
 				depth_map.setPos(robot.pos[0], robot.pos[1]); // Set the robot position
 				depth_map.drawRobot(); // Draw the robot
-				if (draw_target) {
-					depth_map.drawTarget(cv::Point2f(robot.target[0], robot.target[1])); // Draw target if clicked on the camera
-					// TODO, click on the map
-				}
+				//if (draw_target) {
+					//depth_map.drawTarget(cv::Point2f(robot.target[0], robot.target[1])); // Draw target if clicked on the camera
+				//	// TODO, click on the map
+				//}
 				display(depth_map.getMap(), 1);
+				std::cout << "displqy " << std::endl;
 
 				// Send map to the simulation PC
-				simulation.sendMap(depth_map.getUDPFrame());
+				//simulation.sendMap(depth_map.getUDPFrame());  //enleve debug mai 23
 
 				backgroundWorkerDepthMap->ReportProgress(depth_map.tide);
 				backgroundWorkerDepthMap->ReportProgress(depth_map.altitude_max);
@@ -4660,10 +4702,10 @@ namespace MaelstromGUI {
 				//cap_angle_rad = 50*DEG2RAD - PI; //debug
 				//cap_angle = cap_angle_rad * RAD2DEG; //debug
 				//Triche pour visualiser
-				utm_easting_tribord = 293083;
+				/*utm_easting_tribord = 293083;
 				utm_northing_tribord = 5034918;
 				utm_easting_robot = 293083;
-				utm_northing_robot = 5034918;
+				utm_northing_robot = 5034918;*/
 
 
 
@@ -4815,58 +4857,122 @@ namespace MaelstromGUI {
 		Mat bar_m6 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
 		Mat bar_m7 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
 		Mat bar_m8 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
-
-		float m1 = 231, m2 = 754, m3 = 790, m4 = 120, m5 = 322, m6 = 72, m7 = 167, m8 = 356;
+		int min_tension = 50;
+		double m1 = 231, m2 = 754, m3 = 790, m4 = 120, m5 = 322, m6 = 72, m7 = 167, m8 = 356;
 
 		while (true) {
+			
 
-			bar_m1.setTo(cv::Scalar(180, 180, 180));
-			bar_m2.setTo(cv::Scalar(180, 180, 180));
-			bar_m3.setTo(cv::Scalar(180, 180, 180));
-			bar_m4.setTo(cv::Scalar(180, 180, 180));
-			bar_m5.setTo(cv::Scalar(180, 180, 180));
-			bar_m6.setTo(cv::Scalar(180, 180, 180));
-			bar_m7.setTo(cv::Scalar(180, 180, 180));
-			bar_m8.setTo(cv::Scalar(180, 180, 180));
+				m1 = (double)robot.motors[0];
+				m2 = (double)robot.motors[1];
+				m3 = (double)robot.motors[2];
+				m4 = (double)robot.motors[3];
+				m5 = (double)robot.motors[4];
+				m6 = (double)robot.motors[5];
+				m7 = (double)robot.motors[6];
+				m8 = (double)robot.motors[7];
 
-			textBoxM1->Text = "" + m1;
-			textBoxM2->Text = "" + m2;
-			textBoxM3->Text = "" + m3;
-			textBoxM4->Text = "" + m4;
-			textBoxM5->Text = "" + m5;
-			textBoxM6->Text = "" + m6;
-			textBoxM7->Text = "" + m7;
-			textBoxM8->Text = "" + m8;
+				
+				
+				bar_m1.setTo(cv::Scalar(180, 180, 180));
+				bar_m2.setTo(cv::Scalar(180, 180, 180));
+				bar_m3.setTo(cv::Scalar(180, 180, 180));
+				bar_m4.setTo(cv::Scalar(180, 180, 180));
+				bar_m5.setTo(cv::Scalar(180, 180, 180));
+				bar_m6.setTo(cv::Scalar(180, 180, 180));
+				bar_m7.setTo(cv::Scalar(180, 180, 180));
+				bar_m8.setTo(cv::Scalar(180, 180, 180));
 
-			cv::rectangle(bar_m1, cv::Point(0, scaleTension(m1)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
-			cv::rectangle(bar_m2, cv::Point(0, scaleTension(m2)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
-			cv::rectangle(bar_m3, cv::Point(0, scaleTension(m3)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
-			cv::rectangle(bar_m4, cv::Point(0, scaleTension(m4)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
-			cv::rectangle(bar_m5, cv::Point(0, scaleTension(m5)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
-			cv::rectangle(bar_m6, cv::Point(0, scaleTension(m6)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
-			cv::rectangle(bar_m7, cv::Point(0, scaleTension(m7)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
-			cv::rectangle(bar_m8, cv::Point(0, scaleTension(m8)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				backgroundWorkerCableTension->ReportProgress(m1);
+				backgroundWorkerCableTension->ReportProgress(m2);
+				backgroundWorkerCableTension->ReportProgress(m3);
+				backgroundWorkerCableTension->ReportProgress(m4);
+				backgroundWorkerCableTension->ReportProgress(m5);
+				backgroundWorkerCableTension->ReportProgress(m6);
+				backgroundWorkerCableTension->ReportProgress(m7);
+				backgroundWorkerCableTension->ReportProgress(m8);
+				
 
-			pictureBoxM1->Image = ConvertMat2Bitmap(bar_m1);
-			pictureBoxM2->Image = ConvertMat2Bitmap(bar_m2);
-			pictureBoxM3->Image = ConvertMat2Bitmap(bar_m3);
-			pictureBoxM4->Image = ConvertMat2Bitmap(bar_m4);
-			pictureBoxM5->Image = ConvertMat2Bitmap(bar_m5);
-			pictureBoxM6->Image = ConvertMat2Bitmap(bar_m6);
-			pictureBoxM7->Image = ConvertMat2Bitmap(bar_m7);
-			pictureBoxM8->Image = ConvertMat2Bitmap(bar_m8);
+				if (m1 < min_tension)
+					bar_m1.setTo(cv::Scalar(0, 0, 255));
+				if (m2 < min_tension)
+					bar_m2.setTo(cv::Scalar(0, 0, 255));
+				if (m3 < min_tension)
+					bar_m3.setTo(cv::Scalar(0, 0, 255));
+				if (m4 < min_tension)
+					bar_m4.setTo(cv::Scalar(0, 0, 255));
+				if (m5 < min_tension)
+					bar_m5.setTo(cv::Scalar(0, 0, 255));
+				if (m6 < min_tension)
+					bar_m6.setTo(cv::Scalar(0, 0, 255));
+				if (m7 < min_tension)
+					bar_m7.setTo(cv::Scalar(0, 0, 255));
+				if (m8 < min_tension)
+					bar_m8.setTo(cv::Scalar(0, 0, 255));
+				
+				
 
-			Sleep(250);
+
+
+
+				cv::rectangle(bar_m1, cv::Point(0, scaleTension(m1)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				cv::rectangle(bar_m2, cv::Point(0, scaleTension(m2)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				cv::rectangle(bar_m3, cv::Point(0, scaleTension(m3)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				cv::rectangle(bar_m4, cv::Point(0, scaleTension(m4)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				cv::rectangle(bar_m5, cv::Point(0, scaleTension(m5)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				cv::rectangle(bar_m6, cv::Point(0, scaleTension(m6)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				cv::rectangle(bar_m7, cv::Point(0, scaleTension(m7)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+				cv::rectangle(bar_m8, cv::Point(0, scaleTension(m8)), cv::Point(40, 220), cv::Scalar(255, 50, 0), -1);
+
+				pictureBoxM1->Image = ConvertMat2Bitmap(bar_m1);
+				pictureBoxM2->Image = ConvertMat2Bitmap(bar_m2);
+				pictureBoxM3->Image = ConvertMat2Bitmap(bar_m3);
+				pictureBoxM4->Image = ConvertMat2Bitmap(bar_m4);
+				pictureBoxM5->Image = ConvertMat2Bitmap(bar_m5);
+				pictureBoxM6->Image = ConvertMat2Bitmap(bar_m6);
+				pictureBoxM7->Image = ConvertMat2Bitmap(bar_m7);
+				pictureBoxM8->Image = ConvertMat2Bitmap(bar_m8);
+				Sleep(250);
+		
+			
 		}
+	
 	}
+	private: System::Void backgroundWorkerCableTension_ProgressChanged(System::Object^ sender, System::ComponentModel::ProgressChangedEventArgs^ e) {
+		double m1 = (double)robot.motors[0];
+		double m2 = (double)robot.motors[1];
+		double m3 = (double)robot.motors[2];
+		double m4 = (double)robot.motors[3];
+		double m5 = (double)robot.motors[4];
+		double m6 = (double)robot.motors[5];
+		double m7 = (double)robot.motors[6];
+		double m8 = (double)robot.motors[7];
+		
+		
+		textBoxM1->Text = "" + m1;
+		textBoxM2->Text = "" + m2;
+		textBoxM3->Text = "" + m3;
+		textBoxM4->Text = "" + m4;
+		textBoxM5->Text = "" + m5;
+		textBoxM6->Text = "" + m6;
+		textBoxM7->Text = "" + m7;
+		textBoxM8->Text = "" + m8;
+
+		
+		   }
 
 	private: System::Void button1_Click(System::Object^ sender, System::EventArgs^ e) {
 
-		bathymetry.set_size(50);
+		//bathymetry.set_size(50);
 
 	}
 
 	private: System::Void textBoxPRoll_TextChanged(System::Object^ sender, System::EventArgs^ e) {
 	}
-	};
+	
+private: System::Void pictureBoxM1_Click(System::Object^ sender, System::EventArgs^ e) {
+}
+
+
+};
 }

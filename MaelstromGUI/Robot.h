@@ -133,7 +133,7 @@ public:
 			//&this->speed[0], &this->speed[1], &this->speed[2],
 			&this->motors[0], &this->motors[1], &this->motors[2], &this->motors[3], &this->motors[4], &this->motors[5], &this->motors[6], &this->motors[7],
 			&this->state, &this->gripper_state_str, &this->pump_state_str);
-		std::cout << this->state << std::endl;
+		//std::cout << this->state << std::endl;
 
 
 		//int ret = sscanf(this->rcv_buffer,
@@ -204,7 +204,7 @@ public:
 		float z = this->target[2];
 		float delta_z = this->target[3];
 		std::cout << "go to . " << x << " " << y << std::endl; 
-		z = 0.4;
+		z = -1.2;
 		delta_z = 0.1;
 		goTo(x, y, z, delta_z);
 	}
@@ -238,16 +238,16 @@ public:
 		std::string second_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(c_x) + ";" + std::to_string(c_y) + ";" + std::to_string(c_z) + "#";
 		std::string third_command  = "*" + std::to_string(this->request_id) + ";" + std::to_string(d_x) + ";" + std::to_string(d_y) + ";" + std::to_string(d_z) + "#";
 
-		//log("Sending first command...");
-		//while (this->state != 10) {
-		//	Sleep(100);
+		log("Sending first command...");
+		while (this->state != 10) {
+			Sleep(100);
 		//	//std::cout << this->state << std::endl;
-		//}
-		//first_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(b_x) + ";" + std::to_string(b_y) + ";" + std::to_string(b_z) + "#";
-		//request_socket.sendTo(first_command.c_str(), 100, this->client_ip, request_port);
-		//log("To Robot (first command): " + first_command);
-		//this->request_id++;
-		//Sleep(250);
+		}
+		first_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(b_x) + ";" + std::to_string(b_y) + ";" + std::to_string(b_z) + "#";
+		request_socket.sendTo(first_command.c_str(), 100, this->client_ip, request_port);
+		log("To Robot (first command): " + first_command);
+		this->request_id++;
+		Sleep(250);
 
 		log("Sending second command...");
 		while (this->state != 10) {
@@ -260,14 +260,14 @@ public:
 		this->request_id++;
 		Sleep(250);
 
-		//log("Sending third command...");
+		log("Sending third command...");
 		while (this->state != 10) {
 			Sleep(10);
 		//	//std::cout << this->state << std::endl;
 		}
-		//third_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(d_x) + ";" + std::to_string(d_y) + ";" + std::to_string(d_z) + "#";
-		//request_socket.sendTo(third_command.c_str(), 100, this->client_ip, request_port);
-		//log("To Robot (third command): " + third_command);
+		third_command = "*" + std::to_string(this->request_id) + ";" + std::to_string(d_x) + ";" + std::to_string(d_y) + ";" + std::to_string(d_z) + "#";
+		request_socket.sendTo(third_command.c_str(), 100, this->client_ip, request_port);
+		log("To Robot (third command): " + third_command);
 		this->request_id++;
 		Sleep(250);
 	}

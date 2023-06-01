@@ -4,37 +4,35 @@
 
 class Bathymetry {
 private:
-	char rcv_buffer[300];
-	UDPSocket socket;
-	std::string ip;
-	unsigned short port;
+	
+	int target_x = 0, target_y = 0;
+public:
+	bool flag_bathy_is_clicked = false; //0 not clicked
+	
 
-	unsigned short foreign_port = 20001;
-
-	int size = 0;
 
 public:
 	/*------------------------------
 		CONSTRUCTOR / DESTRUCTOR
 	-------------------------------*/
 	Bathymetry() {
-		this->ip = BATHYMETRY_IP;
-		this->port = BATHYMETRY_PORT;
-		this->socket.init();
-		this->socket.setLocalAddressAndPort(this->ip, this->port);
-		this->socket.setBroadcast();
+		
 	}
 
 	~Bathymetry() {
 
 	}
 
-	void set_size(int size) {
-		this->size = size;
+	
 
-		std::string command = "*" + std::to_string(size) + "$";
-		this->socket.sendTo(command.c_str(), 100, this->ip, foreign_port);
-
+	void set_target(int target_x , int target_y){
+		this->target_x = target_x;
+		this->target_y = target_y;
+	}
+	cv::Point get_target() {
+		
+		cv::Point target = cv::Point(this->target_x, this->target_y);
+		return target;
 	}
 
 };
