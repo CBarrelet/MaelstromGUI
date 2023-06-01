@@ -96,6 +96,7 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param) {
 // UTM values ? 
 float utm_x = 0, utm_y = 0;
 
+
 namespace MaelstromGUI {
 
 	using namespace System;
@@ -205,81 +206,8 @@ namespace MaelstromGUI {
 	public:
 		MainForm(void)
 		{
-			// create object of Geotiff class
-			Geotiff tiff((const char*)"C:/Users/admin/Desktop/arsenale_2022_06_5cm.tiff"); //saccaFisola_5cm.tif               //arsenale_2022_06_5cm.tiff");
-			cout << "fichier ouvert" << endl;
-			int* dim = tiff.GetDimensions();
-			// output a value from 2D array  
-			
-			std::vector<std::vector<float>> rasterBandData = tiff.readWindowRaster();
-			std::cout << "readwindowraster terminé" << std::endl;
-			int winx = rasterBandData.size()  ;
-			int winy = rasterBandData[0].size();
-	
-			cout << "winx" << winx << endl;
-			cout << "winy" << winy << endl;
-			double nodata = tiff.GetNoDataValue();
-		
-			cout << "nodata " << nodata<< endl;
-			//find min and max
-			float min = 0; // TODO enlever le cas ou c'est pas zero
-			float max = -20;
-			for (int i = 0; i < winx; i++) {
-			
-				for (int j = 0; j < winy; j++) {
-				
-					float data = rasterBandData[i][j];
-					if (data == nodata) {
-						rasterBandData[i][j] = 0.;
-						cout << "nodata" << endl;
-						
-					}
-					else {
-						
-
-						if (data < min) {
-							min = data;
-							cout << "min" << endl;
-							
-						}
-						if (data > max) {
-							max = data;
-							cout << "max" << endl;
-						}
-					};
-				};
-			};
-			cout << min << endl;
-			cout << max << endl;
-			Mat img(winx, winy, CV_8UC1);
-			
-			unsigned char pixel_value = 0;
-
-			
-			
-			for (int i = 0; i < winx; i++) {
-				for (int j = 0; j < winy; j++) {
-				
-
-					pixel_value = (uchar)((rasterBandData[i][j] - min) / (max - min) * 255);
-					//std::cout << (int)pixel_value << std::endl;
-
-					
-					img.at<uchar>(i, j) = pixel_value;
-						
-					};
-				};
-			
-
-			
-			cv::resize(img, img, cv::Size(1000, 1000));
-			Mat img_color;
-			applyColorMap(img, img_color, COLORMAP_TURBO);
-			cv::imshow("test", img_color);
-			cv::waitKey(0);
 
 
-			//cout << "ok test ici " << endl;
 			// Keep track of logs
 			if (false) {
 				string log_path = log_dir_path + getTime() + ".txt";
@@ -523,101 +451,101 @@ namespace MaelstromGUI {
 	private: System::Windows::Forms::Label^ label5;
 	private: System::Windows::Forms::PictureBox^ pictureBoxLogoMaelstrom;
 	private: System::Windows::Forms::PictureBox^ pictureBoxColorMap;
-private: System::Windows::Forms::Label^ labelMaxDepth;
+	private: System::Windows::Forms::Label^ labelMaxDepth;
 
 
-private: System::Windows::Forms::Label^ labelMinDepth;
-private: System::Windows::Forms::ContextMenuStrip^ contextMenuStrip1;
-private: System::Windows::Forms::TextBox^ textBoxTargetLatitude;
-private: System::Windows::Forms::TextBox^ textBoxTargetLongitude;
-private: System::Windows::Forms::Label^ label37;
-private: System::Windows::Forms::Label^ label38;
-private: System::Windows::Forms::Button^ buttonGoTargetGPS;
-private: System::Windows::Forms::TextBox^ textBoxLatRobot;
-private: System::Windows::Forms::TextBox^ textBoxLongRobot;
-private: System::Windows::Forms::Label^ label39;
-private: System::Windows::Forms::Label^ label40;
-private: System::Windows::Forms::TextBox^ textBoxUTMXRobot;
-private: System::Windows::Forms::TextBox^ textBoxUTMYRobot;
-private: System::Windows::Forms::Label^ label41;
-private: System::Windows::Forms::Label^ label42;
-private: System::Windows::Forms::TextBox^ textBoxCap;
-private: System::Windows::Forms::Label^ label43;
-private: System::Windows::Forms::Label^ label44;
-private: System::Windows::Forms::TextBox^ textBoxCapDeg;
-private: System::Windows::Forms::Label^ label45;
-private: System::Windows::Forms::TextBox^ textBoxDistanceGPS;
-private: System::Windows::Forms::Label^ label46;
-private: System::Windows::Forms::Label^ label47;
-private: System::Windows::Forms::TextBox^ textBoxTargetUTMNorth;
-private: System::Windows::Forms::TextBox^ textBoxTargetUTMEast;
-private: System::Windows::Forms::Label^ label48;
-private: System::Windows::Forms::Label^ label49;
-private: System::Windows::Forms::TextBox^ textBoxUTMDeltaNorthing;
-private: System::Windows::Forms::TextBox^ textBoxDeltaUTMEasting;
-private: System::Windows::Forms::Label^ label50;
-private: System::Windows::Forms::Label^ label51;
-private: System::Windows::Forms::Label^ label52;
-private: System::Windows::Forms::TextBox^ textBoxTargetCap;
-private: System::Windows::Forms::TextBox^ textBoxCurrentCap;
-private: System::Windows::Forms::TextBox^ textBoxDeltaCap;
-private: System::Windows::Forms::Button^ buttonSetTargetUTM;
-private: System::Windows::Forms::Label^ label53;
-private: System::Windows::Forms::Label^ label54;
-private: System::Windows::Forms::TextBox^ textBoxDeltaXRobot;
-private: System::Windows::Forms::TextBox^ textBoxDeltaYRobot;
-private: System::Windows::Forms::PictureBox^ pictureBoxBathy;
-private: System::ComponentModel::BackgroundWorker^ backgroundWorkerBathy;
+	private: System::Windows::Forms::Label^ labelMinDepth;
+	private: System::Windows::Forms::ContextMenuStrip^ contextMenuStrip1;
+	private: System::Windows::Forms::TextBox^ textBoxTargetLatitude;
+	private: System::Windows::Forms::TextBox^ textBoxTargetLongitude;
+	private: System::Windows::Forms::Label^ label37;
+	private: System::Windows::Forms::Label^ label38;
+	private: System::Windows::Forms::Button^ buttonGoTargetGPS;
+	private: System::Windows::Forms::TextBox^ textBoxLatRobot;
+	private: System::Windows::Forms::TextBox^ textBoxLongRobot;
+	private: System::Windows::Forms::Label^ label39;
+	private: System::Windows::Forms::Label^ label40;
+	private: System::Windows::Forms::TextBox^ textBoxUTMXRobot;
+	private: System::Windows::Forms::TextBox^ textBoxUTMYRobot;
+	private: System::Windows::Forms::Label^ label41;
+	private: System::Windows::Forms::Label^ label42;
+	private: System::Windows::Forms::TextBox^ textBoxCap;
+	private: System::Windows::Forms::Label^ label43;
+	private: System::Windows::Forms::Label^ label44;
+	private: System::Windows::Forms::TextBox^ textBoxCapDeg;
+	private: System::Windows::Forms::Label^ label45;
+	private: System::Windows::Forms::TextBox^ textBoxDistanceGPS;
+	private: System::Windows::Forms::Label^ label46;
+	private: System::Windows::Forms::Label^ label47;
+	private: System::Windows::Forms::TextBox^ textBoxTargetUTMNorth;
+	private: System::Windows::Forms::TextBox^ textBoxTargetUTMEast;
+	private: System::Windows::Forms::Label^ label48;
+	private: System::Windows::Forms::Label^ label49;
+	private: System::Windows::Forms::TextBox^ textBoxUTMDeltaNorthing;
+	private: System::Windows::Forms::TextBox^ textBoxDeltaUTMEasting;
+	private: System::Windows::Forms::Label^ label50;
+	private: System::Windows::Forms::Label^ label51;
+	private: System::Windows::Forms::Label^ label52;
+	private: System::Windows::Forms::TextBox^ textBoxTargetCap;
+	private: System::Windows::Forms::TextBox^ textBoxCurrentCap;
+	private: System::Windows::Forms::TextBox^ textBoxDeltaCap;
+	private: System::Windows::Forms::Button^ buttonSetTargetUTM;
+	private: System::Windows::Forms::Label^ label53;
+	private: System::Windows::Forms::Label^ label54;
+	private: System::Windows::Forms::TextBox^ textBoxDeltaXRobot;
+	private: System::Windows::Forms::TextBox^ textBoxDeltaYRobot;
+	private: System::Windows::Forms::PictureBox^ pictureBoxBathy;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerBathy;
 
 
 
 
 
-private: System::Windows::Forms::Button^ buttonBathyOnline;
-private: System::Windows::Forms::Label^ label55;
-private: System::Windows::Forms::Label^ label56;
-private: System::Windows::Forms::Label^ label57;
+	private: System::Windows::Forms::Button^ buttonBathyOnline;
+	private: System::Windows::Forms::Label^ label55;
+	private: System::Windows::Forms::Label^ label56;
+	private: System::Windows::Forms::Label^ label57;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxZoomedBathy;
-private: System::Windows::Forms::GroupBox^ groupBox2;
-private: System::Windows::Forms::GroupBox^ groupBox3;
-private: System::Windows::Forms::PictureBox^ pictureBoxM1;
+	private: System::Windows::Forms::PictureBox^ pictureBoxZoomedBathy;
+	private: System::Windows::Forms::GroupBox^ groupBox2;
+	private: System::Windows::Forms::GroupBox^ groupBox3;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM1;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxM2;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM2;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxM3;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM3;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxM4;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM4;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxM5;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM5;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxM6;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM6;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxM7;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM7;
 
-private: System::Windows::Forms::PictureBox^ pictureBoxM8;
+	private: System::Windows::Forms::PictureBox^ pictureBoxM8;
 
-private: System::Windows::Forms::GroupBox^ groupBox4;
-private: System::Windows::Forms::Label^ label65;
-private: System::Windows::Forms::Label^ label64;
-private: System::Windows::Forms::Label^ label63;
-private: System::Windows::Forms::Label^ label62;
-private: System::Windows::Forms::Label^ label61;
-private: System::Windows::Forms::Label^ label60;
-private: System::Windows::Forms::Label^ label59;
-private: System::Windows::Forms::Label^ label58;
-private: System::Windows::Forms::ContextMenuStrip^ contextMenuStrip2;
-private: System::ComponentModel::BackgroundWorker^ backgroundWorkerCableTension;
-private: System::Windows::Forms::TextBox^ textBoxM8;
-private: System::Windows::Forms::TextBox^ textBoxM7;
-private: System::Windows::Forms::TextBox^ textBoxM6;
-private: System::Windows::Forms::TextBox^ textBoxM5;
-private: System::Windows::Forms::TextBox^ textBoxM4;
-private: System::Windows::Forms::TextBox^ textBoxM3;
-private: System::Windows::Forms::TextBox^ textBoxM2;
-private: System::Windows::Forms::TextBox^ textBoxM1;
-private: System::Windows::Forms::Button^ button1;
-private: System::Windows::Forms::ErrorProvider^ errorProvider1;
+	private: System::Windows::Forms::GroupBox^ groupBox4;
+	private: System::Windows::Forms::Label^ label65;
+	private: System::Windows::Forms::Label^ label64;
+	private: System::Windows::Forms::Label^ label63;
+	private: System::Windows::Forms::Label^ label62;
+	private: System::Windows::Forms::Label^ label61;
+	private: System::Windows::Forms::Label^ label60;
+	private: System::Windows::Forms::Label^ label59;
+	private: System::Windows::Forms::Label^ label58;
+	private: System::Windows::Forms::ContextMenuStrip^ contextMenuStrip2;
+	private: System::ComponentModel::BackgroundWorker^ backgroundWorkerCableTension;
+	private: System::Windows::Forms::TextBox^ textBoxM8;
+	private: System::Windows::Forms::TextBox^ textBoxM7;
+	private: System::Windows::Forms::TextBox^ textBoxM6;
+	private: System::Windows::Forms::TextBox^ textBoxM5;
+	private: System::Windows::Forms::TextBox^ textBoxM4;
+	private: System::Windows::Forms::TextBox^ textBoxM3;
+	private: System::Windows::Forms::TextBox^ textBoxM2;
+	private: System::Windows::Forms::TextBox^ textBoxM1;
+	private: System::Windows::Forms::Button^ button1;
+	private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 
 
 
@@ -2860,6 +2788,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 			this->pictureBoxBathy->Size = System::Drawing::Size(560, 560);
 			this->pictureBoxBathy->TabIndex = 166;
 			this->pictureBoxBathy->TabStop = false;
+			this->pictureBoxBathy->MouseDoubleClick += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::pictureBoxBathy_MouseDoubleClick);
 			// 
 			// backgroundWorkerBathy
 			// 
@@ -3503,6 +3432,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 			draw_target = true;
 
 		}
+
 		//// Zoom
 		//if (mouse_click == 'L') {
 		//	int zoom = 500;
@@ -3557,6 +3487,48 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 			break;
 		}*/
 	}
+
+	private: System::Void pictureBoxBathy_MouseDoubleClick(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
+		std::cout << "ici meme" << std::endl;
+		int mod = 0;
+		float scale_factor_resized_map = 28./560. ;
+		if (mod == 0) {
+			target_point2D = cv::Point(e->X, e->Y); // endroit du click
+			std::cout << "scale factor : "<< scale_factor_resized_map << std::endl;
+			double target_point_metres_x_robot = (double)(e->X - 280) * scale_factor_resized_map; // 280 la moitie de la taille de l'image
+			double target_point_metres_y_robot = (double)(-e->Y + 280) * scale_factor_resized_map;// dans le repere du robot inversee par rapport a la carte resized
+			
+			target_point3D = cv::Point3d(target_point_metres_x_robot, target_point_metres_y_robot, 0);
+																				  // Need to take into account the Depth map... 
+			std::cout << "valeur x : " << target_point3D.x << "valeur y : " << target_point3D.y << "valeur z : " << target_point3D.z << std::endl;
+			//float* distances = dvl.getDistances();
+			//float d = distances[0];
+
+			//d = 0.715;
+
+
+			//int u = target_point2D.x - camera_params.center.x;
+			//int v = target_point2D.y - camera_params.center.y;
+			////target_point3D = cv::Point3d(u * d / camera_params.fx, v * d / camera_params.fy, d);
+			//target_point3D = cv::Point3d(-v * d / camera_params.fy, -u * d / camera_params.fx, d);
+
+			robot.setTarget(target_point3D);
+			robot.goToTarget();
+
+			/*this->labelTarget->Text = "Target (x, y, z): " + getPrecision(target_point3D.x, 3) + " m " +
+				getPrecision(target_point3D.y, 3) + " m " +
+				getPrecision(target_point3D.z, 3) + " m";*/
+
+			//draw_target = true;
+
+		}
+	}
+
+
+
+
+
+
 		   // Temp button
 	private: System::Void view_button_Click(System::Object^ sender, System::EventArgs^ e) {
 		//listView1->Items->Clear();
@@ -3709,7 +3681,9 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 			std::string vid_path = getNewVideoPath();
 			//output_video.open(vid_path, VideoWriter::fourcc('a', 'v', 'c', '1'), 15, cv::Size(640, 480), true);
 			//output_video.open(vid_path, VideoWriter::fourcc('m', 'p', '4', 'v'), 15, cv::Size(640, 480), true);
+#define OPENCV_FFMPEG_WRITER_OPTIONS = "vcodec;x264|vprofile;high|vlevel;9.0";
 			output_video.open(vid_path, VideoWriter::fourcc('H', '2', '6', '4'), 15, cv::Size(640, 480), true);
+			//output_video.open(vid_path, VideoWriter::fourcc('M', 'J', 'P', 'G'), 15, cv::Size(640, 480), true);
 
 			log("From video recording: " + vid_path + " created");
 		}
@@ -3807,7 +3781,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		   // Send a command to the robot
 	private: System::Void backgroundWorkerRobotCommand_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		//robot.goTo(0, 0, 0, 0);
-		robot.goToTarget();
+		//robot.goToTarget(); // mai 2023
 		// Stop background worker when finished
 		backgroundWorkerRobotCommand->CancelAsync();
 		e->Cancel = true;
@@ -3858,7 +3832,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		//this->textBoxUTMXRobot->Text = "";
 		//this->textBoxUTMYRobot->Text = "";
 
-		
+
 	}
 		   // Check if command is done
 	private: System::Void backgroundWorkerRobotCommand_RunWorkerCompleted(System::Object^ sender, System::ComponentModel::RunWorkerCompletedEventArgs^ e) {
@@ -3906,7 +3880,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		   *
 		   *
 		   *		DVL
-		   * 
+		   *
 		   *		TODO: Verify if DVL is unerwater function System::Void backgroundWorkerDVLOn_RunWorkerCompleted
 		   *		TODO: STOP DVL if DVL is near to sea level function to be done
 		   *
@@ -4148,9 +4122,9 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 
 				depth_map.init(); // Reinit displayed map
 
-				
+
 				// Should update only if DVL is on ? TODO
-				if(arduino.is_dvl_on)
+				if (arduino.is_dvl_on)
 					depth_map.update(dvl.coordinates,
 						robot.coordinates,
 						dvl.distances,
@@ -4375,7 +4349,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		// Display geo coordinates of the robot in DD
 		double lat_P = 0, long_P = 0;
 		plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
-		
+
 		this->textBoxLatRobot->Text = gcnew System::String(std::to_string(lat_P).c_str());
 		this->textBoxLongRobot->Text = gcnew System::String(std::to_string(long_P).c_str());
 		LLtoUTM((const double)lat_P, (const double)long_P,
@@ -4392,7 +4366,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		// Compute delta to target UTM
 		double delta_north = plateform.utm_target_north - utm_northing;
 		double delta_east = plateform.utm_target_east - utm_easting;
-		
+
 		double robot_cap = plateform.cap_GPS_babord_vers_tribord;
 		double delta_cap = plateform.target_cap - robot_cap * 180 / PI;
 
@@ -4550,11 +4524,11 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		   /*--------------------------------------------------------------
 		   *
 		   *
-		   *		UTM target 
+		   *		UTM target
 		   *
 		   *
 		   * --------------------------------------------------------------*/
-	// Send command to the robot. The robot will go at the GPS point written in the text box.
+		   // Send command to the robot. The robot will go at the GPS point written in the text box.
 	private: System::Void buttonGoTargetGPS_Click(System::Object^ sender, System::EventArgs^ e) {
 		std::string latitude_str = ConvertString2Char(textBoxTargetLatitude->Text);
 		double latitude = std::stof(latitude_str);
@@ -4571,7 +4545,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		double cap = std::stof(cap_str);
 		plateform.set_utm_target(northing, easting, cap);
 	}
-	
+
 		   /*--------------------------------------------------------------
 		   *
 		   *
@@ -4581,8 +4555,24 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		   * --------------------------------------------------------------*/
 
 
-	// Read "SHM", update the robot postition, and display the bathymetry
+		   // Read "SHM", update the robot postition, and display the bathymetry
 	private: System::Void backgroundWorkerBathy_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+
+
+		//the new way of bathy
+		Geotiff tiff((const char*)"C:/Users/admin/Desktop/sacca_clip.tif"); //saccaFisola_5cm.tif    //arsenale_2022_06_5cm.tiff");
+
+			//plot the window around the GPS position
+		float** band = tiff.GetRasterBand(1);
+		double* transform = tiff.GetGeoTransform();
+		double origin_global_geotiff_x = transform[0];
+		double origin_global_geotiff_y = transform[3];
+		double pixelWidth = transform[1];
+		double pixelHeight = transform[5];
+
+
+
+
 
 		cv::Mat bathy = cv::Mat::ones(cv::Size(560, 560), CV_8UC3);
 		cv::Mat resized_bathy = cv::Mat::ones(cv::Size(400, 400), CV_8UC3);
@@ -4597,16 +4587,43 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		int count = 0;
 
 		double lat_P = 0, long_P = 0;
-		double utm_northing = 0, utm_easting = 0;
+		double utm_northing_robot = 0, utm_easting_robot = 0;
+		double utm_northing_babord = 0, utm_easting_babord = 0;
+		double utm_northing_tribord = 0, utm_easting_tribord = 0;
+		cv::Point pixel_tribord;
+		cv::Point secondPointRectangle;
+		cv::Point UTM_northing_robot;
+
+
 		char* utm_zone = "33";
 
 		bool update_check = true;
 
-		double cap_angle = 0;
+		double cap_angle = 0; //en degres
 		Mat for_Rotation;
 
 		Mat zoomed_bathy;
 		Mat resized_zoomed_bathy;
+
+		double UTM_window_origin_x = 0;
+		double UTM_window_origin_y = 0;
+
+		const double width_pool = 7.75; //distance entre les GPS
+		const double length_pool = 12.25;
+
+		cv::Scalar gris = cv::Scalar(50, 50, 50); // BGR
+		cv::Scalar vert = cv::Scalar(0, 160, 0); // BGR
+		cv::Scalar rouge = cv::Scalar(0, 0, 255); // BGR
+
+		double largeur_panier = 2.50;
+		double longueur_panier = 2.50;
+
+		double lateral_margin = 1.5; //colision margin
+		double avant_margin = 2.;
+		double arriere_margin = 1.;
+		double largeur_workspace = width_pool - 2 * lateral_margin;
+		double longueur_workspace = length_pool - avant_margin - arriere_margin - largeur_panier;
+
 
 
 		while (true) {
@@ -4616,35 +4633,112 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 
 				plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
 				LLtoUTM((const double)lat_P, (const double)long_P,
-					utm_northing, utm_easting,
+					utm_northing_robot, utm_easting_robot,
 					utm_zone);
+				/*std::cout << "northing . " << utm_northing_robot << " easting . " << utm_easting_robot;*/
+
 
 
 				LLtoUTM((const double)plateform.latitude_GPS_Master_babord, (const double)plateform.longitude_GPS_Master_babord,
-					utm_northing, utm_easting,
+					utm_northing_babord, utm_easting_babord,
 					utm_zone);
 
 
 				LLtoUTM((const double)plateform.latitude_GPS_Slave_tribord, (const double)plateform.longitude_GPS_Slave_tribord,
-					utm_northing, utm_easting,
+					utm_northing_tribord, utm_easting_tribord,
 					utm_zone);
 
 
 
 				Sleep(250);
 
-				bathy = cv::imread("D:/projects/cyril/geotiff/image.png");
-
-				cv::resize(bathy, resized_bathy, cv::Size(560, 560));
 
 				cap_angle = plateform.cap_GPS_babord_vers_tribord * 180 / PI;
 				cap_angle = cap_angle - 180;
+				double cap_angle_rad = plateform.cap_GPS_babord_vers_tribord - PI;
 
-				for_Rotation = getRotationMatrix2D(cv::Point(280, 280), (cap_angle), 1);//affine transformation matrix for 2D rotation//
-				//Mat for_Rotated;//declaring a matrix for rotated image
-				warpAffine(resized_bathy, resized_bathy, for_Rotation, resized_bathy.size());//applying affine transformation//
+				//cap_angle_rad = 50*DEG2RAD - PI; //debug
+				//cap_angle = cap_angle_rad * RAD2DEG; //debug
+				//Triche pour visualiser
+				utm_easting_tribord = 293083;
+				utm_northing_tribord = 5034918;
+				utm_easting_robot = 293083;
+				utm_northing_robot = 5034918;
 
-				zoomed_bathy = resized_bathy(cv::Rect(220, 220, 120, 120));
+
+
+
+				//New way of bathy 
+				std::vector<std::vector<float>> rasterBandData = tiff.readWindowRaster(band, utm_easting_robot, utm_northing_robot, pixelWidth, pixelHeight, origin_global_geotiff_x, origin_global_geotiff_y, UTM_window_origin_x, UTM_window_origin_y);
+
+				Mat img_color = tiff.plotBathy(rasterBandData);
+
+				/*std::cout << img_color.size().width << std::endl;
+				std::cout << img_color.size().height << std::endl;*/
+
+				//Plot piscine
+				//cap angle dans le sens anti trigo
+				pixel_tribord.x = (int)((utm_easting_tribord - UTM_window_origin_x) / pixelWidth);
+				pixel_tribord.y = (int)((utm_northing_tribord - UTM_window_origin_y) / pixelHeight); //took the same length and width
+				cv::Point pixel_babord = cv::Point(pixel_tribord.x + (int)(sin(cap_angle_rad) * width_pool / pixelWidth), pixel_tribord.y - (int)(cos(cap_angle_rad) * width_pool / pixelWidth));//secondPointRectangle
+				cv::Point avant_pixel_tribord = cv::Point(pixel_tribord.x + (int)(cos(cap_angle_rad) * length_pool / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * length_pool / pixelWidth));//secondPointRectangle
+				cv::Point avant_pixel_babord = cv::Point((int)(pixel_tribord.x + sin(cap_angle_rad) * width_pool / pixelWidth + cos(cap_angle_rad) * length_pool / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * length_pool / pixelWidth - cos(cap_angle_rad) * width_pool / pixelWidth));
+
+
+				line(img_color, pixel_tribord, pixel_babord, gris, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, pixel_tribord, avant_pixel_tribord, gris, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, avant_pixel_tribord, avant_pixel_babord, gris, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, pixel_babord, avant_pixel_babord, gris, (int)(0.2 / pixelWidth), LINE_AA);
+
+				// panier
+				cv::Point tribord_panier = cv::Point((int)(pixel_tribord.x + sin(cap_angle_rad) * 3.2 / pixelWidth + cos(cap_angle_rad) * (length_pool - largeur_panier) / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * (length_pool - largeur_panier) / pixelWidth - cos(cap_angle_rad) * 3.2 / pixelWidth));
+				cv::Point pixel_babord_panier = cv::Point(tribord_panier.x + (int)(sin(cap_angle_rad) * longueur_panier / pixelWidth), tribord_panier.y - (int)(cos(cap_angle_rad) * longueur_panier / pixelWidth));//secondPointRectangle
+				cv::Point avant_pixel_tribord_panier = cv::Point(tribord_panier.x + (int)(cos(cap_angle_rad) * largeur_panier / pixelWidth), (int)(tribord_panier.y + sin(cap_angle_rad) * largeur_panier / pixelWidth));//secondPointRectangle
+				cv::Point avant_pixel_babord_panier = cv::Point((int)(tribord_panier.x + sin(cap_angle_rad) * longueur_panier / pixelWidth + cos(cap_angle_rad) * largeur_panier / pixelWidth), (int)(tribord_panier.y + sin(cap_angle_rad) * largeur_panier / pixelWidth - cos(cap_angle_rad) * longueur_panier / pixelWidth));
+
+				line(img_color, tribord_panier, pixel_babord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
+				line(img_color, tribord_panier, avant_pixel_tribord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
+				line(img_color, avant_pixel_tribord_panier, avant_pixel_babord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
+				line(img_color, pixel_babord_panier, avant_pixel_babord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
+
+
+				cv::Point tribord_workspace = cv::Point((int)(pixel_tribord.x + sin(cap_angle_rad) * lateral_margin / pixelWidth + cos(cap_angle_rad) * arriere_margin / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * arriere_margin / pixelWidth - cos(cap_angle_rad) * lateral_margin / pixelWidth));
+				cv::Point pixel_babord_workspace = cv::Point(tribord_workspace.x + (int)(sin(cap_angle_rad) * largeur_workspace / pixelWidth), tribord_workspace.y - (int)(cos(cap_angle_rad) * largeur_workspace / pixelWidth));//secondPointRectangle
+				cv::Point avant_pixel_tribord_workspace = cv::Point(tribord_workspace.x + (int)(cos(cap_angle_rad) * longueur_workspace / pixelWidth), (int)(tribord_workspace.y + sin(cap_angle_rad) * longueur_workspace / pixelWidth));//secondPointRectangle
+				cv::Point avant_pixel_babord_workspace = cv::Point((int)(tribord_workspace.x + sin(cap_angle_rad) * largeur_workspace / pixelWidth + cos(cap_angle_rad) * longueur_workspace / pixelWidth), (int)(tribord_workspace.y + sin(cap_angle_rad) * longueur_workspace / pixelWidth - cos(cap_angle_rad) * largeur_workspace / pixelWidth));
+
+				line(img_color, tribord_workspace, pixel_babord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
+				line(img_color, tribord_workspace, avant_pixel_tribord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
+				line(img_color, avant_pixel_tribord_workspace, avant_pixel_babord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
+				line(img_color, pixel_babord_workspace, avant_pixel_babord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
+				circle(img_color, pixel_tribord, 5, vert, (int)(0.1 / pixelWidth), LINE_AA);
+				circle(img_color, pixel_babord, 5, rouge, (int)(0.1 / pixelWidth), LINE_AA);
+				/*cv::imshow("Test", img_color);
+				cv::waitKey(0);*/
+
+				cv::Point centre_image_bathy = cv::Point(img_color.size().width / 2, img_color.size().height / 2);
+
+				for_Rotation = getRotationMatrix2D(centre_image_bathy, (cap_angle), 1); //cap angle dans le sens trigo
+				Mat rotated_image_color;
+
+
+				//max(abs(cos(x)+sin(x)),abs( -cos(x)+sin(x)))
+			/*	double scale_factor= max(abs(cos(cap_angle_rad) + sin(cap_angle_rad)), abs(-cos(cap_angle_rad) + sin(cap_angle_rad)));
+				cv::Size rotated_image_size = cv::Size((int)(img_color.size().width * scale_factor), (int)(img_color.size().height * scale_factor));*/
+				warpAffine(img_color, rotated_image_color, for_Rotation, img_color.size());//applying affine transformation//
+				//cv::imshow("Test2", rotated_image_color);
+
+				Mat cropped_image_bathy = rotated_image_color(Range(centre_image_bathy.x - (int)(14 / pixelWidth), centre_image_bathy.x + (int)(14 / pixelWidth)), Range(centre_image_bathy.y - (int)(14 / pixelWidth), centre_image_bathy.y + (int)(14 / pixelWidth)));
+				Mat zoomed_bathy = rotated_image_color(Range(centre_image_bathy.x - (int)(3 / pixelWidth), centre_image_bathy.x + (int)(3 / pixelWidth)), Range(centre_image_bathy.y - (int)(3 / pixelWidth), centre_image_bathy.y + (int)(3 / pixelWidth)));
+				/*cv::imshow("Test3", cropped_image_bathy);
+				cv::waitKey(0);*/
+
+				//scale_factor_resized_map = 28/560; //meter size/pixel size
+
+				cv::resize(cropped_image_bathy, resized_bathy, cv::Size(560, 560));
+
+
+				//zoomed_bathy = resized_bathy(cv::Rect(220, 220, 120, 120));
 
 				cv::resize(zoomed_bathy, resized_zoomed_bathy, cv::Size(300, 300));
 
@@ -4660,8 +4754,8 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 				cv::line(resized_bathy, cv::Point(0, 280), cv::Point(560, 280), cv::Scalar(0, 0, 255), 1);
 				cv::line(resized_bathy, cv::Point(280, 0), cv::Point(280, 560), cv::Scalar(0, 0, 255), 1);
 
-				cv::line(resized_bathy, cv::Point(0, 280), cv::Point(560, 280), cv::Scalar(0, 0, 255), 1);
-				cv::line(resized_bathy, cv::Point(280, 0), cv::Point(280, 560), cv::Scalar(0, 0, 255), 1);
+				/*cv::line(resized_bathy, cv::Point(0, 280), cv::Point(560, 280), cv::Scalar(0, 0, 255), 1);
+				cv::line(resized_bathy, cv::Point(280, 0), cv::Point(280, 560), cv::Scalar(0, 0, 255), 1);*/
 
 				for (size_t i = 0; i < 560; i += 20)
 				{
@@ -4669,17 +4763,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 					cv::line(resized_bathy, cv::Point(280 - 2, i), cv::Point(280 + 2, i), cv::Scalar(0, 0, 255), 1);
 				}
 
-				for (size_t i = 280; i < 560; i += 100)
-				{
-					cv::line(resized_bathy, cv::Point(i, 280 - 5), cv::Point(i, 280 + 5), cv::Scalar(0, 0, 255), 1);
-					cv::line(resized_bathy, cv::Point(280 - 5, i), cv::Point(280 + 5, i), cv::Scalar(0, 0, 255), 1);
-				}
 
-				for (size_t i = 280; i > 80; i -= 100)
-				{
-					cv::line(resized_bathy, cv::Point(i, 280 - 5), cv::Point(i, 280 + 5), cv::Scalar(0, 0, 255), 1);
-					cv::line(resized_bathy, cv::Point(280 - 5, i), cv::Point(280 + 5, i), cv::Scalar(0, 0, 255), 1);
-				}
 
 
 				pictureBoxBathy->Image = ConvertMat2Bitmap(resized_bathy);
@@ -4708,18 +4792,18 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 		}
 	}
 
-	float scaleTension(float tension) {
-		tension = 1000 - tension;
-		return (tension - 0) / (1000 - 0) * (200 - 0) + 0;
-	}
+		   float scaleTension(float tension) {
+			   tension = 1000 - tension;
+			   return (tension - 0) / (1000 - 0) * (200 - 0) + 0;
+		   }
 
-	/*--------------------------------------------------------------
-	*
-	*
-	*		TODO: Cabble tension display (need to receive appropiate frame from P-E)
-	*
-	*
-	* --------------------------------------------------------------*/
+		   /*--------------------------------------------------------------
+		   *
+		   *
+		   *		TODO: Cabble tension display (need to receive appropiate frame from P-E)
+		   *
+		   *
+		   * --------------------------------------------------------------*/
 
 	private: System::Void backgroundWorkerCableTension_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 
@@ -4782,7 +4866,7 @@ private: System::Windows::Forms::ErrorProvider^ errorProvider1;
 
 	}
 
-private: System::Void textBoxPRoll_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-}
-};
+	private: System::Void textBoxPRoll_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	}
+	};
 }

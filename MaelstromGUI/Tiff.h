@@ -6,6 +6,10 @@
 #include "cpl_conv.h"
 #include "gdalwarper.h"
 #include "stdlib.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgcodecs/imgcodecs.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
 
 
 
@@ -87,32 +91,22 @@ public:
         return geotransform;
     }
     
-    std::vector<std::vector<float>> readWindowRaster() {
+    std::vector<std::vector<float>> readWindowRaster(float** band, double window_Xcenter, double window_Ycenter, double& pixelWidth, double& pixelHeight, double& origin_global_geotiff_x, double& origin_global_geotiff_y, double& UTM_window_origin_x, double& UTM_window_origin_y) {
         
-        double* geotransform = GetGeoTransform();
-        double originX = geotransform[0];
-        double originY = geotransform[3];
-        double pixelWidth = geotransform[1];
-        double pixelHeight = geotransform[5];
-        double window_Xorigin = 293083; //289628  ; //in meters
-        double window_Yorigin = 5034918; //5033699  ;
-        double xOffset = int((window_Xorigin - originX) / pixelWidth);
-        double yOffset = int((window_Yorigin - originY) / pixelHeight); //center coordinates
+        
+        
+        //double window_Xcenter = 293083; //289628  ; //in meters
+        //double window_Ycenter = 5034918; //5033699  ;
+        double xOffset = int((window_Xcenter - origin_global_geotiff_x) / pixelWidth);
+        double yOffset = int((window_Ycenter - origin_global_geotiff_y) / pixelHeight); //center coordinates
         //size in meters
-        double win_xsize = 10;
-        double win_ysize = 10;
+        double win_xsize = 30 * 1.5;// in order to crop again the image
+        double win_ysize = 30 * 1.5;
         int winx = int(win_xsize / pixelWidth);
         int winy = -int(win_ysize / pixelHeight);
-        //get the projection
-        //const char* projection = GetProjection();
+        //int winy = int(win_ysize / pixelHeight);
         
-        
-        float** band = GetRasterBand(1); //TODO suivant la vitesse d'execution, ne faire qu'une fois au début du programme et stocker la band dans un argument de la classe
-        std::cout << "bandok" << std::endl;
 
-       
-        //band->RasterIO(GF_Read, xOffset - winx / 2, yOffset - winy / 2, winx, winy,
-        //    blockData, pixelWidth, pixelHeight, GDT_Float32, 0, 0);
        
         std::vector<std::vector<float>> vect;
        
@@ -120,19 +114,75 @@ public:
         int endy = yOffset + (winy / 2);
         int beginx = xOffset - (winx / 2);
         int endx = xOffset + (winx / 2);
-        std::cout << "beginy " << beginy << " endy " << endy << " beginx " << beginx << "  endx " << endx << std::endl;
+        
         for (int i = beginy; i < endy; i++) {
             std::vector<float> lign;
-            std::cout << i << std::endl;
+            
             for (int j = beginx; j <endx ; j++) {
                 lign.push_back(band[i][j]);
             }
             vect.push_back(lign);
         }
         
+        UTM_window_origin_x = origin_global_geotiff_x + beginx * pixelWidth;
+        UTM_window_origin_y = origin_global_geotiff_y + beginy * pixelHeight;
+
+
+
         return vect;
           
     }
+
+    cv::Mat plotBathy(std::vector<std::vector<float>>& raster){
+        int winx = raster.size();
+        int winy = raster[0].size();
+        double nodata = this->GetNoDataValue();
+        //find min and max
+        float min = 100;
+        float max = -100;
+        for (int i = 0; i < winx; i++) {
+            for (int j = 0; j < winy; j++) {
+
+                float data = raster[i][j];
+                
+                if (data == nodata) {
+                    raster[i][j] = 0.;
+                }
+
+                else {
+                    if (data < min) {
+                        min = data;                      
+                    }
+
+                    if (data > max) {
+                        max = data;                      
+                    }
+                };
+            };
+        };
+        
+        cv::Mat img(winx, winy, CV_8UC1);
+        unsigned char pixel_value = 0;
+
+        for (int i = 0; i < winx; i++) {
+            for (int j = 0; j < winy; j++) {
+
+                pixel_value = (uchar)((raster[i][j] - min) / (max - min) * 255);
+                img.at<uchar>(i, j) = pixel_value;
+
+            };
+        };
+
+
+        
+        //cv::resize(img, img, cv::Size(1000, 1000));
+        cv::Mat img_color;
+        cv::applyColorMap(img, img_color, cv::COLORMAP_TURBO);
+        return img_color;
+    }
+
+
+
 
     double GetNoDataValue() {
         /*
