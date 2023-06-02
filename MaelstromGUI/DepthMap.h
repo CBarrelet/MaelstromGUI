@@ -272,8 +272,8 @@ public:
 
 					this->altitude_min = min(high_depth_map[i][j].altitude, this->altitude_min);
 					this->altitude_max = max(high_depth_map[i][j].altitude, this->altitude_max);
-					this->altitude_min = -6;
-					this->altitude_max = -2;
+					this->altitude_min = -5;
+					this->altitude_max = -3;
 				}
 			}
 		}
@@ -339,8 +339,15 @@ public:
 						else
 							is_good_value *= false;
 					}
-
-					is_good_value = true;
+					//filtrage des coordonnees du fond marin
+					double profondeur_min = -3; 
+					double profondeur_max  = -5;
+					if ((dvl_coo[0].z < profondeur_min) && (dvl_coo[0].z > profondeur_max) 
+						&& (dvl_coo[1].z < profondeur_min) && (dvl_coo[1].z > profondeur_max)
+						&& (dvl_coo[2].z < profondeur_min) && (dvl_coo[2].z > profondeur_max)
+						&& (dvl_coo[3].z < profondeur_min) && (dvl_coo[3].z > profondeur_max)
+						) is_good_value = true;
+						
 
 					// Very high map
 					if (is_good_value) {

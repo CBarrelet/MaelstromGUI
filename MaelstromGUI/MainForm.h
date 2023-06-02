@@ -3415,9 +3415,9 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 			}
 		// Display the depth map
 		if (ptb == 1) {
-			std::cout << "ptb 1" << std::endl;
+			//std::cout << "ptb 1" << std::endl;
 			if (!img.empty()) {
-				std::cout << "image non nulle" << std::endl;
+				//std::cout << "image non nulle" << std::endl;
 				ptbDepthMap->Image = ConvertMat2Bitmap(img); // Refresh the image on the Windows application
 				//ptbSource->Refresh(); // If streaming, freeze
 				//ptbDepthMap->Refresh();
@@ -3533,7 +3533,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 			//target_point3D = cv::Point3d(-v * d / camera_params.fy, -u * d / camera_params.fx, d);
 
 			robot.setTarget(target_point3D);
-			robot.goToTarget();
+			robot.goToTarget(bathymetry.flag_bathy_is_clicked);
 			bathymetry.flag_bathy_is_clicked = false;
 
 			/*this->labelTarget->Text = "Target (x, y, z): " + getPrecision(target_point3D.x, 3) + " m " +
@@ -4010,9 +4010,10 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 	}
 	private: System::Void backgroundWorkerDVL_Security_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
 		while(true){
-			double dvl_sea_lvl_from_robot = -0.8;
-			if (robot.pos[2] > -1.2 || arduino.depth < 0.5) {
-				//std::cout << "Coucou" << std::endl;
+			// dvl_sea_lvl_from_robot = -0.8; pour info
+			if ((robot.pos[2] > -1.2) || (arduino.depth < 0.5)) {
+
+				std::cout << "Stop DVL" << std::endl;
 				arduino.dvlOff();
 				system(DVL_READER_CLOSE);
 				this->buttonDVLon->Text = L"DVL on";
@@ -4184,7 +4185,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 				//	// TODO, click on the map
 				//}
 				display(depth_map.getMap(), 1);
-				std::cout << "displqy " << std::endl;
+				//std::cout << "displqy " << std::endl;
 
 				// Send map to the simulation PC
 				//simulation.sendMap(depth_map.getUDPFrame());  //enleve debug mai 23
@@ -4657,12 +4658,12 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 		cv::Scalar vert = cv::Scalar(0, 160, 0); // BGR
 		cv::Scalar rouge = cv::Scalar(0, 0, 255); // BGR
 
-		double largeur_panier = 2.50;
-		double longueur_panier = 2.50;
+		double largeur_panier = 3.0;
+		double longueur_panier = 3.0;
 
 		double lateral_margin = 1.5; //colision margin
-		double avant_margin = 2.;
-		double arriere_margin = 1.;
+		double avant_margin = 2.2;
+		double arriere_margin = 2.1;
 		double largeur_workspace = width_pool - 2 * lateral_margin;
 		double longueur_workspace = length_pool - avant_margin - arriere_margin - largeur_panier;
 
@@ -4749,10 +4750,10 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 				cv::Point avant_pixel_tribord_workspace = cv::Point(tribord_workspace.x + (int)(cos(cap_angle_rad) * longueur_workspace / pixelWidth), (int)(tribord_workspace.y + sin(cap_angle_rad) * longueur_workspace / pixelWidth));//secondPointRectangle
 				cv::Point avant_pixel_babord_workspace = cv::Point((int)(tribord_workspace.x + sin(cap_angle_rad) * largeur_workspace / pixelWidth + cos(cap_angle_rad) * longueur_workspace / pixelWidth), (int)(tribord_workspace.y + sin(cap_angle_rad) * longueur_workspace / pixelWidth - cos(cap_angle_rad) * largeur_workspace / pixelWidth));
 
-				line(img_color, tribord_workspace, pixel_babord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
-				line(img_color, tribord_workspace, avant_pixel_tribord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
-				line(img_color, avant_pixel_tribord_workspace, avant_pixel_babord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
-				line(img_color, pixel_babord_workspace, avant_pixel_babord_workspace, vert, (int)(0.1 / pixelWidth), LINE_AA);
+				line(img_color, tribord_workspace, pixel_babord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
+				line(img_color, tribord_workspace, avant_pixel_tribord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
+				line(img_color, avant_pixel_tribord_workspace, avant_pixel_babord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
+				line(img_color, pixel_babord_workspace, avant_pixel_babord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
 				circle(img_color, pixel_tribord, 5, vert, (int)(0.1 / pixelWidth), LINE_AA);
 				circle(img_color, pixel_babord, 5, rouge, (int)(0.1 / pixelWidth), LINE_AA);
 				/*cv::imshow("Test", img_color);
@@ -4857,7 +4858,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 		Mat bar_m6 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
 		Mat bar_m7 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
 		Mat bar_m8 = Mat::zeros(cv::Size(40, 200), CV_8UC3);
-		int min_tension = 50;
+		int min_tension = 10;
 		double m1 = 231, m2 = 754, m3 = 790, m4 = 120, m5 = 322, m6 = 72, m7 = 167, m8 = 356;
 
 		while (true) {

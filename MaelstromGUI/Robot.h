@@ -3,6 +3,10 @@
 #include "config.h"
 #include <random>
 #include <map>
+#include "Bathymetry.h"
+
+
+
 
 class Robot {
 
@@ -198,15 +202,17 @@ public:
 		this->target[3] = 1; // delta_z
 	}
 
-	void goToTarget() {
+	void goToTarget(bool flag_bathy_is_clicked) {
+		if(flag_bathy_is_clicked == true){
 		float x = this->target[0];
 		float y = this->target[1];
 		float z = this->target[2];
 		float delta_z = this->target[3];
 		std::cout << "go to . " << x << " " << y << std::endl; 
-		z = -1.2;
+		z = -2;
 		delta_z = 0.1;
 		goTo(x, y, z, delta_z);
+		}
 	}
 
 	/*------------------------------
