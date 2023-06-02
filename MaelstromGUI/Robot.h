@@ -69,10 +69,11 @@ public:
 	float scanning_depth;
 
 	// Plateform: working zone 
-	int max_x = 7; // Shall be divised by two, the 0 is in the center
-	int max_y = 4; // Shall be divised by two, the 0 is in the center
-	float start_x = - float(max_x) / 2, start_y = - float(max_y) / 2;
-	float end_x = float(max_x) / 2, end_y = float(max_y) / 2;
+	float max_x = 4; // Shall be divised by two, the 0 is in the center
+	float max_y = 3.; // Shall be divised by two, the 0 is in the center
+	float centre_x = -0.5;
+	float start_x = - float(max_x) / 2 + centre_x , start_y = - float(max_y) / 2;
+	float end_x = float(max_x) / 2 + centre_x, end_y = float(max_y) / 2;
 
 	
 
@@ -306,7 +307,7 @@ public:
 				+- 2.0
 		*/
 		float z = this->scanning_depth;
-
+		z = - 2;
 		float step = 0.5;
 		int n_step = this->max_x / step;
 
