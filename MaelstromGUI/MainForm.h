@@ -4600,35 +4600,39 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 
 		   // Read "SHM", update the robot postition, and display the bathymetry
 	private: System::Void backgroundWorkerBathy_DoWork(System::Object^ sender, System::ComponentModel::DoWorkEventArgs^ e) {
+		
 
-
-		//the new way of bathy
-		Geotiff tiff((const char*)"C:/Users/admin/Desktop/sacca_clip.tif"); //saccaFisola_5cm.tif    //arsenale_2022_06_5cm.tiff");
-
-			//plot the window around the GPS position
+		//Tiff object
+		Geotiff tiff((const char*)"C:/Users/admin/Desktop/work_area_CS_2.tif"); //saccaFisola_5cm.tif    //arsenale_2022_06_5cm.tiff");
+		std::cout << "Bathy map opened" << std::endl;
 		float** band = tiff.GetRasterBand(1);
 		double* transform = tiff.GetGeoTransform();
 		double origin_global_geotiff_x = transform[0];
 		double origin_global_geotiff_y = transform[3];
 		double pixelWidth = transform[1];
 		double pixelHeight = transform[5];
+		double UTM_window_origin_x = 0;
+		double UTM_window_origin_y = 0;
 
-
-
-
-
+		// Opencv objects
 		cv::Mat bathy = cv::Mat::ones(cv::Size(560, 560), CV_8UC3);
 		cv::Mat resized_bathy = cv::Mat::ones(cv::Size(400, 400), CV_8UC3);
-		unsigned char altitude_color = 0;
+		Mat for_Rotation;
+		Mat zoomed_bathy;
+		Mat resized_zoomed_bathy;
 
-		vector<double> bathy_map;
+		
+		//unsigned char altitude_color = 0;
+
+		//vector<double> bathy_map;
 
 
-		int total = 0;
+		//int total = 0;
 
-		double temp = 0;
-		int count = 0;
+		//double temp = 0;
+		//int count = 0;
 
+		//GPS objects
 		double lat_P = 0, long_P = 0;
 		double utm_northing_robot = 0, utm_easting_robot = 0;
 		double utm_northing_babord = 0, utm_easting_babord = 0;
@@ -4636,44 +4640,46 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 		cv::Point pixel_tribord;
 		cv::Point secondPointRectangle;
 		cv::Point UTM_northing_robot;
-
-
 		char* utm_zone = "33";
+		double cap_angle = 0; //en degres
 
 		bool update_check = true;
 
-		double cap_angle = 0; //en degres
-		Mat for_Rotation;
+		
 
-		Mat zoomed_bathy;
-		Mat resized_zoomed_bathy;
-
-		double UTM_window_origin_x = 0;
-		double UTM_window_origin_y = 0;
-
+		// platform dimension & drawing
 		const double width_pool = 7.75; //distance entre les GPS
 		const double length_pool = 12.25;
-
 		cv::Scalar gris = cv::Scalar(50, 50, 50); // BGR
 		cv::Scalar vert = cv::Scalar(0, 160, 0); // BGR
 		cv::Scalar rouge = cv::Scalar(0, 0, 255); // BGR
-
 		double largeur_panier = 3.0;
 		double longueur_panier = 3.0;
-
 		double lateral_margin = 1.5; //colision margin
 		double avant_margin = 2.2;
 		double arriere_margin = 2.1;
 		double largeur_workspace = width_pool - 2 * lateral_margin;
 		double longueur_workspace = length_pool - avant_margin - arriere_margin - largeur_panier;
+		double real_window_size = 78; //half of the length of the bathy map visible on the interface, should be a 14 multiple
 
 
+		//buoy in campo sperimentale
+		double utm_northing_A = 5036110.296, utm_easting_A = 311624.674;
+		double xA = 0, yA = 0;
+		double utm_northing_B = 5036141.568, utm_easting_B = 311699.067;
+		double xB = 0, yB = 0;
+		double utm_northing_C = 5036064.728, utm_easting_C = 311731.512;
+		double xC = 0, yC = 0;
+		double utm_northing_D = 5036034.820, utm_easting_D = 311654.616;
+		double xD = 0, yD = 0;
 
 		while (true) {
 
 			try
 			{
 
+
+				//Read GPS position and cap
 				plateform.getGeoFromXYPos(robot.pos[0], robot.pos[1], &lat_P, &long_P);
 				LLtoUTM((const double)lat_P, (const double)long_P,
 					utm_northing_robot, utm_easting_robot,
@@ -4691,7 +4697,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 					utm_northing_tribord, utm_easting_tribord,
 					utm_zone);
 
-
+				
 
 				Sleep(250);
 
@@ -4700,91 +4706,126 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 				cap_angle = cap_angle - 180;
 				double cap_angle_rad = plateform.cap_GPS_babord_vers_tribord - PI;
 
-				//cap_angle_rad = 50*DEG2RAD - PI; //debug
-				//cap_angle = cap_angle_rad * RAD2DEG; //debug
-				//Triche pour visualiser
-				/*utm_easting_tribord = 293083;
-				utm_northing_tribord = 5034918;
-				utm_easting_robot = 293083;
-				utm_northing_robot = 5034918;*/
 
-
-
-
-				//New way of bathy 
+				//Get data on a window around the robot position
 				std::vector<std::vector<float>> rasterBandData = tiff.readWindowRaster(band, utm_easting_robot, utm_northing_robot, pixelWidth, pixelHeight, origin_global_geotiff_x, origin_global_geotiff_y, UTM_window_origin_x, UTM_window_origin_y);
-
+				
 				Mat img_color = tiff.plotBathy(rasterBandData);
-
+				
 				/*std::cout << img_color.size().width << std::endl;
 				std::cout << img_color.size().height << std::endl;*/
 
-				//Plot piscine
+				//Plot pool, grid and workspace
 				//cap angle dans le sens anti trigo
 				pixel_tribord.x = (int)((utm_easting_tribord - UTM_window_origin_x) / pixelWidth);
-				pixel_tribord.y = (int)((utm_northing_tribord - UTM_window_origin_y) / pixelHeight); //took the same length and width
+				pixel_tribord.y = (int)((utm_northing_tribord - UTM_window_origin_y) / pixelHeight); 
 				cv::Point pixel_babord = cv::Point(pixel_tribord.x + (int)(sin(cap_angle_rad) * width_pool / pixelWidth), pixel_tribord.y - (int)(cos(cap_angle_rad) * width_pool / pixelWidth));//secondPointRectangle
 				cv::Point avant_pixel_tribord = cv::Point(pixel_tribord.x + (int)(cos(cap_angle_rad) * length_pool / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * length_pool / pixelWidth));//secondPointRectangle
 				cv::Point avant_pixel_babord = cv::Point((int)(pixel_tribord.x + sin(cap_angle_rad) * width_pool / pixelWidth + cos(cap_angle_rad) * length_pool / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * length_pool / pixelWidth - cos(cap_angle_rad) * width_pool / pixelWidth));
-
+				
 
 				line(img_color, pixel_tribord, pixel_babord, gris, (int)(0.2 / pixelWidth), LINE_AA);
 				line(img_color, pixel_tribord, avant_pixel_tribord, gris, (int)(0.2 / pixelWidth), LINE_AA);
 				line(img_color, avant_pixel_tribord, avant_pixel_babord, gris, (int)(0.2 / pixelWidth), LINE_AA);
 				line(img_color, pixel_babord, avant_pixel_babord, gris, (int)(0.2 / pixelWidth), LINE_AA);
-
-				// panier
+				
+				// grid
 				cv::Point tribord_panier = cv::Point((int)(pixel_tribord.x + sin(cap_angle_rad) * 3.2 / pixelWidth + cos(cap_angle_rad) * (length_pool - largeur_panier) / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * (length_pool - largeur_panier) / pixelWidth - cos(cap_angle_rad) * 3.2 / pixelWidth));
 				cv::Point pixel_babord_panier = cv::Point(tribord_panier.x + (int)(sin(cap_angle_rad) * longueur_panier / pixelWidth), tribord_panier.y - (int)(cos(cap_angle_rad) * longueur_panier / pixelWidth));//secondPointRectangle
 				cv::Point avant_pixel_tribord_panier = cv::Point(tribord_panier.x + (int)(cos(cap_angle_rad) * largeur_panier / pixelWidth), (int)(tribord_panier.y + sin(cap_angle_rad) * largeur_panier / pixelWidth));//secondPointRectangle
 				cv::Point avant_pixel_babord_panier = cv::Point((int)(tribord_panier.x + sin(cap_angle_rad) * longueur_panier / pixelWidth + cos(cap_angle_rad) * largeur_panier / pixelWidth), (int)(tribord_panier.y + sin(cap_angle_rad) * largeur_panier / pixelWidth - cos(cap_angle_rad) * longueur_panier / pixelWidth));
-
-				line(img_color, tribord_panier, pixel_babord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
-				line(img_color, tribord_panier, avant_pixel_tribord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
-				line(img_color, avant_pixel_tribord_panier, avant_pixel_babord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
-				line(img_color, pixel_babord_panier, avant_pixel_babord_panier, gris, (int)(0.1 / pixelWidth), LINE_AA);
-
-
+				
+				line(img_color, tribord_panier, pixel_babord_panier, gris, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, tribord_panier, avant_pixel_tribord_panier, gris, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, avant_pixel_tribord_panier, avant_pixel_babord_panier, gris, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, pixel_babord_panier, avant_pixel_babord_panier, gris, (int)(0.2 / pixelWidth), LINE_AA);
+				
+				
+				// workspace
 				cv::Point tribord_workspace = cv::Point((int)(pixel_tribord.x + sin(cap_angle_rad) * lateral_margin / pixelWidth + cos(cap_angle_rad) * arriere_margin / pixelWidth), (int)(pixel_tribord.y + sin(cap_angle_rad) * arriere_margin / pixelWidth - cos(cap_angle_rad) * lateral_margin / pixelWidth));
 				cv::Point pixel_babord_workspace = cv::Point(tribord_workspace.x + (int)(sin(cap_angle_rad) * largeur_workspace / pixelWidth), tribord_workspace.y - (int)(cos(cap_angle_rad) * largeur_workspace / pixelWidth));//secondPointRectangle
 				cv::Point avant_pixel_tribord_workspace = cv::Point(tribord_workspace.x + (int)(cos(cap_angle_rad) * longueur_workspace / pixelWidth), (int)(tribord_workspace.y + sin(cap_angle_rad) * longueur_workspace / pixelWidth));//secondPointRectangle
 				cv::Point avant_pixel_babord_workspace = cv::Point((int)(tribord_workspace.x + sin(cap_angle_rad) * largeur_workspace / pixelWidth + cos(cap_angle_rad) * longueur_workspace / pixelWidth), (int)(tribord_workspace.y + sin(cap_angle_rad) * longueur_workspace / pixelWidth - cos(cap_angle_rad) * largeur_workspace / pixelWidth));
-
-				line(img_color, tribord_workspace, pixel_babord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
-				line(img_color, tribord_workspace, avant_pixel_tribord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
-				line(img_color, avant_pixel_tribord_workspace, avant_pixel_babord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
-				line(img_color, pixel_babord_workspace, avant_pixel_babord_workspace, vert, (int)(0.05 / pixelWidth), LINE_AA);
+				
+				line(img_color, tribord_workspace, pixel_babord_workspace, vert, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, tribord_workspace, avant_pixel_tribord_workspace, vert, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, avant_pixel_tribord_workspace, avant_pixel_babord_workspace, vert, (int)(0.2 / pixelWidth), LINE_AA);
+				line(img_color, pixel_babord_workspace, avant_pixel_babord_workspace, vert, (int)(0.2 / pixelWidth), LINE_AA);
 				circle(img_color, pixel_tribord, 5, vert, (int)(0.1 / pixelWidth), LINE_AA);
 				circle(img_color, pixel_babord, 5, rouge, (int)(0.1 / pixelWidth), LINE_AA);
-				/*cv::imshow("Test", img_color);
-				cv::waitKey(0);*/
+
+				
+				//plot the buoys in campo sperimentale
+				
+				//buoy A			
+				xA = int((utm_easting_A - UTM_window_origin_x) / pixelWidth);
+				yA = int((utm_northing_A - UTM_window_origin_y) / pixelHeight);
+				/*std::cout << "xA" << xA << std::endl;
+				std::cout << "yA" << yA << std::endl;*/
+				if ((0 < xA) && (xA < img_color.size().width) && (0 < yA) && (yA < img_color.size().height)) {
+					//vect[yA][xA] = 255;
+					circle(img_color, cv::Point((int)xA,(int)yA), 5, gris, (int)(0.3 / pixelWidth), LINE_AA);
+					//std::cout << "A" << std::endl;
+				}
+
+				
+			
+				//buoy B
+				xB = int((utm_easting_B - UTM_window_origin_x) / pixelWidth);
+				yB = int((utm_northing_B - UTM_window_origin_y) / pixelHeight);
+				/*std::cout << "xB" << xB << std::endl;
+				std::cout << "yB" << yB << std::endl;*/
+				if ((0 < xB) && (xB < img_color.size().width) && (0 < yB) && (yB < img_color.size().height)) {
+					//vect[yB][xB] = 255;
+					circle(img_color, cv::Point((int)xB, (int)yB), 5, gris, (int)(0.3 / pixelWidth), LINE_AA);
+					//std::cout << "B" << std::endl;
+				}
+
+			
+				//buoy C
+				xC = int((utm_easting_C - UTM_window_origin_x) / pixelWidth);
+				yC = int((utm_northing_C - UTM_window_origin_y) / pixelHeight);
+				//std::cout << "xC" << xC << std::endl;
+				//std::cout << "yC" << yC << std::endl;
+				if ((0 < xC) && (xC < img_color.size().width) && (0 < yC) && (yC < img_color.size().height)) {
+					//vect[yC][xC] = 0;
+					circle(img_color, cv::Point((int)xC, (int)yC), 5, gris, (int)(0.3 / pixelWidth), LINE_AA);
+					std::cout << "C" << std::endl;
+				}
+
+				
+				//buoy D
+				xD = int((utm_easting_D - UTM_window_origin_x) / pixelWidth);
+				yD = int((utm_northing_D - UTM_window_origin_y) / pixelHeight);
+				/*std::cout << "xD" << xD << std::endl;
+				std::cout << "yD" << yD << std::endl;*/
+				cv::Point D = cv::Point((int)xD, (int)yD);
+				if ((0 < xD) && (xD < img_color.size().width) && (0 < yD) && (yD < img_color.size().height)) {
+					//vect[yD][xD] = 255;
+					circle(img_color, D , 5, gris, (int)(0.3 / pixelWidth), LINE_AA);
+					//std::cout << "D  " <<D<< std::endl;
+				}
+				
+
+
 
 				cv::Point centre_image_bathy = cv::Point(img_color.size().width / 2, img_color.size().height / 2);
-
+				
+				//rotate the map
 				for_Rotation = getRotationMatrix2D(centre_image_bathy, (cap_angle), 1); //cap angle dans le sens trigo
 				Mat rotated_image_color;
-
-
-				//max(abs(cos(x)+sin(x)),abs( -cos(x)+sin(x)))
-			/*	double scale_factor= max(abs(cos(cap_angle_rad) + sin(cap_angle_rad)), abs(-cos(cap_angle_rad) + sin(cap_angle_rad)));
-				cv::Size rotated_image_size = cv::Size((int)(img_color.size().width * scale_factor), (int)(img_color.size().height * scale_factor));*/
+			
 				warpAffine(img_color, rotated_image_color, for_Rotation, img_color.size());//applying affine transformation//
 				//cv::imshow("Test2", rotated_image_color);
 
-				Mat cropped_image_bathy = rotated_image_color(Range(centre_image_bathy.x - (int)(14 / pixelWidth), centre_image_bathy.x + (int)(14 / pixelWidth)), Range(centre_image_bathy.y - (int)(14 / pixelWidth), centre_image_bathy.y + (int)(14 / pixelWidth)));
+				//zoom and resize
+				Mat cropped_image_bathy = rotated_image_color(Range(centre_image_bathy.x - (int)(real_window_size / pixelWidth), centre_image_bathy.x + (int)(real_window_size / pixelWidth)), Range(centre_image_bathy.y - (int)(real_window_size / pixelWidth), centre_image_bathy.y + (int)(real_window_size / pixelWidth))); 
 				Mat zoomed_bathy = rotated_image_color(Range(centre_image_bathy.x - (int)(3 / pixelWidth), centre_image_bathy.x + (int)(3 / pixelWidth)), Range(centre_image_bathy.y - (int)(3 / pixelWidth), centre_image_bathy.y + (int)(3 / pixelWidth)));
-				/*cv::imshow("Test3", cropped_image_bathy);
-				cv::waitKey(0);*/
-
-				//scale_factor_resized_map = 28/560; //meter size/pixel size
-
+				
 				cv::resize(cropped_image_bathy, resized_bathy, cv::Size(560, 560));
-
-
-				//zoomed_bathy = resized_bathy(cv::Rect(220, 220, 120, 120));
-
 				cv::resize(zoomed_bathy, resized_zoomed_bathy, cv::Size(300, 300));
 
+				//plot the scale
 				cv::line(resized_zoomed_bathy, cv::Point(0, 150), cv::Point(300, 150), cv::Scalar(0, 0, 255), 1);
 				cv::line(resized_zoomed_bathy, cv::Point(150, 0), cv::Point(150, 300), cv::Scalar(0, 0, 255), 1);
 
@@ -4808,7 +4849,8 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 
 
 
-
+				
+				//plot in the interface
 				pictureBoxBathy->Image = ConvertMat2Bitmap(resized_bathy);
 
 				pictureBoxZoomedBathy->Image = ConvertMat2Bitmap(resized_zoomed_bathy);
@@ -4843,7 +4885,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 		   /*--------------------------------------------------------------
 		   *
 		   *
-		   *		TODO: Cabble tension display (need to receive appropiate frame from P-E)
+		   *		Cabble tension display (need to receive appropiate frame from P-E)
 		   *
 		   *
 		   * --------------------------------------------------------------*/

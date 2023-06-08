@@ -1,7 +1,9 @@
+#pragma once
 #include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include "config.h"
+
 
 // WGS84 Parameters
 #define WGS84_A		6378137.0		///< major axis

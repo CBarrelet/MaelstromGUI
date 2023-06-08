@@ -11,6 +11,7 @@
 #include <opencv2/imgcodecs/imgcodecs.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 
+//#include "UTM.h"
 
 
 class Geotiff {
@@ -100,8 +101,8 @@ public:
         double xOffset = int((window_Xcenter - origin_global_geotiff_x) / pixelWidth);
         double yOffset = int((window_Ycenter - origin_global_geotiff_y) / pixelHeight); //center coordinates
         //size in meters
-        double win_xsize = 30 * 1.5;// in order to crop again the image
-        double win_ysize = 30 * 1.5;
+        double win_xsize = 120 * 1.5;// in order to crop again the image
+        double win_ysize = 120 * 1.5;
         int winx = int(win_xsize / pixelWidth);
         int winy = -int(win_ysize / pixelHeight);
         //int winy = int(win_ysize / pixelHeight);
@@ -119,7 +120,7 @@ public:
             std::vector<float> lign;
             
             for (int j = beginx; j <endx ; j++) {
-                if ((i < dim[0])&& (j < dim[1])){
+                if ((0 <i)&&(i < dim[0]) && (0<j)&&(j < dim[1])){
                     lign.push_back(band[i][j]);
                 }
                 else {
@@ -132,6 +133,7 @@ public:
         UTM_window_origin_x = origin_global_geotiff_x + beginx * pixelWidth;
         UTM_window_origin_y = origin_global_geotiff_y + beginy * pixelHeight;
 
+        
 
 
         return vect;
@@ -143,7 +145,7 @@ public:
         int winy = raster[0].size();
         double nodata = this->GetNoDataValue();
         //find min and max
-        float min = 100;
+        float min = 120;
         float max = -100;
         for (int i = 0; i < winx; i++) {
             for (int j = 0; j < winy; j++) {

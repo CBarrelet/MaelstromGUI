@@ -175,7 +175,7 @@ void Socket::setLocalAddressAndPort(const string& localAddress,
 void Socket::cleanUp() throw(SocketException) {
 #ifdef WIN32
     if (WSACleanup() != 0) {
-        throw SocketException("WSACleanup() failed");
+           throw SocketException("WSACleanup() failed");
     }
 #endif
 }

@@ -18,8 +18,8 @@ private:
 public:
 
 	// Maximum and minimum altitude to scale the depth map color map
-	float altitude_min = 0;
-	float altitude_max = -5;
+	float altitude_min = -5;
+	float altitude_max = -3;
 
 
 	// Global 5x5 cm map
@@ -79,8 +79,9 @@ private:
 	float max_altitude = 5; // 5 meters for the color map
 
 	// Last dvl values
-	float last_distances[4][4]; // Altitude buffer with the 4 last values
-	float coeff_filter = 1.8;
+	float last_distances[4][4]; // Altitude buffer with the 4 last values [j last value][i value of the dvl]
+	//float last_distances[10][4]; FILTER
+	float coeff_filter = 1.5;
 
 public:
 	int which_res = 1; // 0, 1, 2 Means very high, high or low resolution
@@ -112,6 +113,7 @@ public:
 
 		// Init last altitudes values
 		for (size_t i = 0; i < 4; i++)
+			//for (size_t i = 0; i < 4; i++) FILTER
 			for (size_t j = 0; j < 4; i = j++)
 				last_distances[i][j] = 0;
 
@@ -270,10 +272,10 @@ public:
 			{
 				if (high_depth_map[i][j].altitude != 0) {
 
-					this->altitude_min = min(high_depth_map[i][j].altitude, this->altitude_min);
+					this->altitude_min = min(high_depth_map[i][j].altitude, this->altitude_min) ; 
 					this->altitude_max = max(high_depth_map[i][j].altitude, this->altitude_max);
-					this->altitude_min = -5;
-					this->altitude_max = -3;
+					/*this->altitude_min = -17;
+					this->altitude_max = -12;*/
 				}
 			}
 		}
@@ -302,7 +304,7 @@ public:
 
 		for (size_t i = 0; i < 4; i++) {
 
-			is_good_value = true;
+			//is_good_value = true;
 
 			// Very high map i, j coordinates
 			convertit_coordonnees_x_y_locales_en_i_j_tres_grande_carte(
@@ -330,30 +332,52 @@ public:
 				if ((i_very_high_global >= 0) && (i_very_high_global < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH) && (j_very_high_global >= 0) && (j_very_high_global < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH)) {
 
 					// Need to filter this
-					is_good_value = true;
+					//is_good_value = true;
 
-					for (size_t j = 0; j < 4; j++) {
-						// Filter some artefacts, if at least one value is wrong, is_good_value == false
-						if ((1.5 * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] * 0.7 < dvl_distances[i]))
-							is_good_value *= true;
-						else
-							is_good_value *= false;
+					//sort last distances
+					std::vector<std::vector<double>> last_distances_sorted;
+					for (int i = 0; i < 4; i++) {
+						std::vector<double> lign;
+						for (int j = 0; j < 4; j++) {
+							lign.push_back(last_distances[j][i]);
+							sort(lign.begin(), lign.end());
+						}
+						last_distances_sorted.push_back(lign);
 					}
+					//find median
+					std::vector<double> median;
+					for (int i = 0; i < 4; i++) {
+						int l = last_distances_sorted[i].size();
+						if (l%2 ==1){
+							median.push_back(last_distances_sorted[i][l / 2]);
+						}
+						else {
+							median.push_back((last_distances_sorted[i][l / 2] + last_distances_sorted[i][l / 2 + 1]) / 2);
+						}
+					}
+					
+
+					// Filter some artefacts, if at least one value is wrong, is_good_value == false
+					if ((median[i] + 1 > dvl_distances[i]) && (median[i] - 1 < dvl_distances[i]))
+						is_good_value *= true;
+					else
+						is_good_value *= false;
+					
 					//filtrage des coordonnees du fond marin
-					double profondeur_min = -3; 
-					double profondeur_max  = -5;
+					/*double profondeur_min = -12; 
+					double profondeur_max  = -17;
 					if ((dvl_coo[0].z < profondeur_min) && (dvl_coo[0].z > profondeur_max) 
 						&& (dvl_coo[1].z < profondeur_min) && (dvl_coo[1].z > profondeur_max)
 						&& (dvl_coo[2].z < profondeur_min) && (dvl_coo[2].z > profondeur_max)
 						&& (dvl_coo[3].z < profondeur_min) && (dvl_coo[3].z > profondeur_max)
-						) is_good_value = true;
+						) is_good_value = true;*/
 						
 
 					// Very high map
 					if (is_good_value) {
-						if ((this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude < 0))
-							this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude = max(this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude, dvl_coo[i].z);
-						else
+						//if ((this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude < 0))
+						//	//this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude = max(this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude, dvl_coo[i].z);
+						//else
 							this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude = dvl_coo[i].z;
 						//altitude_color = max(min(255, (5 + global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude) * 255 / 5), 0);
 						altitude_color = (-this->global_very_high_depth_map[j_very_high_global][i_very_high_global].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
@@ -364,9 +388,9 @@ public:
 
 					// High map
 					if (is_good_value) {
-						if ((this->global_high_depth_map[j_global][i_global].altitude < 0))
-							this->global_high_depth_map[j_global][i_global].altitude = max(this->global_high_depth_map[j_global][i_global].altitude, dvl_coo[i].z);
-						else
+						//if ((this->global_high_depth_map[j_global][i_global].altitude < 0))
+						//	//this->global_high_depth_map[j_global][i_global].altitude = max(this->global_high_depth_map[j_global][i_global].altitude, dvl_coo[i].z);
+						//else
 							this->global_high_depth_map[j_global][i_global].altitude = dvl_coo[i].z;
 						//altitude_color = max(min(255, (5 + global_high_depth_map[j_global][i_global].altitude) * 255 / 5), 0);
 						altitude_color = (-this->global_high_depth_map[j_global][i_global].altitude + altitude_min) / (-altitude_max + altitude_min) * (255 - 0) + 0;
@@ -377,7 +401,16 @@ public:
 
 					}
 				}
-			}	
+			}
+			//compare the rays
+			max(dvl_distances[0], dvl_distances[1], dvl_distances[2], dvl_distances[3]);
+			if ((max(dvl_distances[0], dvl_distances[1], dvl_distances[2], dvl_distances[3]) - min(dvl_distances[0], dvl_distances[1], dvl_distances[2], dvl_distances[3])) > (this->altitude_max - this->altitude_min)*0.5) {
+				is_good_value *= 0;
+				
+			}
+			else {
+				is_good_value *= 1;
+			}
 		}
 
 
@@ -435,7 +468,7 @@ public:
 
 
 		//// Set the coorinates in the depth map coordinates space
-		//for (size_t i = 0; i < 4; i++) {
+		//for (size_t i = 0; i < 4; i++) s
 		//	dvl_coo[i].x = dvl_coo[i].x * this->low_resolution * 2;
 		//	dvl_coo[i].y = dvl_coo[i].y * this->low_resolution * 2 * -1;
 		//}
@@ -502,7 +535,7 @@ private:
 					else
 						is_good_value *= false;
 				}
-
+				
 				if (is_good_value) {
 					if (this->high_depth_map[this->beams[i].x][this->beams[i].y].altitude < 0) 
 						this->high_depth_map[this->beams[i].x][this->beams[i].y].altitude = max(high_depth_map[this->beams[i].x][this->beams[i].y].altitude, dvl_coo[i].z);
