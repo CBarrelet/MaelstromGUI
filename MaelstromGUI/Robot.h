@@ -307,7 +307,7 @@ public:
 				+- 2.0
 		*/
 		float z = this->scanning_depth;
-		z = - 13;
+		z = - 2;
 		float step = 0.5;
 		int n_step = this->max_x / step;
 

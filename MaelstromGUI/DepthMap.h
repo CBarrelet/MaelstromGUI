@@ -79,7 +79,7 @@ private:
 	float max_altitude = 5; // 5 meters for the color map
 
 	// Last dvl values
-	float last_distances[4][4]; // Altitude buffer with the 4 last values [j last value][i value of the dvl]
+	float last_distances[7][4]; // Altitude buffer with the 4 last values [j last value][i value of the dvl]
 	//float last_distances[10][4]; FILTER
 	float coeff_filter = 1.5;
 
@@ -112,10 +112,13 @@ public:
 
 
 		// Init last altitudes values
-		for (size_t i = 0; i < 4; i++)
-			//for (size_t i = 0; i < 4; i++) FILTER
-			for (size_t j = 0; j < 4; i = j++)
+		for (int i = 0; i < 7; i++){
+			//for (size_t i = 0; i < 4; i++) FILTERstd::cout << "Coucou" << std::endl;
+		
+			for (int j = 0; j < 4; j++){
 				last_distances[i][j] = 0;
+							}
+		}
 
 		// Init global very high depth map
 		for (size_t i = 0; i < NB_CASES_COTE_CARTE_GLOBALE_VERY_HIGH; i++) {
@@ -336,9 +339,9 @@ public:
 
 					//sort last distances
 					std::vector<std::vector<double>> last_distances_sorted;
-					for (int i = 0; i < 4; i++) {
+					for (int j = 0; j <7; j++) {
 						std::vector<double> lign;
-						for (int j = 0; j < 4; j++) {
+						for (int i = 0;i < 4; i++) {
 							lign.push_back(last_distances[j][i]);
 							sort(lign.begin(), lign.end());
 						}
@@ -347,13 +350,9 @@ public:
 					//find median
 					std::vector<double> median;
 					for (int i = 0; i < 4; i++) {
-						int l = last_distances_sorted[i].size();
-						if (l%2 ==1){
-							median.push_back(last_distances_sorted[i][l / 2]);
-						}
-						else {
-							median.push_back((last_distances_sorted[i][l / 2] + last_distances_sorted[i][l / 2 + 1]) / 2);
-						}
+						
+						median.push_back((last_distances_sorted[i][4 / 2] + last_distances_sorted[i][3 / 2 + 1]) / 2);
+						
 					}
 					
 
@@ -364,13 +363,16 @@ public:
 						is_good_value *= false;
 					
 					//filtrage des coordonnees du fond marin
-					/*double profondeur_min = -12; 
-					double profondeur_max  = -17;
+					double profondeur_min = -2; 
+					double profondeur_max  = -6;
 					if ((dvl_coo[0].z < profondeur_min) && (dvl_coo[0].z > profondeur_max) 
 						&& (dvl_coo[1].z < profondeur_min) && (dvl_coo[1].z > profondeur_max)
 						&& (dvl_coo[2].z < profondeur_min) && (dvl_coo[2].z > profondeur_max)
 						&& (dvl_coo[3].z < profondeur_min) && (dvl_coo[3].z > profondeur_max)
-						) is_good_value = true;*/
+						) {is_good_value = true;}
+					else {
+						is_good_value = false;
+					}
 						
 
 					// Very high map
@@ -516,6 +518,42 @@ private:
 			this->last_distances[3][2] = dvl_distances[2];
 			this->last_distances[3][3] = dvl_distances[3];
 		}
+		else if ((this->last_distances[4][0] == 0) && (this->last_distances[4][1] == 0) && (this->last_distances[4][2] == 0) && (this->last_distances[4][3] == 0)) {
+			this->last_distances[4][0] = dvl_distances[0];
+			this->last_distances[4][1] = dvl_distances[1];
+			this->last_distances[4][2] = dvl_distances[2];
+			this->last_distances[4][3] = dvl_distances[3];
+		}
+		else if ((this->last_distances[5][0] == 0) && (this->last_distances[5][1] == 0) && (this->last_distances[5][2] == 0) && (this->last_distances[5][3] == 0)) {
+			this->last_distances[5][0] = dvl_distances[0];
+			this->last_distances[5][1] = dvl_distances[1];
+			this->last_distances[5][2] = dvl_distances[2];
+			this->last_distances[5][3] = dvl_distances[3];
+		}
+		else if ((this->last_distances[6][0] == 0) && (this->last_distances[6][1] == 0) && (this->last_distances[6][2] == 0) && (this->last_distances[6][3] == 0)) {
+			this->last_distances[6][0] = dvl_distances[0];
+			this->last_distances[6][1] = dvl_distances[1];
+			this->last_distances[6][2] = dvl_distances[2];
+			this->last_distances[6][3] = dvl_distances[3];
+		}
+		/*else if ((this->last_distances[7][0] == 0) && (this->last_distances[7][1] == 0) && (this->last_distances[7][2] == 0) && (this->last_distances[7][3] == 0)) {
+			this->last_distances[7][0] = dvl_distances[0];
+			this->last_distances[7][1] = dvl_distances[1];
+			this->last_distances[7][2] = dvl_distances[2];
+			this->last_distances[7][3] = dvl_distances[3];
+		}
+		else if ((this->last_distances[8][0] == 0) && (this->last_distances[8][1] == 0) && (this->last_distances[8][2] == 0) && (this->last_distances[8][3] == 0)) {
+			this->last_distances[8][0] = dvl_distances[0];
+			this->last_distances[8][1] = dvl_distances[1];
+			this->last_distances[8][2] = dvl_distances[2];
+			this->last_distances[8][3] = dvl_distances[3];
+		}
+		else if ((this->last_distances[9][0] == 0) && (this->last_distances[9][1] == 0) && (this->last_distances[9][2] == 0) && (this->last_distances[9][3] == 0)) {
+			this->last_distances[9][0] = dvl_distances[0];
+			this->last_distances[9][1] = dvl_distances[1];
+			this->last_distances[9][2] = dvl_distances[2];
+			this->last_distances[9][3] = dvl_distances[3];
+		}*/
 	}
 
 	void valuesFiltering(float dvl_distances[4], cv::Point3f dvl_coo[4]) {
@@ -528,7 +566,7 @@ private:
 
 			if ((this->beams[i].x >= 0) && (this->beams[i].y >= 0) && (this->beams[i].x <= this->high_depth_map.size()) && (this->beams[i].y <= this->high_depth_map[0].size())) {
 				// Check value for the 4 last values
-				for (size_t j = 0; j < 4; j++) {
+				for (size_t j = 0; j < 7; j++) {
 					// Filter some artefacts, if at least one value is wrong, is_good_value == false
 					if ((this->coeff_filter * this->last_distances[j][i] > dvl_distances[i]) && (this->last_distances[j][i] / this->coeff_filter < dvl_distances[i]))
 						is_good_value *= true;
@@ -552,7 +590,7 @@ private:
 		// Shift all the values by one, and add the new one at the first position
 		for (size_t i = 0; i < 4; i++) {
 			// Shift values
-			for (size_t j = 1; j < 4; j++)
+			for (size_t j = 1; j < 7; j++)
 				this->last_distances[j][i] = this->last_distances[j - 1][i];
 			// Update first values
 			this->last_distances[0][i] = dvl_distances[i];

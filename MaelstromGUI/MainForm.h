@@ -4603,7 +4603,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 		
 
 		//Tiff object
-		Geotiff tiff((const char*)"C:/Users/admin/Desktop/work_area_CS_2.tif"); //saccaFisola_5cm.tif    //arsenale_2022_06_5cm.tiff");
+		Geotiff tiff((const char*)"C:/Users/admin/Desktop/punta_salute_DE.tiff"); //saccaFisola_5cm.tif    //arsenale_2022_06_5cm.tiff");
 		std::cout << "Bathy map opened" << std::endl;
 		float** band = tiff.GetRasterBand(1);
 		double* transform = tiff.GetGeoTransform();
@@ -4660,7 +4660,7 @@ private: System::ComponentModel::BackgroundWorker^ backgroundWorkerDVL_Security;
 		double arriere_margin = 2.1;
 		double largeur_workspace = width_pool - 2 * lateral_margin;
 		double longueur_workspace = length_pool - avant_margin - arriere_margin - largeur_panier;
-		double real_window_size = 78; //half of the length of the bathy map visible on the interface, should be a 14 multiple
+		double real_window_size = 14; //half of the length of the bathy map visible on the interface, should be a 14 multiple
 
 
 		//buoy in campo sperimentale
